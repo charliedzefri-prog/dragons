@@ -259,6 +259,10 @@ const DRAGONS = [
   {id:"d107", name:"Алмазный Голем", els:["legend", "royal", "cyber"], rarity:"legendary", base:{"hp": 145, "atk": 40, "def": 20, "spd": 12}, desc:"Серый каменный великан с головой-алмазом. Молчит, сияет, дробит."},
   {id:"d108", name:"Барашка", els:["sheep", "beast"], rarity:"epic", base:{"hp": 120, "atk": 32, "def": 16, "spd": 13}, desc:"Настоящий горный баран с закрученными рогами. Не мультяшный. Опасный."},
   {id:"d109", name:"Г.Б.Т.", els:["tyrant", "clock", "glitch"], rarity:"tyrant", base:{"hp": 170, "atk": 52, "def": 20, "spd": 17}, eventOnly:true, boss:true, desc:"Гнев. Бесконечность. Тьма. Финальный босс кампании — то, что появляется, когда все часы показывают 3:00."},
+  {id:"d110", name:"Амальгамет 396", els:["glitch", "digit", "night"], rarity:"epic", base:{"hp": 130, "atk": 36, "def": 15, "spd": 16}, desc:"Сплав из тройки, девятки и шестёрки — кривой, шатающийся, но цифры на нём считают правильно. Иногда. Символы на теле меняются, когда он злится."},
+  {id:"d111", name:"Амальгамет 444", els:["glitch", "digit", "beast"], rarity:"epic", base:{"hp": 140, "atk": 38, "def": 17, "spd": 12}, desc:"Три Четвёрки, сросшиеся в одного. Ходят вместе, думают порознь. Если спросить «сколько вас?», ответит «четыре»."},
+  {id:"d112", name:"Амальгамет Сундук", els:["glitch", "money", "cyber"], rarity:"epic", base:{"hp": 150, "atk": 30, "def": 22, "spd": 10}, desc:"Сундук, из которого выросли зелёные глаза. Смотрит на золото. Смотрит на тебя. Открывать не рекомендуется."},
+  {id:"d113", name:"Сайбер Вульф Заяц", els:["cyber", "beast", "glitch"], rarity:"epic", base:{"hp": 125, "atk": 40, "def": 14, "spd": 19}, desc:"Наполовину розовый, наполовину синий, целиком странный. Ни волк, ни заяц — уши длинные, зубы кроличьи, а глаза светятся. В жёлтой кофте, потому что так надо."},
   {id:"d106", name:"Телец", els:["legend", "zodiac", "beast"], rarity:"legendary", base:{"hp": 140, "atk": 40, "def": 18, "spd": 13}, eventOnly:true, desc:"Голубой бык с кольцом в носу и огоньком на лбу. Не машите красным."},
 ];
 
@@ -347,3 +351,7 @@ const CAMPAIGN=[
  ]},
 ];
 const CAMPAIGN_NODES=CAMPAIGN.flatMap(c=>c.nodes.map(n=>({...n,ch:c.ch})));
+
+// ---- фоны (assets/bg) ----
+const HAB_BG={night:"nightmare_hall",glitch:"darknet",clock:"ice_hell",cyber:"base",digit:"room1",royal:"gallery",sheep:"snow",bird:"skyship",beast:"darkside",cat:"room1",doc:"base",money:"gallery",zodiac:"skyship"};
+const BATTLE_BG={default:"versus",pvp:"versus",phone:"ice_hell",zodiac:"skyship",dungeon:"nightmare1",campaign:{1:"snow",2:"base",3:"nightmare_hall",4:"nightmare2"},boss:"darkside",final:"nightmare0"};

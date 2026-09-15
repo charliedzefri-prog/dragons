@@ -157,7 +157,7 @@ function tileHtml(t,i,left,top,z){
   const dr=t.dragons.map((id,k)=>`<img class="dr-mini walk ${dInfo(id).noflip?"noflip":""}" style="left:${14+k*30}px;animation-delay:-${(i*7+k*3)%6}s;animation-duration:${5+((i+k)%3)}s" src="assets/${id}.png">`).join("");
   const cnt=b.cap?`<span class="count">${t.dragons.length}/${HAB_CAP(b,habLvl(t))}${habLvl(t)>1?" ⬆"+habLvl(t):""}</span>`:"";
   const col=b.el?ELEMENTS[b.el].color:b.farm?"#d8b54a":"#8fd36a";
-  return `<div class="itile built" data-i="${i}" title="${b.name}" style="${style}"><div class="rhomb" style="background:linear-gradient(135deg,#fff8,${col})"><div class="rside" style="background:${col}"></div></div><span class="bico">${b.ico}</span>${dr}${cnt}${ready?`<span class="ready">${inc.gold?"🪙":inc.food?"🍖":"💎"}</span>`:lib?`<span class="ready">📜</span>`:""}</div>`;
+  return `<div class="itile built" data-i="${i}" title="${b.name}" style="${style}"><div class="rhomb" style="background:linear-gradient(135deg,#fff8,${col})"><div class="rside" style="background:${col}"></div></div><span class="bico ${b.special==="phone"?"phone":""}">${b.ico}</span>${dr}${cnt}${ready?`<span class="ready">${inc.gold?"🪙":inc.food?"🍖":"💎"}</span>`:lib?`<span class="ready">📜</span>`:""}</div>`;
 }
 let moveFrom=null;
 function tileClick(i){
@@ -204,8 +204,8 @@ function tileClick(i){
 }
 function enterHabitat(i){
   const t=S.tiles[i],b=BUILDINGS[t.b],col=ELEMENTS[b.el].color;
-  const m=modal(`<h2>${b.ico} ${b.name}</h2><div class="hab-scene" style="background:linear-gradient(#bfe9ff,${col}aa 60%,${col})">
-   <div class="hab-ground"></div><div class="hab-deco">${b.ico}</div>
+  const hbg=HAB_BG[b.el];const m=modal(`<h2>${b.ico} ${b.name}</h2><div class="hab-scene ${hbg?"hab-img":""}" style="background:${hbg?`url(assets/bg/${hbg}.jpg) center/cover`:`linear-gradient(#bfe9ff,${col}aa 60%,${col})`}">
+   <div class="hab-ground" ${hbg?'style="background:linear-gradient(transparent,rgba(0,0,0,.45));border:0;height:60px"':""}></div>${hbg?"":`<div class="hab-deco">${b.ico}</div>`}
    ${t.dragons.map((id,k)=>`<div class="hab-dr ${dInfo(id).noflip?"noflip":""}" data-id="${id}" style="left:${15+k*40}%;animation-duration:${6+k*2}s;animation-delay:-${k*3}s"><img src="assets/${id}.png"><div class="hab-tag">${dInfo(id).name} <b>ур.${S.dragons[id].lvl}</b></div></div>`).join("")}
   </div><small>Нажми на дракона, чтобы покормить.</small><div id="hab-info"></div>`);
   $$(".hab-dr",m).forEach(el=>el.onclick=()=>{const id=el.dataset.id,o=S.dragons[id],d=dInfo(id),ml=maxLevel(o.stars),fc=feedCost(id);
@@ -372,12 +372,13 @@ function nextTurn(first){
   if(B.cur.side==="enemy"){B.busy=true;setTimeout(aiTurn,900)}
 }
 function log(s){B.log.push(s);if(B.log.length>40)B.log.shift()}
+function battleBg(){const o=B&&B.opp;if(!o)return null;if(o.bg)return o.bg;if(o.final)return BATTLE_BG.final;if(o.boss)return BATTLE_BG.boss;if(o.campaign)return BATTLE_BG.campaign[o.ch]||BATTLE_BG.default;if(o.pvp)return BATTLE_BG.pvp;return BATTLE_BG.default}
 function renderBattle(){
   const root=$("#scr-battle");const f=B.cur;
   const fh=(x)=>`<div class="fighter ${x.side} ${dInfo(x.id).noflip?"noflip":""} ${x.hp<=0?"dead":""} ${x===f?"active":""} pos${x.i}" data-side="${x.side}" data-i="${x.i}"><img src="assets/${x.id}.png"><div class="hpbar"><div class="${x.hp/x.maxhp<.3?"low":""}" style="width:${x.hp/x.maxhp*100}%"></div>${x.shield?`<div class="shieldbar" style="width:${Math.min(100,x.shield/x.maxhp*100)}%"></div>`:""}</div><div class="fn">${x.name} <small>ур.${x.lvl}</small></div><div>${x.els.map(elIco).join("")}</div>${x.buffAtk?"<small>⚔️↑</small>":""}${x.buffDef?"<small>🛡️↑</small>":""}${x.debuff?"<small>⚔️↓</small>":""}${x.shield?`<small>🔰${x.shield}</small>`:""}${(x.fx||[]).map(e=>({burn:"🔥",hot:"💚",stun:"💫",freeze:"🧊",slow:"🐌",vuln:"💔"})[e.k]||"").join("")}</div>`;
   root.innerHTML=`<div class="arena">
    ${B.pvp?`<div class="pvp-head"><span>${S.profile.name} ${leagueOf(S.pvp.rating).ico}</span><span class="pvp-timer" id="pvpt">10</span><span>${B.opp.name}</span></div>`:""}<div class="turn-order">${[f,...B.queue].map(x=>`<img src="assets/${x.id}.png" class="${x===f?"now":""} ${x.side==="enemy"?"en":""}">`).join("")}</div>
-   <div class="arena-field iso-arena"><div class="arena-floor"></div><div class="team allies">${B.allies.map(fh).join("")}</div><div class="team enemies">${B.enemies.map(fh).join("")}</div></div>
+   <div class="arena-field iso-arena" style="${battleBg()?`background:url(assets/bg/${battleBg()}.jpg) center/cover`:""}"><div class="arena-floor" ${battleBg()?'style="opacity:.35"':""}></div><div class="team allies">${B.allies.map(fh).join("")}</div><div class="team enemies">${B.enemies.map(fh).join("")}</div></div>
    <div class="battle-log" id="blog">${B.log.map(l=>`<div>${l}</div>`).join("")}</div>
    <div class="skills" id="sk">${f.side==="ally"?f.skills.map(k=>{const s=SKILLS[k];const cd=f.cds[k]||0;return `<button class="skillbtn ${B.sel===k?"sel":""}" data-k="${k}" ${cd?"disabled":""} style="${s.el?`border-color:${ELEMENTS[s.el].color}`:""}"><b>${s.el?ELEMENTS[s.el].ico:"⚪"} ${s.name}</b><small>${s.desc}</small>${cd?`<span class="cd">⏳${cd}</span>`:""}</button>`}).join(""):`<div style="grid-column:1/-1;color:#ffe9b8;font-weight:900;text-align:center;padding:14px">Ход противника: ${f.name}…</div>`}
    <button class="btn red sm" style="grid-column:1/-1" id="flee">🏳️ Сдаться</button></div></div>`;
@@ -631,12 +632,12 @@ function pickTeamModal(title,desc,onGo){const own=housedIds();let sel=[...team].
   $("#go",m).onclick=()=>{team=sel;closeModal();onGo()}}
 function openPhone(){
   const last=S.phoneLast||0;const left=Math.max(0,PHONE_EVENT.cooldown-(Date.now()-last));const wins=S.phoneWins||0;
-  const m=modal(`<h2>📞 Телефонная будка</h2><div class="phone-card"><img src="assets/d71.png"><div><b>MR 333</b><br><small>«Алло? Три часа ночи. Ты знаешь, что делать. Приводи своих — я приведу своих.»</small><br><br>Его команда: ${PHONE_EVENT.team.map(id=>`<img src="assets/${id}.png" style="height:44px;vertical-align:middle" title="${dInfo(id).name}">`).join("")}<br><small>Уровень команды: <b>${S.level+PHONE_EVENT.lvlBonus}</b> (всегда выше твоего). Побед: ${wins}</small></div></div>
+  const m=modal(`<h2>📞 Телефонная будка</h2><div class="phone-card"><img src="assets/phone.png" class="phone-img"><img src="assets/d71.png"><div><b>MR 333</b><br><small>«Алло? Три часа ночи. Ты знаешь, что делать. Приводи своих — я приведу своих.»</small><br><br>Его команда: ${PHONE_EVENT.team.map(id=>`<img src="assets/${id}.png" style="height:44px;vertical-align:middle" title="${dInfo(id).name}">`).join("")}<br><small>Уровень команды: <b>${S.level+PHONE_EVENT.lvlBonus}</b> (всегда выше твоего). Побед: ${wins}</small></div></div>
   <p>Награда за победу: ${costStr(PHONE_EVENT.reward)}. Каждая <b>3-я победа</b> — 🥚 яйцо самого <b>MR 333</b> (только так его и можно получить)!</p>
   <div class="row"><button class="btn red" id="call" ${left>0?"disabled":""}>${left>0?"📵 Занято: "+tleft(Date.now()+left):"📞 Позвонить"}</button></div>`);
   $("#call",m).onclick=()=>{closeModal();pickTeamModal("📞 MR 333 отвечает…","<div class='desc'>«3:33. Ровно. Не опаздывай.» Команда 3:00 очень сильна — бери драконов, сильных против 🕒 3:00 (🔢 Цифра и 💉 Медицина) и берегись 🌙 Ночи.</div>",()=>{
     const lvl=S.level+PHONE_EVENT.lvlBonus;S.phoneLast=Date.now();save();
-    startBattle({name:"Команда 3:00 (MR 333)",lvl,ids:PHONE_EVENT.team,onEnd:(win)=>{
+    startBattle({name:"Команда 3:00 (MR 333)",lvl,ids:PHONE_EVENT.team,bg:BATTLE_BG.phone,onEnd:(win)=>{
       if(win){S.phoneWins=(S.phoneWins||0)+1;const r=PHONE_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(200+40*lvl);let egg="";if(S.phoneWins%3===0){giveEgg(PHONE_EVENT.egg,"event");egg="<p><b>🥚 MR 333 впечатлён — его яйцо в твоём инвентаре!</b></p>"}
         save();updateTop();modal(`<div class="result win">ПОБЕДА!</div><p class="center">«…Ладно. Перезвоню в четыре.»</p><div class="center" style="font-weight:900">+${costStr(r)} +⭐${200+40*lvl}</div>${egg}<p class="center"><small>Побед над MR 333: ${S.phoneWins} (до яйца: ${3-S.phoneWins%3===3?0:3-S.phoneWins%3})</small></p><div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('map')">Ок</button></div>`,{closable:false})}
       else{addXP(30);save();modal(`<div class="result lose">ПОРАЖЕНИЕ</div><p class="center">«Три часа. Каждую ночь. Я подожду.»</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('map')">Ок</button></div>`,{closable:false})}}})})}}
@@ -652,7 +653,7 @@ function renderZodiacCard(){const z=zodiacState();const locked=S.level<ZODIAC_EV
 function bindZodiac(root){const z=zodiacState();
   const zf=$("#zfight",root);if(zf)zf.onclick=()=>{const st=z.stage;const id=ZODIAC_IDS[st];const lvl=ZODIAC_EVENT.baseLvl+st*2;
     pickTeamModal("♈ "+dInfo(id).name,`<div class="desc">${dInfo(id).desc}</div>${z.hp?"<p>⚠️ HP команды переносится с прошлого боя.</p>":""}`,()=>{
-      startBattle({name:"Зодиак: "+dInfo(id).name,lvl,ids:[id,...(st>=6?[ZODIAC_IDS[(st+5)%13]]:[]),...(st>=10?[ZODIAC_IDS[(st+9)%13]]:[])],carry:z.hp||null,onEnd:(win,hpLeft)=>{
+      startBattle({name:"Зодиак: "+dInfo(id).name,lvl,bg:BATTLE_BG.zodiac,ids:[id,...(st>=6?[ZODIAC_IDS[(st+5)%13]]:[]),...(st>=10?[ZODIAC_IDS[(st+9)%13]]:[])],carry:z.hp||null,onEnd:(win,hpLeft)=>{
         if(win){z.stage++;z.best=Math.max(z.best,z.stage);z.hp=hpLeft;const g=1500*(st+1),sc=3+st;S.gold+=g;S.scrolls=(S.scrolls||0)+sc;S.gems+=2+st;addXP(150+50*st);let egg="";if(ZODIAC_EVENT.eggAt.includes(z.stage)){giveEgg(id,"event");egg=`<p><b>🥚 Яйцо знака «${dInfo(id).name}» в инвентаре!</b></p>`}
           save();updateTop();modal(`<div class="result win">ЭТАП ${z.stage} ПРОЙДЕН</div><div class="center" style="font-weight:900">+🪙${g} +📜${sc} +💎${2+st}</div>${egg}<div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('events')">Дальше</button></div>`,{closable:false})}
         else{z.stage=0;z.hp=null;save();modal(`<div class="result lose">ИСПЫТАНИЕ ПРОВАЛЕНО</div><p class="center">Звёзды погасли. Прогресс сброшен, рекорд сохранён: ${z.best}.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">Ок</button></div>`,{closable:false})}}})})};
@@ -669,7 +670,7 @@ function openDungeon(){const g=dgState();if(!g.next)g.next=dgEnemies(g.floor);co
   ${g.hp?`<small>HP команды: ${Object.entries(g.hp).map(([id,h])=>dInfo(id).name+" "+h).join(", ")}</small>`:""}
   <div class="row"><button class="btn red" id="dgo">⬇ Спуститься</button>${g.hp?`<button class="btn green" id="dheal">💚 Лечить (💎${3+Math.floor(g.floor/3)})</button>`:""}${g.floor>0?`<button class="btn" id="dexit">🚪 Выйти (сохранить добычу)</button>`:""}</div><p><small>Рекорд глубины: ${g.best}</small></p>`);
   $("#dgo",m).onclick=()=>{closeModal();pickTeamModal("🏚️ Этаж "+(g.floor+1),g.hp?"<p>⚠️ HP команды переносится.</p>":"",()=>{
-    startBattle({name:"Темница, этаж "+(g.floor+1),lvl,ids:g.next,carry:g.hp||null,onEnd:(win,hpLeft)=>{
+    startBattle({name:"Темница, этаж "+(g.floor+1),lvl,bg:BATTLE_BG.dungeon,ids:g.next,carry:g.hp||null,onEnd:(win,hpLeft)=>{
       if(win){g.floor++;g.best=Math.max(g.best,g.floor);g.hp=hpLeft;g.next=dgEnemies(g.floor);const gold=400*g.floor+rnd(0,200),food=100*g.floor;S.gold+=gold;S.food+=food;S.scrolls=(S.scrolls||0)+1;addXP(80+30*g.floor);let chest="";if(g.floor%5===0){S.gems+=10+g.floor;S.scrolls+=5;chest=`<p><b>🎁 Сундук: +💎${10+g.floor} +📜5</b></p>`}
         save();updateTop();modal(`<div class="result win">ЭТАЖ ${g.floor} ЗАЧИЩЕН</div><div class="center" style="font-weight:900">+🪙${gold} +🍖${food} +📜1</div>${chest}<div class="row" style="justify-content:center"><button class="btn green" id="dn">Дальше</button></div>`,{closable:false});$("#dn").onclick=()=>{closeModal();openDungeon()}}
       else{g.floor=0;g.hp=null;g.next=null;save();modal(`<div class="result lose">ТЕМНИЦА ПОГЛОТИЛА ВАС</div><p class="center">Серия прервана. Рекорд: ${g.best}.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('map')">Ок</button></div>`,{closable:false})}}})})};
@@ -844,7 +845,7 @@ function openCampNode(i){const n=CAMPAIGN_NODES[i];const replay=i<campProgress()
   const m=modal(`<h2>${n.final?"☠️":n.boss?"👹":"⚔️"} ${n.name}</h2><div class="center">${n.ids.map(id=>`<img src="assets/${id}.png" style="height:90px">`).join("")}</div><p class="center">${n.ids.map(id=>dInfo(id).name+" "+dInfo(id).els.map(elIco).join("")).join("<br>")}</p><p class="center"><small>Уровень врагов: ${n.lvl}${replay?" · повтор (награда ×0.3)":""}</small></p>
   <div class="row" style="justify-content:center"><button class="btn red" id="cgo">В бой</button></div>`);
   $("#cgo",m).onclick=()=>{closeModal();pickTeamModal(n.name,"",()=>{playDialog(n.pre,()=>{
-    startBattle({name:n.name,lvl:n.lvl,ids:n.ids,campaign:true,music:n.music,onEnd:(win)=>{if(win){const mult=replay?.3:1;const gold=Math.round((300*n.lvl+(n.boss?1500:0))*mult),xp=Math.round((60+80*n.lvl)*mult),gems=replay?0:(n.boss?25:8),sc=Math.round((2+Math.floor(n.lvl/3))*mult);S.gold+=gold;S.gems+=gems;S.scrolls=(S.scrolls||0)+sc;addXP(xp);
+    startBattle({name:n.name,lvl:n.lvl,ids:n.ids,campaign:true,ch:n.ch,boss:n.boss,final:n.final,music:n.music,onEnd:(win)=>{if(win){const mult=replay?.3:1;const gold=Math.round((300*n.lvl+(n.boss?1500:0))*mult),xp=Math.round((60+80*n.lvl)*mult),gems=replay?0:(n.boss?25:8),sc=Math.round((2+Math.floor(n.lvl/3))*mult);S.gold+=gold;S.gems+=gems;S.scrolls=(S.scrolls||0)+sc;addXP(xp);
         if(!replay){S.camp.done=i+1;if(i+1>S.wins)S.wins=i+1;S.quests.wins=(S.quests.wins||0)+1}
         let extra="";if(n.final&&!replay){S.gems+=300;S.scrolls=(S.scrolls||0)+50;giveEgg("d107","campaign");extra="<p><b>🏆 Кампания пройдена! +💎300 +📜50 и 🥚 яйцо Алмазного Голема.</b></p>"}
         save();updateTop();playDialog(n.post,()=>{playMusic("campaign");modal(`<div class="result win">ПОБЕДА!</div><div class="center" style="font-weight:900">+🪙${gold} +💎${gems} +📜${sc} +⭐${xp}</div>${extra}<div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('campaign')">Дальше</button></div>`,{closable:false})})}
