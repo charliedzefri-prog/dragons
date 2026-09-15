@@ -10,10 +10,25 @@ const MIME={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=u
 
 // ---------- база (простой JSON) ----------
 let DB={players:{}};try{DB=JSON.parse(fs.readFileSync(DB_FILE,"utf8"))}catch(e){}
+// ---------- внешнее хранилище (GitHub-ветка "db"): на Render Free нет диска, поэтому база живёт в репозитории ----------
+const GH={token:process.env.GH_TOKEN||"",repo:process.env.GH_REPO||"charliedzefri-prog/dragons",branch:process.env.GH_BRANCH||"db",path:"db.json",sha:null,busy:false,dirty:false,ready:false};
+const ghReq=(method,url,body)=>fetch(url,{method,headers:{Authorization:"Bearer "+GH.token,Accept:"application/vnd.github+json","User-Agent":"dragonmania","Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+async function ghLoad(){if(!GH.token)return;try{const r=await ghReq("GET",`https://api.github.com/repos/${GH.repo}/contents/${GH.path}?ref=${GH.branch}`);if(r.status===404){GH.ready=true;console.log("gh db: файла нет, начнём с пустой");return}if(!r.ok)throw new Error("HTTP "+r.status);const j=await r.json();GH.sha=j.sha;const txt=Buffer.from(j.content,"base64").toString("utf8");const d=JSON.parse(txt);
+  // не затираем более свежие локальные данные пустой базой
+  if(Object.keys(d.players||{}).length||!Object.keys(DB.players).length){DB=d;DB.settings=Object.assign({maint:false,motd:"",goldMult:1,gemsMult:1,xpMult:1},DB.settings||{});DB.log=DB.log||[]}
+  GH.ready=true;console.log("gh db: загружено игроков:",Object.keys(DB.players).length)}catch(e){console.error("gh db load:",e.message);GH.ready=true}}
+async function ghPush(){if(!GH.token||!GH.ready)return;if(GH.busy){GH.dirty=true;return}GH.busy=true;GH.dirty=false;
+  try{const content=Buffer.from(JSON.stringify(DB)).toString("base64");let r=await ghReq("PUT",`https://api.github.com/repos/${GH.repo}/contents/${GH.path}`,{message:"db "+new Date().toISOString(),content,branch:GH.branch,sha:GH.sha||undefined});
+    if(r.status===409||r.status===422){const g=await ghReq("GET",`https://api.github.com/repos/${GH.repo}/contents/${GH.path}?ref=${GH.branch}`);if(g.ok){GH.sha=(await g.json()).sha;r=await ghReq("PUT",`https://api.github.com/repos/${GH.repo}/contents/${GH.path}`,{message:"db "+new Date().toISOString(),content,branch:GH.branch,sha:GH.sha})}}
+    if(!r.ok)throw new Error("HTTP "+r.status+" "+(await r.text()).slice(0,120));GH.sha=(await r.json()).content.sha}
+  catch(e){console.error("gh db push:",e.message);GH.dirty=true}
+  finally{GH.busy=false;if(GH.dirty)setTimeout(ghPush,3000)}}
+let ghT=null;const ghSchedule=()=>{if(!GH.token)return;clearTimeout(ghT);ghT=setTimeout(ghPush,4000)};
+setInterval(()=>{if(GH.dirty&&!GH.busy)ghPush()},30000);
 DB.settings=Object.assign({maint:false,motd:"",goldMult:1,gemsMult:1,xpMult:1},DB.settings||{});DB.log=DB.log||[];
 const alog=(who,what)=>{DB.log.unshift({t:Date.now(),who,what});DB.log=DB.log.slice(0,300);saveDB()};
 {const before=Object.keys(DB.players).length;for(const id of Object.keys(DB.players)){if(!DB.players[id].user)delete DB.players[id]}for(const p of Object.values(DB.players)){p.friends=(p.friends||[]).filter(f=>DB.players[f]);p.requests=(p.requests||[]).filter(f=>DB.players[f])}const after=Object.keys(DB.players).length;if(before!==after)console.log("purged anonymous sessions:",before-after)}
-let saveT=null;const saveDB=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{fs.writeFileSync(DB_FILE,JSON.stringify(DB))}catch(e){console.error("db save",e.message)}},500)};
+let saveT=null;const saveDB=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{fs.writeFileSync(DB_FILE,JSON.stringify(DB))}catch(e){console.error("db save",e.message)}ghSchedule()},500)};
 const code=()=>{let c;do{c=crypto.randomBytes(3).toString("hex").toUpperCase()}while(Object.values(DB.players).some(p=>p.code===c));return c};
 
 // ---------- анти-чит: правдоподобность сохранения ----------
@@ -167,6 +182,8 @@ wss.on("connection",ws=>{
     notifyFriends(me.id)});
 });
 setInterval(()=>{wss.clients.forEach(ws=>{if(!ws.isAlive)return ws.terminate();ws.isAlive=false;ws.ping()})},30000);
-server.listen(PORT,"0.0.0.0",()=>console.log("Dragonmania server on",PORT));
+ghLoad().then(()=>server.listen(PORT,"0.0.0.0",()=>console.log("Dragonmania server on",PORT,GH.token?"(db: github "+GH.repo+"@"+GH.branch+")":"(db: local file)")));
+// при остановке (деплой/рестарт) — успеть сбросить базу
+for(const sig of ["SIGTERM","SIGINT"])process.on(sig,async()=>{try{fs.writeFileSync(DB_FILE,JSON.stringify(DB))}catch(e){}clearTimeout(ghT);if(GH.token){await ghPush();if(GH.dirty)await ghPush()}process.exit(0)});
 // не даём бесплатному Render засыпать: пингуем сами себя каждые 10 минут
 const SELF=process.env.RENDER_EXTERNAL_URL;if(SELF){setInterval(()=>{require("https").get(SELF+"/health",r=>r.resume()).on("error",()=>{})},10*60*1000)}
