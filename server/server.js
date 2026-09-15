@@ -14,6 +14,25 @@ let DB={players:{}};try{DB=JSON.parse(fs.readFileSync(DB_FILE,"utf8"))}catch(e){
 let saveT=null;const saveDB=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{fs.writeFileSync(DB_FILE,JSON.stringify(DB))}catch(e){console.error("db save",e.message)}},500)};
 const code=()=>{let c;do{c=crypto.randomBytes(3).toString("hex").toUpperCase()}while(Object.values(DB.players).some(p=>p.code===c));return c};
 
+// ---------- анти-чит: правдоподобность сохранения ----------
+const MAX_GOLD_PER_SEC=400,MAX_GEMS_PER_SEC=2,MAX_SCROLLS_PER_SEC=1,LEVEL_CAP=60;
+function validateSave(st,prev,p){
+  if(!st||typeof st!=="object")return "неверный формат";
+  const n=x=>typeof x==="number"&&isFinite(x)&&x>=0;
+  if(!n(st.gold)||!n(st.gems)||!n(st.food)||!n(st.level))return "неверные значения ресурсов";
+  if(st.level>LEVEL_CAP||st.gold>5e9||st.gems>5e6)return "значения вне допустимого диапазона";
+  if(st.dragons){for(const [id,o] of Object.entries(st.dragons)){if(!o||o.lvl>50||o.stars>5||(o.sp||0)>5000)return "неверные данные дракона "+id;
+    if(Object.values(o.tree||{}).some(t=>t.lvl>6))return "неверное древо академии"}}
+  if(prev){const dt=Math.max(1,(Date.now()-(p.saveAt||Date.now()))/1000)+30; // +30 с запас
+    // допустимый прирост: базовый лимит в секунду + разовые крупные награды (сундуки/кампания) 
+    if(st.gold-prev.gold>MAX_GOLD_PER_SEC*dt+50000)return "слишком быстрый прирост золота";
+    if(st.gems-prev.gems>MAX_GEMS_PER_SEC*dt+400)return "слишком быстрый прирост алмазов";
+    if((st.scrolls||0)-(prev.scrolls||0)>MAX_SCROLLS_PER_SEC*dt+100)return "слишком быстрый прирост свитков";
+    if(st.level-prev.level>Math.ceil(dt/60)+2)return "слишком быстрый рост уровня";
+    const nd=Object.keys(st.dragons||{}).length-Object.keys(prev.dragons||{}).length;if(nd>Math.ceil(dt/30)+3)return "слишком много новых драконов";
+  }
+  return null}
+
 // ---------- http: статика ----------
 const server=http.createServer((req,res)=>{
   let u=decodeURIComponent(req.url.split("?")[0]);if(u==="/")u="/index.html";
@@ -32,7 +51,9 @@ let queue=[];           // [{id,ws,power,t}]
 const rooms=new Map();  // roomId -> {p:[id,id], turn:0|1, timer, seed}
 const send=(ws,m)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(m))};
 const sendTo=(id,m)=>send(online.get(id),m);
-const pub=(p)=>({id:p.id,name:p.name,avatar:p.avatar,power:p.power||0,rating:p.rating||1000,code:p.code,online:online.has(p.id),team:p.team||[],wins:p.wins||0,losses:p.losses||0});
+const ADMINS=(process.env.ADMINS||"lulu").toLowerCase().split(",").map(x=>x.trim()).filter(Boolean);
+const isAdmin=p=>!!(p&&(p.admin||(p.user&&ADMINS.includes(p.user.toLowerCase()))));
+const pub=(p)=>({id:p.id,name:p.name,admin:isAdmin(p),avatar:p.avatar,power:p.power||0,rating:p.rating||1000,code:p.code,online:online.has(p.id),team:p.team||[],wins:p.wins||0,losses:p.losses||0});
 function pushFriends(id){const p=DB.players[id];if(!p)return;
   sendTo(id,{t:"friends",list:(p.friends||[]).map(f=>DB.players[f]).filter(Boolean).map(pub),requests:(p.requests||[]).map(f=>DB.players[f]).filter(Boolean).map(pub)})}
 function notifyFriends(id){const p=DB.players[id];if(!p)return;(p.friends||[]).forEach(f=>{if(online.has(f))pushFriends(f)})}
@@ -52,7 +73,7 @@ wss.on("connection",ws=>{
     const finishLogin=(p)=>{me=p;p.avatar=m.avatar||p.avatar;p.power=m.power|0;p.team=(m.team||[]).slice(0,3);p.last=Date.now();
       const old=online.get(p.id);if(old&&old!==ws){send(old,{t:"kicked"});try{old.close()}catch(e){}}
       online.set(p.id,ws);saveDB();
-      send(ws,{t:"welcome",me:pub(p),token:p.token,online:online.size,top:leaderboard(),save:p.save||null});pushFriends(p.id);notifyFriends(p.id)};
+      send(ws,{t:"welcome",me:pub(p),token:p.token,online:online.size,top:leaderboard(),save:p.save||null,saveAt:p.saveAt||null});pushFriends(p.id);notifyFriends(p.id)};
     if(m.t==="register"){const u=String(m.user||"").trim();const pw=String(m.pass||"");
       if(!/^[A-Za-zА-Яа-яЁё0-9_]{3,16}$/.test(u)){send(ws,{t:"auth_err",msg:"Имя: 3–16 символов, буквы/цифры/_"});return}
       if(pw.length<4){send(ws,{t:"auth_err",msg:"Пароль минимум 4 символа"});return}
@@ -63,6 +84,7 @@ wss.on("connection",ws=>{
     if(m.t==="login"){const u=String(m.user||"").trim().toLowerCase();const pw=String(m.pass||"");
       const p=Object.values(DB.players).find(x=>x.user&&x.user.toLowerCase()===u);
       if(!p||crypto.scryptSync(pw,p.salt,32).toString("hex")!==p.hash){send(ws,{t:"auth_err",msg:"Неверное имя или пароль"});return}
+      if(p.banned){send(ws,{t:"auth_err",msg:"Аккаунт заблокирован"});return}
       p.token=crypto.randomBytes(16).toString("hex"); // новая сессия, старые обнуляются
       finishLogin(p);return}
     if(m.t==="hello"){const p=m.token&&Object.values(DB.players).find(x=>x.token===m.token&&x.user);
@@ -70,7 +92,28 @@ wss.on("connection",ws=>{
     if(m.t==="logout"){if(me){me.token=crypto.randomBytes(16).toString("hex");saveDB();online.delete(me.id);notifyFriends(me.id);me=null}send(ws,{t:"need_auth"});return}
     if(!me)return;
     if(m.t==="profile"){me.name=String(m.name||me.name).slice(0,20);me.avatar=m.avatar||me.avatar;me.power=m.power|0;me.team=(m.team||[]).slice(0,3);saveDB();notifyFriends(me.id);send(ws,{t:"me",me:pub(me)});return}
-    if(m.t==="save"){if(typeof m.data==="string"&&m.data.length<400000){me.save=m.data;me.saveAt=Date.now();saveDB()}return}
+    if(m.t==="save"){if(typeof m.data!=="string"||m.data.length>400000)return;let st;try{st=JSON.parse(m.data)}catch(e){return}
+      const prev=me.save?JSON.parse(me.save):null;const bad=validateSave(st,prev,me);
+      if(bad){me.flags=(me.flags||0)+1;me.lastFlag={t:Date.now(),why:bad};saveDB();send(ws,{t:"save_rejected",msg:bad,data:me.save||null});console.log("save rejected",me.user,bad);return}
+      // сервер сам держит рейтинг и имя — клиент их не переписывает
+      if(st.pvp)st.pvp.rating=me.rating||1000;if(st.profile)st.profile.name=me.name;
+      me.save=JSON.stringify(st);me.saveAt=Date.now();me.level=st.level;me.gold=st.gold;me.gems=st.gems;saveDB();send(ws,{t:"save_ok"});return}
+    if(m.t==="save_reset"){me.save=null;me.saveAt=Date.now();saveDB();return}
+    // ---- админ ----
+    if(m.t&&m.t.startsWith("admin_")){if(!isAdmin(me)){send(ws,{t:"err",msg:"Нет прав"});return}
+      const list=()=>send(ws,{t:"admin_data",online:online.size,players:Object.values(DB.players).map(p=>({...pub(p),level:p.level,gold:p.gold,gems:p.gems,flags:p.flags||0,banned:!!p.banned,user:p.user,last:p.last})),raw:DB.players});
+      const tgt=DB.players[m.id];
+      if(m.t==="admin_list"){list();return}
+      if(m.t==="admin_broadcast"){online.forEach(w=>send(w,{t:"broadcast",msg:String(m.msg||"").slice(0,500)}));send(ws,{t:"admin_ok",msg:"Отправлено"});return}
+      if(!tgt){send(ws,{t:"err",msg:"Игрок не найден"});return}
+      const patchSave=(fn)=>{let st=tgt.save?JSON.parse(tgt.save):null;if(!st)return false;fn(st);tgt.save=JSON.stringify(st);tgt.level=st.level;tgt.gold=st.gold;tgt.gems=st.gems;tgt.saveAt=Date.now();sendTo(tgt.id,{t:"save_rejected",msg:"Администратор изменил ваш прогресс",data:tgt.save});return true};
+      if(m.t==="admin_give"){const ok=patchSave(st=>{st.gold=(st.gold||0)+(m.gold|0);st.gems=(st.gems||0)+(m.gems|0);st.scrolls=(st.scrolls||0)+(m.scrolls|0)});saveDB();send(ws,{t:"admin_ok",msg:ok?"Выдано":"У игрока нет сохранения"});return}
+      if(m.t==="admin_reset"){tgt.save=null;tgt.level=0;tgt.gold=0;tgt.gems=0;saveDB();sendTo(tgt.id,{t:"save_rejected",msg:"Прогресс сброшен администратором",data:null});send(ws,{t:"admin_ok",msg:"Сброшено"});return}
+      if(m.t==="admin_ban"){tgt.banned=!tgt.banned;tgt.token=crypto.randomBytes(16).toString("hex");saveDB();if(tgt.banned){sendTo(tgt.id,{t:"banned",msg:"Обратитесь к администратору"});const w=online.get(tgt.id);if(w)setTimeout(()=>{try{w.close()}catch(e){}},300)}send(ws,{t:"admin_ok",msg:tgt.banned?"Заблокирован":"Разблокирован"});return}
+      if(m.t==="admin_kick"){const w=online.get(tgt.id);if(w){send(w,{t:"kicked"});try{w.close()}catch(e){}}send(ws,{t:"admin_ok",msg:"Отключён"});return}
+      if(m.t==="admin_admin"){if(tgt.user&&ADMINS.includes(tgt.user.toLowerCase())){send(ws,{t:"err",msg:"Это главный админ"});return}tgt.admin=!tgt.admin;saveDB();send(ws,{t:"admin_ok",msg:tgt.admin?"Назначен админом":"Снят с админа"});return}
+      if(m.t==="admin_delete"){if(isAdmin(tgt)&&tgt.id!==me.id){send(ws,{t:"err",msg:"Нельзя удалить админа"});return}const w=online.get(tgt.id);if(w){try{w.close()}catch(e){}}delete DB.players[tgt.id];Object.values(DB.players).forEach(p=>{p.friends=(p.friends||[]).filter(f=>f!==tgt.id);p.requests=(p.requests||[]).filter(f=>f!==tgt.id)});saveDB();send(ws,{t:"admin_ok",msg:"Удалён"});return}
+      return}
     if(m.t==="top"){send(ws,{t:"top",top:leaderboard(),online:online.size});return}
     // ---- друзья ----
     if(m.t==="friend_add"){const c=String(m.code||"").trim().toUpperCase();const p=Object.values(DB.players).find(x=>x.code===c);

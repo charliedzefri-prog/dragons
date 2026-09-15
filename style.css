@@ -431,3 +431,22 @@ body{font-size:1rem}
 .arena-floor,.screenflash,.vfx,.dmgpop{pointer-events:none}
 .skills .skillbtn{position:relative;z-index:2;pointer-events:auto}
 .battle-log{pointer-events:auto}
+
+/* ===== экран загрузки ===== */
+#boot{position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 50% 30%,#3a7fc0,#0b1a33 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;transition:opacity .5s}
+#boot.out{opacity:0;pointer-events:none}
+.boot-logo{font-size:96px;animation:bob2 1s infinite alternate;filter:drop-shadow(0 8px 12px #000)}
+.boot-title{font-size:2.2rem;font-weight:900;color:var(--gold);text-shadow:3px 3px 0 #3a2008;margin:8px 0 20px}.boot-title span{color:#fff}
+.boot-bar{width:min(420px,80vw);height:22px;border:3px solid #3a2008;border-radius:12px;background:#222;overflow:hidden}
+#bootfill{height:100%;width:0;background:linear-gradient(#ffe27a,#e4a11b);transition:width .1s}
+.boot-txt{margin-top:10px;font-weight:700;opacity:.9}
+.boot-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.bopt{border:3px solid #3a2008;border-radius:14px;padding:14px;color:#fff;font:inherit;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px;text-shadow:1px 1px 0 #000}
+.bopt b{font-size:1.1rem}.bopt small{opacity:.9;line-height:1.3}.bopt:disabled{opacity:.5;cursor:not-allowed}
+.bopt.acc{background:linear-gradient(135deg,#2f8fe0,#123a6a)}.bopt.loc{background:linear-gradient(135deg,#6b6b6b,#333)}
+@media(max-width:640px){.boot-opts{grid-template-columns:1fr}}
+/* ===== админка ===== */
+.modal.wide{width:min(96vw,1100px)}
+.adm-wrap{max-height:60vh;overflow:auto}
+table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,table.adm td{padding:4px 6px;border-bottom:1px solid #d9b26a;text-align:left;vertical-align:middle}
+.adm-act{white-space:nowrap}.adm-act .btn{padding:2px 6px;margin:1px}
