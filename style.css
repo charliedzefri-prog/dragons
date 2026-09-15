@@ -4,8 +4,9 @@
   --panel:#f6e7c8;--panel2:#e9d2a2;--ink:#3b2410;--sky:#7fd3ff;--grass:#5cbf4a;
   --fire:#ff6a2a;--water:#3ea7ff;--nature:#5ec93a;--dark:#7b3fc7;--light:#ffe561;--metal:#a9b4c2;--earth:#b8793c;--wind:#7de5d5;--ice:#9fe8ff;--electric:#ffe000;--legend:#ff4fe6;
 }
+html{font-size:clamp(14px,0.42vw + 11px,22px)}
 html,body{height:100%;font-family:"Trebuchet MS","Segoe UI",Arial,sans-serif;background:#123;color:var(--ink);overflow:hidden;user-select:none}
-#app{height:100%;display:flex;flex-direction:column;max-width:1200px;margin:0 auto;background:linear-gradient(#5fc9ff,#a9e6ff);position:relative}
+#app{height:100%;display:flex;flex-direction:column;width:100%;margin:0 auto;background:linear-gradient(#5fc9ff,#a9e6ff);position:relative}
 
 /* ------ TOPBAR ------ */
 #topbar{display:flex;align-items:center;gap:10px;padding:8px 12px;background:linear-gradient(#8a5a2b,#5a3313);border-bottom:4px solid #3a2008;box-shadow:0 4px 10px rgba(0,0,0,.35);z-index:5;flex-wrap:wrap}
@@ -382,3 +383,26 @@ html,body{height:100%;font-family:"Trebuchet MS","Segoe UI",Arial,sans-serif;bac
 .dr-search{padding:0 14px 8px}.dr-search input{width:100%;font:inherit;font-weight:700;padding:8px 12px;border-radius:10px;border:3px solid #5a3313;background:#fff8e6;box-sizing:border-box}
 .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.chip{font:inherit;font-size:13px;font-weight:900;padding:3px 9px;border-radius:12px;border:2px solid #5a3313;background:#fff8e6;cursor:pointer}.chip.on{background:#ffd54a;box-shadow:0 0 0 2px #3a2008}
 .mm-grid{display:flex;flex-direction:column;gap:6px;margin-top:8px}.opp.mm.easy{border-left:6px solid #4caf50}.opp.mm.normal{border-left:6px solid #ffb300}.opp.mm.hard{border-left:6px solid #ff3b2a}
+
+/* ===== адаптивный масштаб под разные мониторы ===== */
+body{font-size:1rem}
+.btn{font-size:1rem}.btn.sm{font-size:.85rem}
+#topbar{font-size:1.05rem}.logo{font-size:1.5rem}.res{font-size:1rem}.res b{font-size:1.05em}
+#navbar button{font-size:1.2rem;padding:.4rem .2rem}#navbar button span{font-size:.75rem}
+.panel h2{font-size:1.25rem}.panel,.desc,.skill,.stat,.map-hint{font-size:.95rem}
+.iso-scroll{max-width:none;overflow:visible;padding:10px 10px 20px}
+.iso-fit{position:relative;overflow:visible}
+.isl-tabs{max-width:none}.isl-tabs button{font-size:.9rem}
+.island-name{font-size:1.5rem}
+.dr-grid{grid-template-columns:repeat(auto-fill,minmax(clamp(120px,9vw,180px),1fr))}
+.dr-card .nm{font-size:.85rem}
+.arena{max-width:1500px;margin:0 auto;width:100%}
+.arena-menu{max-width:1400px;margin:0 auto}
+.arena-field{min-height:clamp(300px,42vh,560px)}
+.fighter{width:clamp(78px,8vw,140px)}.fighter img{width:clamp(70px,7.5vw,130px);height:clamp(88px,9.5vw,165px)}
+.skillbtn{font-size:.95rem;padding:.5rem}.skillbtn small{font-size:.75rem}
+.camp,.pvp-menu{max-width:1300px}
+.cnode{width:clamp(120px,9vw,170px)}.cnode.boss{width:clamp(150px,11vw,210px)}.cn-img{height:clamp(64px,5vw,96px)}.cn-img img{height:100%}.cn-name{font-size:.85rem}
+.dlg{width:min(1100px,100%)}.dlg-img{height:clamp(200px,24vh,320px);max-width:clamp(180px,16vw,300px)}.dlg-text{font-size:1.15rem}
+.modal{width:min(96vw,clamp(560px,45vw,900px));font-size:1rem}
+@media(min-width:1600px){.tile .dr-mini{width:44px;height:44px}.modal{max-width:1000px}}

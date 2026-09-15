@@ -100,6 +100,13 @@ $$("#navbar button").forEach(b=>b.onclick=()=>{if(B){toast("⚔️ Сначал�
 document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("button:not(.skillbtn)"))SFX.click()},true);
 
 /* ================= КАРТА ================= */
+// Масштабируем остров под доступную ширину/высоту экрана (крупнее на больших мониторах, целиком на маленьких)
+function fitIsland(){const fit=$("#isofit");if(!fit)return;const iso=$(".iso",fit);const W=iso.offsetWidth,H=iso.offsetHeight;
+  const availW=fit.parentElement.clientWidth-20;const availH=Math.max(320,window.innerHeight-fit.getBoundingClientRect().top-170);
+  const s=Math.max(.55,Math.min(availW/W,availH/H,2.2));iso.style.transform=`scale(${s})`;iso.style.transformOrigin="top center";fit.style.width=W*s+"px";fit.style.height=H*s+"px";fit.style.margin="0 auto"}
+window.addEventListener("resize",()=>{fitIsland();document.documentElement.style.setProperty("--vw",window.innerWidth+"px")});
+function toggleFullscreen(){const d=document;if(!d.fullscreenElement){(d.documentElement.requestFullscreen||d.documentElement.webkitRequestFullscreen).call(d.documentElement).catch(()=>toast("Браузер не разрешил полный экран"))}else (d.exitFullscreen||d.webkitExitFullscreen).call(d)}
+document.addEventListener("fullscreenchange",()=>{const b=$("#fsbtn");if(b)b.textContent=document.fullscreenElement?"🗗":"⛶";setTimeout(fitIsland,100)});
 function habLvl(t){return t.lvl||1}
 function habRate(t){const b=BUILDINGS[t.b];let r=0;t.dragons.forEach(id=>{const o=S.dragons[id];if(o)r+=GOLD_PER_MIN(b,o.lvl,RARITY[dInfo(id).rarity].mult)});return r}
 function habStored(t){const b=BUILDINGS[t.b];if(!b||!b.el)return 0;return Math.min(HAB_STORE(b,habLvl(t)),Math.floor(habRate(t)*(Date.now()-t.last)/60000))}
@@ -121,9 +128,10 @@ function renderMap(){
     tiles+=tileHtml(t,i,left,top,x+y)}
   root.innerHTML=`${clouds}<div class="map-wrap"><div class="isl-tabs">${ISLANDS.map((df,k)=>{const owned=S.islands.some(x=>x.id===df.id);const ci=S.islands.findIndex(x=>x.id===df.id);return `<button class="${ci===S.cur?"active":""} ${owned?"":"lockb"}" data-isl="${k}">${owned?"🏝️":"🔒"} ${df.name}${owned?"":`<br><small>ур.${df.req} · ${costStr(df.cost)}</small>`}</button>`}).join("")}</div>
   <div class="island-name">🏝️ ${def.name}</div>
-  <div class="iso-scroll"><div class="iso" style="width:${W}px;height:${H+120}px"><div class="iso-base" style="width:${W+60}px;height:${H+60}px;left:-30px;top:-10px;background:radial-gradient(ellipse at 50% 40%,${def.theme},${def.theme} 60%,#2c5a22)"></div>${tiles}</div></div>
+  <div class="iso-scroll"><div class="iso-fit" id="isofit"><div class="iso" style="width:${W}px;height:${H+120}px"><div class="iso-base" style="width:${W+60}px;height:${H+60}px;left:-30px;top:-10px;background:radial-gradient(ellipse at 50% 40%,${def.theme},${def.theme} 60%,#2c5a22)"></div>${tiles}</div></div></div>
   ${moveFrom!==null?`<div class="map-hint" style="background:#c0506e">📦 Режим перемещения: выбери пустую клетку (или нажми на здание ещё раз для отмены)</div>`:""}<div class="row" style="justify-content:center"><button class="btn green" id="collectall">🪙 Собрать всё (${fmt(allTiles().reduce((a,t)=>a+habStored(t),0))})</button></div><div class="map-hint">Драконы в жилищах генерируют 🪙 каждую минуту (больше уровень и редкость — больше золота). Жилище накапливает золото до лимита — улучшай его, чтобы поднять лимит и число мест. Фермы дают 🍖 каждые 60 сек.</div></div>`;
   $$(".itile",root).forEach(el=>el.onclick=()=>tileClick(+el.dataset.i));
+  fitIsland();
   $("#collectall",root).onclick=()=>{let g=0;allTiles().forEach(t=>{const v=habStored(t);if(v>0){g+=v;t.last=Date.now()}});if(!g){toast("Пока нечего собирать");return}S.gold+=g;addXP(Math.min(120,10+Math.ceil(g/20)));save();updateTop();renderMap();toast(`+🪙${fmt(g)}`)};
   $$("[data-isl]",root).forEach(b=>b.onclick=()=>{const df=ISLANDS[+b.dataset.isl];const ci=S.islands.findIndex(x=>x.id===df.id);
     if(ci>=0){S.cur=ci;moveFrom=null;save();renderMap();return}
@@ -910,6 +918,8 @@ load();
 const _day=new Date().toDateString();if(S.lastDaily!==_day){S.lastDaily=_day;S.scrolls=(S.scrolls||0)+SCROLL_DAILY;S.gems+=2;setTimeout(()=>toast(`🎁 Ежедневный подарок: +📜${SCROLL_DAILY} свитков, +💎2`),800)}
 const _off=allTiles().reduce((a,t)=>a+habStored(t),0);if(_off>0)toast(`🌙 В жилищах накопилось 🪙${fmt(_off)} — собери на острове!`);S.lastLogin=Date.now();save();
 updateTop();show("map");netConnect();
+const _fs=document.createElement("button");_fs.id="fsbtn";_fs.className="btn sm";_fs.textContent="⛶";_fs.title="Полный экран (F11 / F)";_fs.onclick=toggleFullscreen;$("#topbar").append(_fs);
+document.addEventListener("keydown",e=>{if(e.code==="KeyF"&&!e.target.matches("input,textarea")&&!B)toggleFullscreen()});
 const _mb=document.createElement("button");_mb.id="musbtn";_mb.className="btn sm";_mb.textContent=S.music?"🔊":"🔇";_mb.title="Музыка";_mb.onclick=toggleMusic;$("#topbar").append(_mb);
 const _av=document.createElement("img");_av.id="avatar";_av.className="av";_av.onclick=()=>show("friends");$("#topbar").prepend(_av);updateTop();
 // приветствие
