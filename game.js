@@ -250,7 +250,7 @@ function renderDragons(){
 }
 function dragonDetail(id){
   const d=dInfo(id),o=S.dragons[id],r=RARITY[d.rarity];
-  if(!o){modal(`<h2>${d.name} <span class="badge" style="background:${r.color}">${r.name}</span></h2><div class="dd-top"><img src="assets/${id}.png"><div><div class="desc">${d.desc}</div><div>${d.els.map(elIco).join("")}</div><p>Этот дракон ещё не в вашей коллекции.${S.level<DRAGON_REQ[d.id]?` <b>🔒 Нужен уровень ${DRAGON_REQ[d.id]}</b>`:""}</p><div class="row">${isSpecial(id)?`<span class="badge" style="background:#ff4fe6">${isEvent(id)?"🎪 Только в событии ("+(ZODIAC_IDS.includes(id)?"Испытание зодиаков":"Звонок MR 333")+")":isTyrant(id)?"💀 Только разведение: Божество+Божество ур."+TYRANT_BREED.minLvl:isDivine(id)?"🔱 Только разведение: Легенда+Легенда ур."+DIVINE_BREED.minLvl:"👑 Только разведение: оба родителя ур."+LEGEND_BREED.minLvl}</span>`:`${S.level<DRAGON_REQ[d.id]?`<button class="btn" disabled>🔒 Уровень ${DRAGON_REQ[d.id]}</button>`:`<button class="btn ${canPay(dragonPrice(d))?"green":""}" id="buy">Купить за ${costStr(dragonPrice(d))}</button>`}`}</div></div></div>`);
+  if(!o){modal(`<h2>${d.name} <span class="badge" style="background:${r.color}">${r.name}</span></h2><div class="dd-top"><img src="assets/${id}.png"><div><div class="desc">${d.desc}</div><div>${d.els.map(elIco).join("")}</div><p>Этот дракон ещё не в вашей коллекции.${S.level<DRAGON_REQ[d.id]?` <b>🔒 Нужен уровень ${DRAGON_REQ[d.id]}</b>`:""}</p><div class="row">${isSpecial(id)?`<span class="badge" style="background:#ff4fe6">${isEvent(id)?"🎪 Только в событии ("+(ZODIAC_IDS.includes(id)?"Испытание зодиаков":id==="d132"?"Секретный уровень":"Звонок MR 333")+")":isTyrant(id)?"💀 Только разведение: Божество+Божество ур."+TYRANT_BREED.minLvl:isDivine(id)?"🔱 Только разведение: Легенда+Легенда ур."+DIVINE_BREED.minLvl:"👑 Только разведение: оба родителя ур."+LEGEND_BREED.minLvl}</span>`:`${S.level<DRAGON_REQ[d.id]?`<button class="btn" disabled>🔒 Уровень ${DRAGON_REQ[d.id]}</button>`:`<button class="btn ${canPay(dragonPrice(d))?"green":""}" id="buy">Купить за ${costStr(dragonPrice(d))}</button>`}`}</div></div></div>`);
     const bb=$("#buy");if(bb)bb.onclick=()=>buyDragon(id);return}
   const st=dragonStats(id),ml=maxLevel(o.stars),fc=feedCost(id),ec=evolveCost(id);
   const m=modal(`<h2>${d.name} <span class="badge" style="background:${r.color}">${r.name}</span></h2>
@@ -369,7 +369,8 @@ function nextTurn(first){
     if(e.k==="hot"){const h=Math.round(f0.maxhp*0.1);f0.hp=Math.min(f0.maxhp,f0.hp+h);log(`💚 ${f0.name} восстанавливает ${h}`)}
     if(e.k==="stun"||e.k==="freeze"){skip=true;log(`${e.k==="stun"?"💫":"🧊"} ${f0.name} пропускает ход!`)}
     return e.t>0});
-  if(f0.soviet&&f0.hp>0){f0.charge=(f0.charge||0)+1;if(f0.charge>=3){log(`🖥️ ${f0.name}: ЦЕЛЬ НАЙДЕНА`)}else{sndPlay("init",.7);log(`🖥️ ${f0.name} загружается… (${Math.max(0,f0.charge)}/3)`)}}
+  if(f0.soviet&&f0.hp>0&&skip){log(`🖥️ ${f0.name}: загрузка прервана (${Math.max(0,f0.charge||0)}/3)`)}
+  if(f0.soviet&&f0.hp>0&&!skip){f0.charge=(f0.charge||0)+1;if(f0.charge>=3){log(`🖥️ ${f0.name}: ЦЕЛЬ НАЙДЕНА`)}else{sndPlay("init",.7);log(`🖥️ ${f0.name} загружается… (${Math.max(0,f0.charge)}/3)`)}}
   if(f0.tb.regen&&f0.hp>0){const h=Math.round(f0.maxhp*f0.tb.regen);f0.hp=Math.min(f0.maxhp,f0.hp+h);log(`💚 ${f0.name} регенерирует ${h}`)}
   if(f0.hp<=0){renderBattle();setTimeout(nextTurn,500);return}
   if(skip){renderBattle();setTimeout(nextTurn,900);return}
