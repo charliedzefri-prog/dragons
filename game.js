@@ -102,10 +102,9 @@ document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("but
 
 /* ================= КАРТА ================= */
 // Масштабируем остров под доступную ширину/высоту экрана (крупнее на больших мониторах, целиком на маленьких)
-function fitIsland(){const fit=$("#isofit");if(!fit)return;const iso=$(".iso",fit);const W=iso.offsetWidth,H=iso.offsetHeight-60; // без запаса под тень
+function fitIsland(){const fit=$("#isofit");if(!fit)return;const iso=$(".iso",fit);const W=iso.offsetWidth,H=iso.offsetHeight-40;
   const scr=$("#scr-map");const availW=scr.clientWidth-24;
-  const bottomUi=($(".map-hint")?.offsetHeight||0)+($("#collectall")?.offsetHeight||0)+40;
-  const availH=Math.max(360,window.innerHeight-fit.getBoundingClientRect().top-bottomUi-($("#navbar")?.offsetHeight||70));
+  const availH=Math.max(340,window.innerHeight-fit.getBoundingClientRect().top-($("#navbar")?.offsetHeight||70)-16);
   const s=Math.max(.6,Math.min(availW/(W+40),availH/H,3.2));iso.style.transform=`scale(${s})`;iso.style.transformOrigin="top center";fit.style.width=Math.min(availW,W*s)+"px";fit.style.height=H*s+"px";fit.style.margin="0 auto"}
 window.addEventListener("resize",()=>{fitIsland();document.documentElement.style.setProperty("--vw",window.innerWidth+"px")});
 function toggleFullscreen(){const d=document;if(!d.fullscreenElement){(d.documentElement.requestFullscreen||d.documentElement.webkitRequestFullscreen).call(d.documentElement).catch(()=>toast("Браузер не разрешил полный экран"))}else (d.exitFullscreen||d.webkitExitFullscreen).call(d)}
@@ -131,8 +130,9 @@ function renderMap(){
     tiles+=tileHtml(t,i,left,top,x+y)}
   root.innerHTML=`${clouds}<div class="map-wrap"><div class="isl-tabs">${ISLANDS.map((df,k)=>{const owned=S.islands.some(x=>x.id===df.id);const ci=S.islands.findIndex(x=>x.id===df.id);return `<button class="${ci===S.cur?"active":""} ${owned?"":"lockb"}" data-isl="${k}">${owned?"🏝️":"🔒"} ${df.name}${owned?"":`<br><small>ур.${df.req} · ${costStr(df.cost)}</small>`}</button>`}).join("")}</div>
   <div class="island-name">🏝️ ${def.name}</div>
+  ${moveFrom!==null?`<div class="map-hint" style="background:#c0506e">📦 Режим перемещения: выбери пустую клетку (или нажми на здание ещё раз для отмены)</div>`:""}<div class="row map-actions" style="justify-content:center"><button class="btn green" id="collectall">🪙 Собрать всё (${fmt(allTiles().reduce((a,t)=>a+habStored(t),0))})</button></div><div class="map-hint">Драконы в жилищах генерируют 🪙 каждую минуту (больше уровень и редкость — больше золота). Жилище накапливает золото до лимита — улучшай его, чтобы поднять лимит и число мест. Фермы дают 🍖 каждые 60 сек.</div>
   <div class="iso-scroll"><div class="iso-fit" id="isofit"><div class="iso" style="width:${W}px;height:${H+120}px"><div class="iso-base" style="width:${W+60}px;height:${H+60}px;left:-30px;top:-10px;background:radial-gradient(ellipse at 50% 40%,${def.theme},${def.theme} 60%,#2c5a22)"></div>${tiles}</div></div></div>
-  ${moveFrom!==null?`<div class="map-hint" style="background:#c0506e">📦 Режим перемещения: выбери пустую клетку (или нажми на здание ещё раз для отмены)</div>`:""}<div class="row" style="justify-content:center"><button class="btn green" id="collectall">🪙 Собрать всё (${fmt(allTiles().reduce((a,t)=>a+habStored(t),0))})</button></div><div class="map-hint">Драконы в жилищах генерируют 🪙 каждую минуту (больше уровень и редкость — больше золота). Жилище накапливает золото до лимита — улучшай его, чтобы поднять лимит и число мест. Фермы дают 🍖 каждые 60 сек.</div></div>`;
+</div>`;
   $$(".itile",root).forEach(el=>el.onclick=()=>tileClick(+el.dataset.i));
   fitIsland();
   $("#collectall",root).onclick=()=>{let g=0;allTiles().forEach(t=>{const v=habStored(t);if(v>0){g+=v;t.last=Date.now()}});if(!g){toast("Пока нечего собирать");return}S.gold+=g;addXP(Math.min(120,10+Math.ceil(g/20)));save();updateTop();renderMap();toast(`+🪙${fmt(g)}`)};
