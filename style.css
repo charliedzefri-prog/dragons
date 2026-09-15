@@ -423,3 +423,11 @@ body{font-size:1rem}
 
 .netchip{font:inherit;font-size:.8rem;font-weight:900;border-radius:12px;padding:3px 10px;border:2px solid #3a2008;background:#5a3313;color:#fff;cursor:pointer;margin-left:4px;white-space:nowrap}
 .netchip.in{background:#2e7d32}.netchip.noauth{background:#b07a00}.netchip.offline{background:#8a1a1a}.netchip.connecting{background:#555}
+/* клики проходят сквозь слои команд к самим бойцам */
+.iso-arena .team{pointer-events:none}
+.iso-arena .fighter{pointer-events:auto;cursor:default}
+.iso-arena .fighter.target{cursor:pointer;z-index:20}
+.iso-arena .fighter.target img{pointer-events:auto}
+.arena-floor,.screenflash,.vfx,.dmgpop{pointer-events:none}
+.skills .skillbtn{position:relative;z-index:2;pointer-events:auto}
+.battle-log{pointer-events:auto}
