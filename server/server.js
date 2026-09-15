@@ -106,3 +106,5 @@ wss.on("connection",ws=>{
 });
 setInterval(()=>{wss.clients.forEach(ws=>{if(!ws.isAlive)return ws.terminate();ws.isAlive=false;ws.ping()})},30000);
 server.listen(PORT,"0.0.0.0",()=>console.log("Dragonmania server on",PORT));
+// не даём бесплатному Render засыпать: пингуем сами себя каждые 10 минут
+const SELF=process.env.RENDER_EXTERNAL_URL;if(SELF){setInterval(()=>{require("https").get(SELF+"/health",r=>r.resume()).on("error",()=>{})},10*60*1000)}

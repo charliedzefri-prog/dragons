@@ -420,3 +420,6 @@ body{font-size:1rem}
 .map-actions{margin:2px 0}
 #scr-map .map-hint{display:none}
 #scr-map .map-hint[style]{display:block}
+
+.netchip{font:inherit;font-size:.8rem;font-weight:900;border-radius:12px;padding:3px 10px;border:2px solid #3a2008;background:#5a3313;color:#fff;cursor:pointer;margin-left:4px;white-space:nowrap}
+.netchip.in{background:#2e7d32}.netchip.noauth{background:#b07a00}.netchip.offline{background:#8a1a1a}.netchip.connecting{background:#555}

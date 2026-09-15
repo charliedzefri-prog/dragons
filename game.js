@@ -866,17 +866,17 @@ function renderAuth(mode){const box=$("#authbox");if(!box)return;const reg=mode=
     NET.authFresh=true;netSend({t:reg?"register":"login",user:u,pass:p,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team})};
   $("#ago").onclick=go;box.onkeydown=e=>{if(e.key==="Enter")go()};
   $("#aswitch").onclick=()=>renderAuth(reg?"login":"register");
-  $("#askip").onclick=()=>{closeAuth();localStorage.setItem("dml_offline","1");toast("Играем офлайн. Войти можно на экране «Друзья».")}}
+  $("#askip").onclick=()=>{closeAuth();sessionStorage.setItem("dml_offline","1");toast("Играем офлайн. Войти можно на экране «Друзья».")}}
 function closeAuth(){if($("#authbox"))$("#modal-root").innerHTML=""}
-function logout(){netSend({t:"logout"});NET.me=null;localStorage.removeItem("dml_token");localStorage.removeItem("dml_offline");refreshNetUI();showAuth("login")}
+function logout(){netSend({t:"logout"});NET.me=null;localStorage.removeItem("dml_token");sessionStorage.removeItem("dml_offline");refreshNetUI();showAuth("login")}
 
 /* ================= СЕТЬ: PvP + друзья ================= */
 const NET={ws:null,me:null,friends:[],requests:[],top:[],online:0,status:"offline",queued:false,room:null,retry:1000};
 function serverUrl(){const c=localStorage.getItem("dml_server");if(c)return c;const l=location;if(l.protocol==="file:")return "";return (l.protocol==="https:"?"wss://":"ws://")+l.host}
-function netConnect(){const url=serverUrl();if(!url){NET.status="offline";return}try{NET.ws=new WebSocket(url)}catch(e){NET.status="offline";return}
-  NET.status="connecting";const ws=NET.ws;
-  ws.onopen=()=>{NET.retry=1000;NET.status="online";if(!localStorage.getItem("dml_token")){if(!localStorage.getItem("dml_offline"))showAuth("login");refreshNetUI();return}netSend({t:"hello",token:localStorage.getItem("dml_token"),name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team})};
-  ws.onclose=()=>{NET.status="offline";NET.queued=false;refreshNetUI();setTimeout(netConnect,Math.min(15000,NET.retry*=1.6))};
+function netConnect(){const url=serverUrl();if(!url){NET.status="offline";return}if(NET.ws&&(NET.ws.readyState===0||NET.ws.readyState===1))return;try{NET.ws=new WebSocket(url)}catch(e){NET.status="offline";return}
+  NET.status="connecting";refreshNetUI();const ws=NET.ws;
+  ws.onopen=()=>{NET.retry=1000;NET.status="online";if(!localStorage.getItem("dml_token")){if(!sessionStorage.getItem("dml_offline"))showAuth("login");refreshNetUI();return}netSend({t:"hello",token:localStorage.getItem("dml_token"),name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team})};
+  ws.onclose=()=>{NET.status="offline";NET.queued=false;refreshNetUI();setTimeout(netConnect,Math.min(10000,NET.retry*=1.5))};
   ws.onerror=()=>{};
   ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}netHandle(m)}}
 function netSend(m){if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify(m))}
@@ -886,7 +886,7 @@ function netHandle(m){
     // облачный прогресс: если на сервере сохранение новее/богаче локального — берём его
     if(m.save){try{const cs=JSON.parse(m.save);const better=!S.created||(cs.level||0)>(S.level||0)||((cs.level||0)===(S.level||0)&&(cs.battles||0)>=(S.battles||0));if(better&&NET.authFresh){S=cs;installTilesGetter(S);migrate();localStorage.setItem(SAVE_KEY,JSON.stringify(S));toast("☁️ Прогресс загружен из аккаунта");show("map")}}catch(e){}}
     NET.authFresh=false;S.profile.name=m.me.name;S.pvp.rating=m.me.rating;save();updateTop();closeAuth();refreshNetUI();toast("👋 "+m.me.name+", вы вошли");return}
-  if(m.t==="need_auth"){NET.me=null;localStorage.removeItem("dml_token");if(!localStorage.getItem("dml_offline")||NET.wantAuth)showAuth();NET.wantAuth=false;return}
+  if(m.t==="need_auth"){NET.me=null;localStorage.removeItem("dml_token");if(!sessionStorage.getItem("dml_offline")||NET.wantAuth)showAuth();NET.wantAuth=false;return}
   if(m.t==="auth_err"){const e=$("#autherr");if(e)e.textContent=m.msg;else toast("⚠️ "+m.msg);return}
   if(m.t==="kicked"){toast("⚠️ В аккаунт вошли с другого устройства");return}
   if(m.t==="me"){NET.me=m.me;S.pvp.rating=m.me.rating;save();refreshNetUI();return}
@@ -907,7 +907,8 @@ function netHandle(m){
   if(m.t==="room_end"){NET.room=null;if(B&&B.pvp&&m.reason!=="finished")pvpFinish(m.loser!==undefined&&m.loser!==(B.opp.host?0:1),"Бой прерван");return}
 }
 function leagueOf(r){let L=LEAGUES[0];LEAGUES.forEach(l=>{if(r>=l.min)L=l});return L}
-function refreshNetUI(){const st=$("#netdot");if(st){st.className="netdot "+NET.status;st.title=NET.status==="online"?`Онлайн: ${NET.online}`:"Нет связи с сервером"}
+function refreshNetUI(){const chip=$("#netchip");if(chip){const st=NET.status==="online"?(NET.me?"in":"noauth"):NET.status;chip.className="netchip "+st;chip.innerHTML=st==="in"?`🟢 ${NET.me.name}`:st==="noauth"?"🟡 Войти":st==="connecting"?"⏳ Подключение…":"🔴 Нет связи";chip.title=st==="in"?"В сети как "+NET.me.name:st==="noauth"?"Сервер доступен — войди в аккаунт для PvP и друзей":st==="connecting"?"Соединяемся с сервером (после простоя он просыпается до 1 минуты)":"Сервер недоступен, пробуем переподключиться"}
+const st=$("#netdot");if(st){st.className="netdot "+NET.status;st.title=NET.status==="online"?`Онлайн: ${NET.online}`:"Нет связи с сервером"}
   if($("#scr-pvp").classList.contains("active")&&!B)renderPvp();if($("#scr-friends").classList.contains("active"))renderFriends()}
 function startPvp(m){if(!NET.oppFighters)return;NET.pendingMatch=null;
   const ef=NET.oppFighters.filter(f=>dInfo(f.id)).map((f,i)=>({...f,side:"enemy",i,fx:[],cds:{}}));if(!ef.length){toast("У соперника нет команды");return}
@@ -926,8 +927,8 @@ function renderFriends(){const root=$("#scr-friends");const on=NET.status==="onl
   <div class="avgrid">${AVATARS.map(a=>`<img src="assets/av/${a.id}.jpg" class="av ${S.profile.avatar===a.id?"sel":""}" data-av="${a.id}" title="${a.n}">`).join("")}</div></div>
   <div class="panel"><h2>➕ Добавить друга</h2><div class="row"><input id="fcode" placeholder="Код друга, напр. A1B2C3" maxlength="6" style="text-transform:uppercase"><button class="btn green" id="fadd" ${on?"":"disabled"}>Отправить заявку</button></div></div>
   ${NET.requests.length?`<div class="panel"><h2>📨 Заявки (${NET.requests.length})</h2>${NET.requests.map(p=>`<div class="frow"><img src="assets/av/${p.avatar}.jpg" class="av"><b>${p.name}</b><small>${leagueOf(p.rating).ico} ${p.rating}</small><button class="btn sm green" data-acc="${p.id}">✓</button><button class="btn sm" data-dec="${p.id}">✕</button></div>`).join("")}</div>`:""}
-  <div class="panel"><h2>👥 Друзья (${NET.friends.length})</h2>${NET.friends.map(p=>`<div class="frow"><img src="assets/av/${p.avatar}.jpg" class="av"><span class="dot ${p.online?"on":""}"></span><b>${p.name}</b><small>${leagueOf(p.rating).ico} ${p.rating} · ⚡${p.power}</small><button class="btn sm red" data-ch="${p.id}" ${p.online&&team.length?"":"disabled"}>⚔️ Вызвать</button><button class="btn sm" data-rm="${p.id}">🗑</button></div>`).join("")||`<small>${on?"Добавь друзей по коду — и вызывай их на PvP-бой.":"Нет связи с сервером."}</small>`}</div></div>`;
-  const lo=$("#alogout",root);if(lo)lo.onclick=()=>{if(confirm("Выйти из аккаунта?"))logout()};const li=$("#alogin",root);if(li)li.onclick=()=>{NET.wantAuth=true;localStorage.removeItem("dml_offline");showAuth("login")};
+  <div class="panel"><h2>👥 Друзья (${NET.friends.length})</h2>${NET.friends.map(p=>`<div class="frow"><img src="assets/av/${p.avatar}.jpg" class="av"><span class="dot ${p.online?"on":""}"></span><b>${p.name}</b><small>${leagueOf(p.rating).ico} ${p.rating} · ⚡${p.power}</small><button class="btn sm red" data-ch="${p.id}" ${p.online&&team.length?"":"disabled"}>⚔️ Вызвать</button><button class="btn sm" data-rm="${p.id}">🗑</button></div>`).join("")||`<small>${on?"Добавь друзей по коду — и вызывай их на PvP-бой.":"Нет связи с сервером."}</small>`}<p><small>Друг показан «не в сети», пока он не <b>вошёл в аккаунт</b> в игре (индикатор в шапке должен быть 🟢).</small></p>${``}</div></div>`;
+  const lo=$("#alogout",root);if(lo)lo.onclick=()=>{if(confirm("Выйти из аккаунта?"))logout()};const li=$("#alogin",root);if(li)li.onclick=()=>{NET.wantAuth=true;sessionStorage.removeItem("dml_offline");showAuth("login")};
   $("#pname",root).onchange=e=>{S.profile.name=e.target.value.trim()||"Хранитель";save();updateTop();netSend({t:"profile",name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team})};
   $$("[data-av]",root).forEach(a=>a.onclick=()=>{S.profile.avatar=a.dataset.av;save();updateTop();netSend({t:"profile",name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team});renderFriends()});
   $("#fadd",root).onclick=()=>{const c=$("#fcode",root).value.trim();if(c.length<4)return;netSend({t:"friend_add",code:c});$("#fcode",root).value=""};
@@ -939,7 +940,7 @@ function renderFriends(){const root=$("#scr-friends");const on=NET.status==="onl
 // Браузеры замедляют setTimeout в фоне до 1 раза/сек, а WebAudio продолжает работать. Держим «тикер» через Web Worker, который не троттлится.
 const TICKER=(()=>{try{const b=new Blob(["setInterval(()=>postMessage(1),1000)"],{type:"text/javascript"});const w=new Worker(URL.createObjectURL(b));return w}catch(e){return null}})();
 if(TICKER)TICKER.onmessage=()=>{if(document.hidden){/* в фоне: обновляем PvP-таймеры и фермы, чтобы при возврате всё было актуально */if(B&&B.pvp&&B.turnTimer){} }};
-document.addEventListener("visibilitychange",()=>{if(!document.hidden){if(MUSIC.ctx&&MUSIC.ctx.state==="suspended")MUSIC.ctx.resume();if(!B)show($("#navbar button.active")?.dataset.scr||"map")}});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){if(NET.status!=="online")netConnect();if(MUSIC.ctx&&MUSIC.ctx.state==="suspended")MUSIC.ctx.resume();if(!B)show($("#navbar button.active")?.dataset.scr||"map")}});
 
 /* ================= СТАРТ ================= */
 load();
@@ -947,6 +948,7 @@ load();
 const _day=new Date().toDateString();if(S.lastDaily!==_day){S.lastDaily=_day;S.scrolls=(S.scrolls||0)+SCROLL_DAILY;S.gems+=2;setTimeout(()=>toast(`🎁 Ежедневный подарок: +📜${SCROLL_DAILY} свитков, +💎2`),800)}
 const _off=allTiles().reduce((a,t)=>a+habStored(t),0);if(_off>0)toast(`🌙 В жилищах накопилось 🪙${fmt(_off)} — собери на острове!`);S.lastLogin=Date.now();save();
 updateTop();show("map");netConnect();
+const _chip=document.createElement("button");_chip.id="netchip";_chip.className="netchip";_chip.onclick=()=>{if(NET.status!=="online"){toast("⏳ Пробуем подключиться…");netConnect();return}if(!NET.me){NET.wantAuth=true;sessionStorage.removeItem("dml_offline");showAuth("login")}else show("friends")};$("#topbar").append(_chip);refreshNetUI();
 const _fs=document.createElement("button");_fs.id="fsbtn";_fs.className="btn sm";_fs.textContent="⛶";_fs.title="Полный экран (F11 / F)";_fs.onclick=toggleFullscreen;$("#topbar").append(_fs);
 document.addEventListener("keydown",e=>{if(e.code==="KeyF"&&!e.target.matches("input,textarea")&&!B)toggleFullscreen()});
 const _mb=document.createElement("button");_mb.id="musbtn";_mb.className="btn sm";_mb.textContent=S.music?"🔊":"🔇";_mb.title="Музыка";_mb.onclick=toggleMusic;$("#topbar").append(_mb);
