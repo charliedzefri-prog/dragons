@@ -73,7 +73,7 @@ function costStr(c){return [c.gold&&`🪙${fmt(c.gold)}`,c.food&&`🍖${fmt(c.fo
 function dragonStats(id, ov){
   const d=dInfo(id); const o=ov||S.dragons[id]||{lvl:1,stars:1};
   const m=RARITY[d.rarity].mult*(1+(o.lvl-1)*0.12)*(1+(o.stars-1)*0.25);
-  const hpm=ov&&ov.enemy?1.6:2.4; // у врагов запас HP меньше — бои короче
+  const hpm=ov&&ov.enemy?1.6:2.4; // у врагов запас HP меньше — бои короче; в PvP 1.8
   const tb=treeBonuses(id,o);const pk=k=>1+(tb[k]||0);
   return {hp:Math.round(d.base.hp*m*hpm*pk("hp")),atk:Math.round(d.base.atk*m*pk("atk")),def:Math.round(d.base.def*m*pk("def")),spd:Math.round(d.base.spd*(1+(o.lvl-1)*0.02)*(1+(o.stars-1)*0.1)*pk("spd")),crit:0.1+(tb.crit||0),timeb:tb.timing||0,lifesteal:tb.lifesteal||0,startshield:tb.startshield||0,dmg:tb.dmg||{},tb};
 }
@@ -339,7 +339,7 @@ function startBattle(opp){
   show("battle");
   RNG=opp.seed?seededRng(opp.seed):Math.random;
   B={opp,allies:team.map((id,i)=>{const f=mkFighter(id,null,"ally",i);if(opp.carry&&opp.carry[id]){f.hp=Math.min(f.maxhp,opp.carry[id])}return f}),enemies:opp.ids.map((id,i)=>mkFighter(id,ov,"enemy",i)),log:[],round:0,queue:[],busy:false,sel:null,pvp:!!opp.pvp,turnNo:0};
-  if(opp.pvp){B.enemies=opp.enemyFighters;B.allies.forEach(f=>{f.hp=f.maxhp})}
+  if(opp.pvp){B.enemies=opp.enemyFighters;[...B.allies,...B.enemies].forEach(f=>{f.maxhp=Math.round(f.maxhp*0.75);f.hp=f.maxhp;f.shield=Math.round((f.shield||0)*0.75)})} // PvP: HP ×0.75 (hpm 1.8) — короче бои
   [B.allies,B.enemies].forEach(team=>{const ta=team.reduce((a,f)=>a+(f.tb.teamatk||0),0),td=team.reduce((a,f)=>a+(f.tb.teamdef||0),0);if(ta||td)team.forEach(f=>{f.atk=Math.round(f.atk*(1+ta));f.def=Math.round(f.def*(1+td))})});
   playMusic(opp.music||(opp.pvp?"pvp":"battle"));
   S.battles++;nextTurn(true);
@@ -360,7 +360,7 @@ function nextTurn(first){
   if(!B.queue.length){B.round++;const src=B.pvp&&!B.opp.host?[...B.enemies,...B.allies]:[...B.allies,...B.enemies];src.forEach((f,i)=>{f._j=(RNG()-.5)*4;f._o=i});B.queue=alive(src).sort((a,b)=>(B.round===1?((b.tb.firststrike?1000:0)-(a.tb.firststrike?1000:0)):0)||(b.spd+b._j)-(a.spd+a._j)||a._o-b._o);
     // тик баффов/кд
     [...B.allies,...B.enemies].forEach(f=>{Object.keys(f.cds).forEach(k=>f.cds[k]=Math.max(0,f.cds[k]-1));if(f.buffAtk>0)f.buffAtkT--;if(f.buffAtkT<=0)f.buffAtk=0;if(f.buffDef>0)f.buffDefT--;if(f.buffDefT<=0)f.buffDef=0;if(f.debuff>0)f.debuffT--;if(f.debuffT<=0)f.debuff=0});
-    log(`— Раунд ${B.round} —`)}
+    log(`— Раунд ${B.round} —${B.round>SUDDEN_DEATH.from?` ⚡ урон +${Math.round((B.round-SUDDEN_DEATH.from)*SUDDEN_DEATH.step*100)}%`:""}`)}
   B.cur=B.queue.shift();if(B.cur.hp<=0){nextTurn();return}
   // тик эффектов текущего бойца
   const f0=B.cur;let skip=false;
@@ -382,7 +382,7 @@ function lootBonus(){return team.reduce((a,id)=>a+((treeBonuses(id).loot)||0),0)
 function battleBg(){const o=B&&B.opp;if(!o)return null;if(o.bg)return o.bg;if(o.final)return BATTLE_BG.final;if(o.boss)return BATTLE_BG.boss;if(o.campaign)return BATTLE_BG.campaign[o.ch]||BATTLE_BG.default;if(o.pvp)return BATTLE_BG.pvp;return BATTLE_BG.default}
 function renderBattle(){
   const root=$("#scr-battle");const f=B.cur;
-  const fh=(x)=>`<div class="fighter ${x.side} ${dInfo(x.id).noflip?"noflip":""} ${dInfo(x.id).big?"bigspr":""} ${x.banned?"banned":""} ${x.hp<=0?"dead":""} ${x===f?"active":""} pos${x.i}" data-side="${x.side}" data-i="${x.i}"><img src="assets/${x.id}.png"><div class="hpbar"><div class="${x.hp/x.maxhp<.3?"low":""}" style="width:${x.hp/x.maxhp*100}%"></div>${x.shield?`<div class="shieldbar" style="width:${Math.min(100,x.shield/x.maxhp*100)}%"></div>`:""}</div>${x.soviet&&x.hp>0?`<div class="charge ${x.charge>=2?"hot":""}"><span style="width:${Math.min(100,(x.charge||0)/3*100)}%"></span><b>${x.charge>=3?"⚠ BANNED!":"⏳ "+Math.max(0,x.charge||0)+"/3"}</b></div>`:""}${x.banned?`<div class="banmark">BANNED</div>`:""}<div class="fn">${x.name} <small>ур.${x.lvl}</small></div><div>${x.els.map(elIco).join("")}</div>${x.buffAtk?"<small>⚔️↑</small>":""}${x.buffDef?"<small>🛡️↑</small>":""}${x.debuff?"<small>⚔️↓</small>":""}${x.shield?`<small>🔰${x.shield}</small>`:""}${(x.fx||[]).map(e=>({burn:"🔥",hot:"💚",stun:"💫",freeze:"🧊",slow:"🐌",vuln:"💔"})[e.k]||"").join("")}</div>`;
+  const fh=(x)=>`<div class="fighter ${x.side} ${dInfo(x.id).noflip?"noflip":""} ${dInfo(x.id).flipAlly?"flipally":""} ${dInfo(x.id).big?"bigspr":""} ${x.banned?"banned":""} ${x.hp<=0?"dead":""} ${x===f?"active":""} pos${x.i}" data-side="${x.side}" data-i="${x.i}"><img src="assets/${x.id}.png"><div class="hpbar"><div class="${x.hp/x.maxhp<.3?"low":""}" style="width:${x.hp/x.maxhp*100}%"></div>${x.shield?`<div class="shieldbar" style="width:${Math.min(100,x.shield/x.maxhp*100)}%"></div>`:""}</div>${x.soviet&&x.hp>0?`<div class="charge ${x.charge>=2?"hot":""}"><span style="width:${Math.min(100,(x.charge||0)/3*100)}%"></span><b>${x.charge>=3?"⚠ BANNED!":"⏳ "+Math.max(0,x.charge||0)+"/3"}</b></div>`:""}${x.banned?`<div class="banmark">BANNED</div>`:""}<div class="fn">${x.name} <small>ур.${x.lvl}</small></div><div>${x.els.map(elIco).join("")}</div>${x.buffAtk?"<small>⚔️↑</small>":""}${x.buffDef?"<small>🛡️↑</small>":""}${x.debuff?"<small>⚔️↓</small>":""}${x.shield?`<small>🔰${x.shield}</small>`:""}${(x.fx||[]).map(e=>({burn:"🔥",hot:"💚",stun:"💫",freeze:"🧊",slow:"🐌",vuln:"💔"})[e.k]||"").join("")}</div>`;
   root.innerHTML=`<div class="arena">
    ${B.pvp?`<div class="pvp-head"><span>${S.profile.name} ${leagueOf(S.pvp.rating).ico}</span><span class="pvp-timer" id="pvpt">10</span><span>${B.opp.name}</span></div>`:""}<div class="turn-order">${[f,...B.queue].map(x=>`<img src="assets/${x.id}.png" class="${x===f?"now":""} ${x.side==="enemy"?"en":""}">`).join("")}</div>
    <div class="arena-field iso-arena" style="${battleBg()?`background:url(assets/bg/${battleBg()}.jpg) center/cover`:""}"><div class="arena-floor" ${battleBg()?'style="opacity:.35"':""}></div><div class="team allies">${B.allies.map(fh).join("")}</div><div class="team enemies">${B.enemies.map(fh).join("")}</div></div>
@@ -466,7 +466,7 @@ function applySkill(actor,k,target,atkM,blk){
     targets.forEach(t=>{const m=elMult(s.el,actor,t);const crit=RNG()<(actor.crit||0.1);const vuln=(t.fx||[]).some(e=>e.k==="vuln")?1.4:1;
       if(t.tb.dodge&&RNG()<t.tb.dodge){pop(fEl(t),"УКЛОНЕНИЕ","weak");log(`💨 ${t.name} уклонился!`);return}
       const rage=actor.tb.rage&&actor.hp/actor.maxhp<0.4?1+actor.tb.rage:1;const exec=actor.tb.execute&&t.hp/t.maxhp<(actor.tb.execute)?1.5:1;const cm=crit?1.7+(actor.tb.critdmg||0):1;
-      let dmg=atkM*(1-blk)*(actor.atk*(1+actor.buffAtk-actor.debuff)*s.power*(1+((actor.dmgB||{})[s.el]||0))*(s.aoe?0.7:1)*rage*exec)*(100/(100+t.def*(1+t.buffDef)))*m*vuln*rnd(90,110)/100*cm;
+      const ramp=B.round>SUDDEN_DEATH.from?1+(B.round-SUDDEN_DEATH.from)*SUDDEN_DEATH.step:1;let dmg=ramp*atkM*(1-blk)*(actor.atk*(1+actor.buffAtk-actor.debuff)*s.power*(1+((actor.dmgB||{})[s.el]||0))*(s.aoe?0.7:1)*rage*exec)*(100/(100+t.def*(1+t.buffDef)))*m*vuln*rnd(90,110)/100*cm;
       dmg=Math.max(1,Math.round(dmg));
       if(t.tb.thorns&&actor.hp>0){const th=Math.max(1,Math.round(dmg*t.tb.thorns));actor.hp=Math.max(0,actor.hp-th);pop(fEl(actor),"-"+th,"weak");log(`🌵 ${t.name} вернул ${th} урона`)}
       if(t.shield>0){const ab=Math.min(t.shield,dmg);t.shield-=ab;dmg-=ab;if(ab)log(`🔰 щит ${t.name} поглотил ${ab}`)}
@@ -737,10 +737,10 @@ function sovietUnlocked(){return !!S.sovietFound||campProgress()>=CAMPAIGN_NODES
 function startSoviet(){if(S.level<SOVIET_EVENT.req){toast("Нужен уровень "+SOVIET_EVENT.req);return}closeModal();pickTeamModal("🖥️ Советские Компьютеры","<div class='desc'>init… init… ЦЕЛЬ НАЙДЕНА. Три машины, каждая — BANNED раз в 3 хода.</div>",()=>{
   const lvl=S.level+SOVIET_EVENT.lvlBonus;S.sovietLast=Date.now();save();
   playDialog([["d131","Советский Компьютер","INIT… INIT… ЗАГРУЗКА 3%…"],["d131","Советский Компьютер","ХРАНИТЕЛЬ ОБНАРУЖЕН. СТАТУС: НЕЖЕЛАТЕЛЬНЫЙ. ПОДГОТОВКА К УДАЛЕНИЮ."],["av0","Хранитель","Это… три красных ящика? Почему у них лица?"],["d131","Советский Компьютер","BANNED. BANNED. BANNED. НАЧАТЬ."]],()=>{
-    startBattle({name:"Советские Компьютеры",lvl,ids:SOVIET_EVENT.ids,bg:BATTLE_BG.dungeon,music:"gbt",boss:true,onEnd:(win)=>{
-      if(win){S.sovietWins=(S.sovietWins||0)+1;const r=SOVIET_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(400+40*lvl);let egg="";if(S.sovietWins===1){giveEgg(SOVIET_EVENT.egg,"soviet");egg="<p><b>🥚 Яйцо Мэдли Паладина!</b></p>"}
-        save();updateTop();modal(`<div class="result win">СИСТЕМА ОТКЛЮЧЕНА</div><p class="center">«…ошибка… ошибка… перезагрузка через 12 часов…»</p><div class="center" style="font-weight:900">+🪙${fmt(r.gold)} +💎${r.gems} +📜${r.scrolls}</div>${egg}<div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('events')">Ок</button></div>`,{closable:false})}
-      else{save();modal(`<div class="result lose">BANNED</div><p class="center">Вся команда удалена. Перезагрузка через 12 часов.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">Ок</button></div>`,{closable:false})}}})})})}
+    startBattle({name:"Советские Компьютеры",lvl,ids:SOVIET_EVENT.ids,bg:BATTLE_BG.dungeon,music:"soviet",boss:true,onEnd:(win)=>{
+      if(win){S.sovietWins=(S.sovietWins||0)+1;const r=SOVIET_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(400+40*lvl);let egg="";if(S.sovietWins===1){giveEgg(SOVIET_EVENT.egg,"soviet");egg="<p><b>🥚 Яйцо Бога — божественный юнит!</b></p>"}
+        save();updateTop();modal(`<div class="result win">СИСТЕМА ОТКЛЮЧЕНА</div><p class="center">«…ошибка… ошибка… система… отключена…»</p><div class="center" style="font-weight:900">+🪙${fmt(r.gold)} +💎${r.gems} +📜${r.scrolls}</div>${egg}<div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('events');setTimeout(()=>{const t=document.getElementById('stat-title');if(t)t.scrollIntoView({behavior:'smooth',block:'start'})},60)">Ок</button></div>`,{closable:false})}
+      else{save();modal(`<div class="result lose">BANNED</div><p class="center">Вся команда удалена. Попробуй снова.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events');setTimeout(()=>{const t=document.getElementById('stat-title');if(t)t.scrollIntoView({behavior:'smooth',block:'start'})},60)">Ок</button></div>`,{closable:false})}}})})})}
 function renderEvents(){
   const f=featured();const root=$("#scr-events");
   const feat=(d,title,badge,end,key,disc)=>{const own=S.dragons[d.id];const r=RARITY[d.rarity];const price=Math.round(r.price*disc);const claimed=S.quests["claim_"+key];
@@ -755,8 +755,8 @@ function renderEvents(){
   <div class="panel"><h2>🎪 Другие события</h2><div class="skill"><span>📞 <b>Звонок MR 333</b><br><small>Построй Телефонную будку (ур.${BUILDINGS.phone.req}) и брось вызов команде 3:00. Каждая 3-я победа — яйцо MR 333.</small></span><button class="btn sm" id="gophone" ${allTiles().some(t=>t.b==="phone")?"":"disabled"}>${allTiles().some(t=>t.b==="phone")?"📞":"нет будки"}</button></div>
   <div class="skill"><span>🏚️ <b>Темница</b><br><small>Построй Темницу (ур.${BUILDINGS.dungeon.req}): бесконечный спуск по этажам с растущей наградой.</small></span><button class="btn sm" id="godg" ${allTiles().some(t=>t.b==="dungeon")?"":"disabled"}>${allTiles().some(t=>t.b==="dungeon")?"⬇":"нет темницы"}</button></div></div>
   <div class="panel"><h2>📜 Задания</h2>${QUESTS.map(q=>{const p=Math.min(q.need,S.quests[q.id]||0);const done=S.quests["done_"+q.id];return `<div class="quest ${done?"done":""}"><span>${q.name}<br><small>${p}/${q.need}</small></span>${done?"✅":`<button class="btn sm green" data-q="${q.id}" ${p>=q.need?"":"disabled"}>${costStr(q.reward)}</button>`}</div>`}).join("")}</div>
-  ${sovietUnlocked()?`<div class="panel soviet-card"><h2>🖥️ СЕКРЕТНЫЙ УРОВЕНЬ: Советские Компьютеры <span class="badge" style="background:#b0201a">???</span></h2><div class="phone-card" style="background:linear-gradient(135deg,#1a0505,#4a0a0a);border-color:#ff4030"><img src="assets/d131.png" style="height:100px;filter:none"><div><b>Три красных ящика.</b><br><small>У них огромный запас HP, а каждый 3-й ход каждый из них <b>удаляет одного твоего бойца одним ударом</b> (BANNED). Следи за индикатором загрузки и убивай самого заряженного первым. Уклонение спасает.</small><br><small>Награда: 🪙${fmt(SOVIET_EVENT.reward.gold)} 💎${SOVIET_EVENT.reward.gems} 📜${SOVIET_EVENT.reward.scrolls}, первая победа — 🥚 Мэдли Паладин.</small></div></div>
-  <div class="row"><button class="btn red" id="gosoviet" ${(S.sovietLast||0)+SOVIET_EVENT.cooldown>Date.now()?"disabled":""}>${(S.sovietLast||0)+SOVIET_EVENT.cooldown>Date.now()?"⏳ Перезагрузка: "+tleft(S.sovietLast+SOVIET_EVENT.cooldown):"▶ ЗАПУСТИТЬ"}</button></div></div>`:""}
+  ${sovietUnlocked()?`<div class="panel soviet-card"><h2>🖥️ СЕКРЕТНЫЙ УРОВЕНЬ: Советские Компьютеры <span class="badge" style="background:#b0201a">???</span></h2><div class="phone-card" style="background:linear-gradient(135deg,#1a0505,#4a0a0a);border-color:#ff4030"><img src="assets/d131.png" style="height:100px;filter:none"><div><b>Три красных ящика.</b><br><small>У них огромный запас HP, а каждый 3-й ход каждый из них <b>удаляет одного твоего бойца одним ударом</b> (BANNED). Следи за индикатором загрузки и убивай самого заряженного первым. Уклонение спасает.</small><br><small>Награда: 🪙${fmt(SOVIET_EVENT.reward.gold)} 💎${SOVIET_EVENT.reward.gems} 📜${SOVIET_EVENT.reward.scrolls}, первая победа — 🥚 <b>Бог</b> (божественный).</small></div></div>
+  <div class="row"><button class="btn red" id="gosoviet">▶ ЗАПУСТИТЬ${S.sovietWins?` <small>(побед: ${S.sovietWins})</small>`:""}</button></div></div>`:""}
   <div class="panel"><h2 id="stat-title">📊 Статистика</h2><div class="stat"><span>Драконов</span><span>${ownedIds().length}/${DRAGONS.filter(d=>!d.boss).length}</span></div><div class="stat"><span>Побед</span><span>${S.wins}</span></div><div class="stat"><span>Боёв</span><span>${S.battles}</span></div><div class="stat"><span>Островов</span><span>${S.islands.length}/${ISLANDS.length}</span></div><div class="stat"><span>Построек</span><span>${allTiles().filter(t=>t.b).length}</span></div><div class="stat"><span>Открыто клеток</span><span>${allTiles().filter(t=>t.unlocked).length}/${allTiles().length}</span></div>
   <div class="row"><button class="btn red sm" id="reset">Сбросить прогресс</button></div></div></div>`;
   bindZodiac(root);const gp=$("#gophone",root);if(gp)gp.onclick=openPhone;const gs=$("#gosoviet",root);if(gs)gs.onclick=startSoviet;
@@ -848,7 +848,7 @@ const TRACKS={ // ноты (полутоны от A3), темп, характе�
   campaign:{bpm:80,bass:[0,0,0,0,-4,-4,-4,-4,-2,-2,-2,-2,3,3,3,3],lead:[12,14,15,19,15,14,12,10, 8,10,12,15,12,10,8,7],wave:"triangle",gain:.045},
 };
 function playMusic(name){if(MUSIC.cur===name)return;stopMusic();MUSIC.cur=name;if(!S||!S.music)return;
-  if(name==="gbt"){const a=new Audio("assets/gbt.mp3");a.loop=true;a.volume=.6;a.play().catch(()=>{});MUSIC.mp3=a;return}
+  if(name==="gbt"||name==="soviet"){const a=new Audio("assets/"+name+".mp3");a.loop=true;a.volume=.6;a.play().catch(()=>{});MUSIC.mp3=a;return}
   const T=TRACKS[name];if(!T)return;try{MUSIC.ctx=MUSIC.ctx||new (window.AudioContext||window.webkitAudioContext)();}catch(e){return}
   const ctx=MUSIC.ctx;if(ctx.state==="suspended")ctx.resume();
   const master=ctx.createGain();master.gain.value=T.gain;master.connect(ctx.destination);MUSIC.master=master;

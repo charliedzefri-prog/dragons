@@ -475,3 +475,4 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 .banmark{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%) rotate(-18deg);background:#c00;color:#fff;font-weight:900;font-size:16px;letter-spacing:2px;padding:2px 8px;border:3px solid #fff;box-shadow:0 0 0 2px #c00;z-index:6;pointer-events:none}
 .fighter.banned img{filter:grayscale(1) contrast(1.4) brightness(.35)!important}
 .soviet-card{border-color:#ff4030!important;background:linear-gradient(#3a0a0a,#1a0505)!important;color:#ffdcdc}.soviet-card h2{color:#ff6a5a}
+.fighter.ally.flipally img{transform:scaleX(-1)}.fighter.enemy.flipally img{transform:none}.dr-mini.walk.flipally{animation-name:walk-nf}

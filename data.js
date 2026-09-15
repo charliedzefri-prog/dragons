@@ -27,8 +27,8 @@ const RARITY = {
   rare:{name:"Редкий",color:"#3ea7ff",mult:1.2, price:2500},
   epic:{name:"Эпический",color:"#a04fe6",mult:1.45, price:6000},
   legendary:{name:"Легендарный",color:"#ffb300",mult:1.8, price:15000},
-  divine:{name:"Божественный",color:"#ff4fe6",mult:2.2, price:40000},
-  tyrant:{name:"Тиранский",color:"#8b0000",mult:2.6, price:100000},
+  divine:{name:"Божественный",color:"#ff4fe6",mult:2.05, price:40000},
+  tyrant:{name:"Тиранский",color:"#8b0000",mult:2.3, price:100000},
 };
 
 // ====== НАВЫКИ ======
@@ -77,8 +77,8 @@ const SKILLS = {
   multiply: {name:"Умножение",       type:"attack", power:0.9, el:"digit",  aoe:true, effect:"stun",  chance:0.35, desc:"Цифры по всем, 35% оглушить"},
   midnight: {name:"Полночь",         type:"attack", power:0.9, el:"clock",  aoe:true, effect:"burn",  desc:"Жжёт всех 3 хода"},
   lullaby:  {name:"Колыбельная",     type:"attack", power:0.8, el:"night",  aoe:true, effect:"freeze",chance:0.4, desc:"Усыпляет: 40% пропуск хода"},
-  ninelives:{name:"Девять жизней",   type:"heal",   power:0.35,el:"cat",    effect:"hot", desc:"Лечит союзника 35% + 10% 2 хода"},
-  surgery:  {name:"Операция",        type:"heal",   power:0.22,el:"doc",    aoe:true, effect:"cleanse", desc:"Лечит всех 22% и снимает эффекты"},
+  ninelives:{name:"Девять жизней",   type:"heal", cd:2,   power:0.35,el:"cat",    effect:"hot", desc:"Лечит союзника 35% + 10% 2 хода"},
+  surgery:  {name:"Операция",        type:"heal", cd:2,   power:0.22,el:"doc",    aoe:true, effect:"cleanse", desc:"Лечит всех 22% и снимает эффекты"},
   flock:    {name:"Стая",            type:"buff",   power:0.5, el:"bird",   effect:"spd", desc:"Команда: +50% скорости"},
   overclock:{name:"Разгон",          type:"buff",   power:0.4, el:"cyber",  effect:"atk", desc:"Команда: +40% атаки на 2 хода"},
   crash:    {name:"Краш",            type:"debuff", power:0.4, el:"glitch", effect:"vuln", desc:"Враги: +40% получаемого урона"},
@@ -86,9 +86,9 @@ const SKILLS = {
   royaldecree:{name:"Королевский указ",type:"debuff",power:0.35,el:"royal", effect:"weaken", desc:"Враги: -35% атаки на 2 хода"},
   frenzy:   {name:"Бешенство",       type:"attack", power:1.5, el:"beast",  effect:"lifesteal", desc:"Сильный удар, лечит на 50% урона"},
   bailout:  {name:"Откуп",           type:"buff",   power:0.5, el:"money",  effect:"def", desc:"Команда: -50% урона на 2 хода"},
-  horoscope:{name:"Гороскоп",        type:"heal",   power:0.2, el:"zodiac", aoe:true, desc:"Лечит всю команду на 20%"},
+  horoscope:{name:"Гороскоп",        type:"heal", cd:2,   power:0.2, el:"zodiac", aoe:true, desc:"Лечит всю команду на 20%"},
   legendrage:{name:"Ярость Легенды", type:"buff",   power:0.45,el:"legend", effect:"atk", desc:"Команда: +45% атаки"},
-  divinegrace:{name:"Благодать",     type:"heal",   power:0.25,el:"divine", aoe:true, desc:"Лечит всех на 25%"},
+  divinegrace:{name:"Благодать",     type:"heal", cd:2,   power:0.25,el:"divine", aoe:true, desc:"Лечит всех на 25%"},
   tyrantfear:{name:"Страх",          type:"debuff", power:0.45,el:"tyrant", effect:"vuln", desc:"Враги: +45% получаемого урона"},
 };
 const ELEMENT_ATTACK={german:"march",soviet:"sovhit",digit:"count",clock:"threeam",night:"nightfall",cat:"scratch",doc:"inject",bird:"peck",cyber:"laser",glitch:"corrupt",sheep:"ram",royal:"decree",beast:"maul",money:"bribe",zodiac:"starfall",legend:"legendary",divine:"divine",tyrant:"tyrant"};
@@ -285,13 +285,14 @@ const DRAGONS = [
   {id:"d122", name:"Антон Гусев", els:["legend", "german", "clock"], rarity:"legendary", big:true, eventOnly:true, base:{"hp": 145, "atk": 46, "def": 18, "spd": 15}, desc:"Глава немецких Мэдли. Красные глаза, фуражка с символом. Уверен, что история движется по его расписанию. Расписание составлено на 3:00."},
   {id:"d123", name:"Птица Грей", els:["bird", "night", "money"], rarity:"epic", base:{"hp": 120, "atk": 34, "def": 14, "spd": 19}, desc:"Серая птица в цилиндре с розовым глазом. Заговорщица. Продаёт секреты обеим сторонам и всегда остаётся в плюсе."},
   {id:"d124", name:"Немецкая Луна", els:["german", "night", "clock"], rarity:"epic", base:{"hp": 130, "atk": 35, "def": 16, "spd": 14}, desc:"Полумесяц с закрытыми глазами и повязкой на плаще. Светит только для своих. Улыбается, потому что знает, чем всё кончится."},
-  {id:"d125", name:"Червяк Немец", els:["german", "beast"], rarity:"common", base:{"hp": 100, "atk": 20, "def": 14, "spd": 12}, desc:"Чёрный червяк с повязкой. Самый младший в организации. Носит письма и очень старается."},
+  {id:"d125", name:"Червяк Немец", els:["german", "beast"], rarity:"common", flipAlly:true, base:{"hp": 100, "atk": 20, "def": 14, "spd": 12}, desc:"Чёрный червяк с повязкой. Самый младший в организации. Носит письма и очень старается."},
   {id:"d126", name:"Баран Альт", els:["sheep", "digit", "royal"], rarity:"rare", base:{"hp": 115, "atk": 24, "def": 17, "spd": 13}, desc:"Барашка в очках, с рыжей чёлкой и в бордовом топе. Альтернативная версия из соседней вселенной. Умнее оригинала и знает об этом."},
   {id:"d127", name:"Бисквит Альт", els:["cat", "night"], rarity:"rare", base:{"hp": 110, "atk": 25, "def": 14, "spd": 16}, desc:"Седая кошка с футболкой «Переходи на сторону психов». Альтернативная Бисквит. Спокойная, пока не трогать колокольчик."},
   {id:"d128", name:"Бисквит Анархокоммунист", els:["german", "cat", "money"], rarity:"epic", base:{"hp": 120, "atk": 32, "def": 16, "spd": 15}, desc:"Красная фуражка с серпом, гимнастёрка, усики. Требует поделить всю еду в жилищах поровну. Себе — чуть больше."},
   {id:"d129", name:"Анти-Бисквит", els:["glitch", "cat", "night"], rarity:"epic", big:false, base:{"hp": 125, "atk": 34, "def": 15, "spd": 16}, desc:"Чёрная корона с зелёными кристаллами, зелёные полоски. Противоположность Бисквит: где та мурлычет, эта шипит."},
   {id:"d130", name:"Бисквит Антистраус", els:["clock", "cat", "glitch"], rarity:"epic", base:{"hp": 120, "atk": 36, "def": 14, "spd": 17}, desc:"Повязка на глазу, «666» на щеке и надпись Teh. Объявила войну всем страусам. Страусы не в курсе."},
-  {id:"d131", name:"Советский Компьютер", els:["soviet", "cyber", "glitch"], rarity:"tyrant", eventOnly:true, boss:true, noflip:true, base:{"hp": 150, "atk": 26, "def": 22, "spd": 8}, desc:"Красный ящик с лицом. Загружается очень долго, зато когда найдёт цель — удаляет её из команды навсегда. BANNED."},
+  {id:"d131", name:"Советский Компьютер", els:["soviet", "cyber", "glitch"], rarity:"tyrant", eventOnly:true, boss:true, flipAlly:true, base:{"hp": 150, "atk": 26, "def": 22, "spd": 8}, desc:"Красный ящик с лицом. Загружается очень долго, зато когда найдёт цель — удаляет её из команды навсегда. BANNED."},
+  {id:"d132", name:"Бог", els:["divine", "zodiac", "royal"], rarity:"divine", eventOnly:true, base:{"hp": 150, "atk": 46, "def": 20, "spd": 16}, desc:"Пятиконечная звезда пяти цветов с одним глазом посередине. Смотрит на всё сразу. Появляется только перед тем, кто отключил Советские Компьютеры."},
   {id:"d106", name:"Телец", els:["legend", "zodiac", "beast"], rarity:"legendary", base:{"hp": 140, "atk": 40, "def": 18, "spd": 13}, eventOnly:true, desc:"Голубой бык с кольцом в носу и огоньком на лбу. Не машите красным."},
 ];
 
@@ -329,6 +330,7 @@ const BREED_TIME = 120*1000;
 const LEGEND_BREED = {minLvl:10, chance:0.10, time:300*1000};
 const DIVINE_BREED = {minLvl:20, chance:0.15, time:600*1000};
 const TYRANT_BREED = {minLvl:25, chance:0.10, time:1200*1000};
+const SUDDEN_DEATH={from:8,step:0.10}; // с 8-го раунда весь урон +10% за раунд — против затяжных боёв
 const TIMING = {perfect:{atk:1.3,block:0.5,w:0.14,label:"ИДЕАЛЬНО!"}, good:{atk:1.0,block:0.25,w:0.42,label:"Хорошо"}, miss:{atk:0.8,block:0,label:"Мимо"}};
 const XP_TABLE = [0, 60, 120, 200, 320, 480, 700, 950, 1300];
 const SCROLL_PER_WIN = lvl => 1 + Math.floor(lvl/4);
@@ -395,4 +397,4 @@ const CAMPAIGN_NODES=CAMPAIGN.flatMap(c=>c.nodes.map(n=>({...n,ch:c.ch})));
 const HAB_BG={german:"base",night:"nightmare_hall",glitch:"darknet",clock:"ice_hell",cyber:"base",digit:"room1",royal:"gallery",sheep:"snow",bird:"skyship",beast:"darkside",cat:"room1",doc:"base",money:"gallery",zodiac:"skyship"};
 const BATTLE_BG={default:"versus",pvp:"versus",phone:"ice_hell",zodiac:"skyship",dungeon:"nightmare1",campaign:{1:"snow",2:"base",3:"nightmare_hall",4:"nightmare2"},boss:"darkside",final:"nightmare0"};
 
-const SOVIET_EVENT={req:30, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold:20000,gems:60,scrolls:40}, egg:"d121", cooldown:12*60*60*1000};
+const SOVIET_EVENT={req:30, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold:20000,gems:60,scrolls:40}, egg:"d132", cooldown:0};
