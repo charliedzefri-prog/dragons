@@ -1,0 +1,60 @@
+first fight { win: false, r: 14 }
+TIMER ERR TypeError: Cannot set properties of null (setting 'busy') |     at http://localhost/:902:25 |     at /home/user/dragonmania/tools/tier.js:10:52
+TIMER ERR TypeError: Cannot set properties of null (setting 'busy') |     at http://localhost/:902:25 |     at /home/user/dragonmania/tools/tier.js:10:52
+TIMER ERR TypeError: Cannot read properties of undefined (reading 'els') |     at elMult (http://localhost/:751:10) |     at http://localhost/:868:33
+games=4000 lvl=30 avgRounds=12.1 timeouts=0
+ELEMENTS:
+  tyrant   96%  (n=238)
+  divine   91%  (n=391)
+  legend   80%  (n=2053)
+  clock    64%  (n=4122)
+  cyber    54%  (n=3082)
+  glitch   52%  (n=4642)
+  beast    51%  (n=3704)
+  digit    51%  (n=8171)
+  doc      49%  (n=3948)
+  german   49%  (n=2277)
+  night    49%  (n=6455)
+  money    48%  (n=4415)
+  royal    47%  (n=4460)
+  bird     47%  (n=2846)
+  cat      46%  (n=6695)
+  sheep    41%  (n=1854)
+DRAGONS:
+  d63 96% tyrant [tyrant,glitch,night] Dolphy.vhs
+  d59 92% divine [divine,digit,clock] Шестёрка Серафим
+  d30 91% divine [divine,beast,clock] Т-Рекс СОСАЛ
+  d31 87% legendary [legend,glitch,digit] Ошибка 4614
+  d121 83% legendary [legend,german,doc] Мэдли Паладин
+  d107 83% legendary [legend,royal,cyber] Алмазный Голем
+  d75 80% legendary [legend,digit,clock] MR 666
+  d10 80% legendary [legend,digit,clock] Четвёрка-Сотона
+  d48 80% legendary [legend,cyber,bird] Самолёт
+  d93 78% legendary [legend,clock,digit] Профессор 666
+  d52 78% legendary [legend,clock,night] Сосал
+  d15 77% legendary [legend,doc,clock] Доктор 666
+  d56 72% legendary [legend,doc,clock] Высокая Температура
+  d130 61% epic [clock,cat,glitch] Бисквит Антистраус
+  d24 60% epic [cat,cyber,beast] Роуз Меха
+  d86 59% rare [clock,night,glitch] Дримкор
+  d50 59% rare [clock,money] Чревоугодие
+  d36 57% epic [beast,sheep,money] Бычок
+  d49 57% rare [clock] Гнев
+  d85 57% epic [clock,royal,money] Дримкор Смокинг
+  d92 56% epic [digit,cyber,beast] Тройка Хавергот
+  d113 56% epic [cyber,beast,glitch] Сайбер Вульф Заяц
+  d119 55% epic [german,doc,bird] Мэдли Петух
+  d117 54% epic [german,doc,royal] Мэдли Джексон
+  d09 54% epic [digit,cyber,night] Четвёрка-Хакер
+  d79 54% epic [digit,money,cyber] Семёрка Бандит
+  d66 53% epic [cat,beast,money] Лофо Рэмбо
+  d77 53% epic [digit,glitch,night] Ноль Бездна
+  d76 53% epic [digit,clock,royal] Ноль Баланс
+  d07 52% epic [digit,money,beast] Четвёрка-Гангстер
+  d12 52% epic [cat,royal,night] Бисквит Ночи
+  d58 52% epic [digit,cyber,clock] Шестёрка Меха
+  d128 52% epic [german,cat,money] Бисквит Анархокоммунист
+  d32 52% epic [night,clock,digit] Бесконечность Ночи
+  d124 51% epic [german,night,clock] Немецкая Луна
+  d81 51% epic [digit,doc,royal] Восьмёрка Горничная
+  d23 51% epic [cat,money] Руж Финдиректор

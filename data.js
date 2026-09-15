@@ -308,7 +308,13 @@ const HAB_MAX_LVL = 5;
 const HAB_UP = lvl => ({gold: Math.round(1500*Math.pow(2.2,lvl-1))});
 const HAB_CAP = (b,lvl) => b.cap + (lvl-1);
 const HAB_STORE = (b,lvl) => Math.round(b.income*60*lvl*lvl);
-const GOLD_PER_MIN = (b,dragonLvl,rarityMult) => Math.round(b.income*0.5*(1+dragonLvl*0.35)*rarityMult);
+// Экономика поздней игры: масштаб от уровня игрока (ур.1 ×1 … ур.20 ×2.9 … ур.40 ×4.9)
+const ECON_SCALE = plvl => 1 + Math.max(0,plvl-1)*0.10;
+// Фермы улучшаются: ур.1..5, еда ×(1,2,3.5,5.5,8), цена улучшения растёт
+const FARM_MAX_LVL = 5;
+const FARM_MULT = [1,2,3.5,5.5,8];
+const FARM_UP = (b,lvl) => ({gold: Math.round((b.cost.gold||300)*2*Math.pow(2.5,lvl-1))});
+const GOLD_PER_MIN = (b,dragonLvl,rarityMult) => Math.round(b.income*0.5*(1+dragonLvl*0.35)*rarityMult*(typeof S!=="undefined"&&S?ECON_SCALE(S.level):1));
 const ISLANDS = [
   {id:"main",   name:"Главный остров",     req:1,  cost:{gold:0},      w:8, h:6, start:20, theme:"#5cbf4a", ground:"#63c94c", edge:"#b9955a", tile:"grass", deco:["🌳","🌼","🪨"], sky:"radial-gradient(ellipse at 50% 100%,#2b8ccf 0,#3aa8e8 45%,#7fd3ff 100%)"},
   {id:"sunny",  name:"Солнечный остров",   req:6,  cost:{gold:15000},  w:7, h:6, start:12, theme:"#d8c25a", ground:"#e8d27a", edge:"#c9a24a", tile:"sand", deco:["🌴","🐚","⛱️"], sky:"linear-gradient(#ffd27a,#ff9a4a 60%,#2b8ccf)", bonus:{food:1.25}, bonusText:"🍖 фермы +25%"},

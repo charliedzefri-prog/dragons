@@ -86,7 +86,7 @@ function treeBonuses(id,o){o=o||S.dragons[id];const b={dmg:{}};if(!o||!o.tree)re
     if(L>=5)b[p]=(b[p]||0)+pi.v;
     if(L>=6&&t.final!=null){const f=FINAL_OPTIONS[el][t.final];b[f.k]=(b[f.k]||0)+f.v}});
   return b}
-function feedCost(id){const o=S.dragons[id];return Math.round(15*Math.pow(1.22,o.lvl-1)*RARITY[dInfo(id).rarity].mult)}
+function feedCost(id){const o=S.dragons[id];const l=o.lvl;const g=l<=20?Math.pow(1.22,l-1):Math.pow(1.22,19)*Math.pow(1.11,l-20);return Math.round(15*g*RARITY[dInfo(id).rarity].mult)}
 function maxLevel(stars){return 10+ (stars-1)*10}
 function evolveCost(id){const o=S.dragons[id];return {gold:2000*o.stars*o.stars,gems:5*o.stars}}
 function power(id,ov){const s=dragonStats(id,ov);return Math.round(s.hp/3+s.atk*4+s.def*3+s.spd*2)}
@@ -121,7 +121,7 @@ function habRate(t){const b=BUILDINGS[t.b];let r=0;t.dragons.forEach(id=>{const 
 function habStored(t){const b=BUILDINGS[t.b];if(!b||!b.el)return 0;return Math.min(Math.round(HAB_STORE(b,habLvl(t))*islBonus("store",t)),Math.floor(habRate(t)*(Date.now()-t.last)/60000))}
 function tileIncome(t){const b=BUILDINGS[t.b];if(!b)return null;
   if(b.el){return {gold:habStored(t)}}
-  if(b.food)return {food:Math.round(b.food*islBonus("food",t))};if(b.gems)return {gems:Math.round(b.gems*MULT("gemsMult")*islBonus("gems",t))};return null}
+  if(b.food)return {food:Math.round(b.food*FARM_MULT[(t.lvl||1)-1]*ECON_SCALE(S.level)*islBonus("food",t))};if(b.gems)return {gems:Math.round(b.gems*MULT("gemsMult")*islBonus("gems",t))};return null}
 function tileReady(t){const b=BUILDINGS[t.b];if(b&&b.el)return habStored(t)>=Math.max(10,habRate(t));if(b&&b.special==="library")return Date.now()-t.last>=LIBRARY.time;return Date.now()-t.last>=HARVEST_TIME}
 function unlockCost(){const isl=curIsland();const df=ISLANDS.find(x=>x.id===isl.id)||ISLANDS[0];const n=isl.tiles.filter(t=>t.unlocked).length;return {gold:Math.round(400*Math.pow(1.35,n-df.start)*(S.islands.indexOf(isl)+1))}}
 
@@ -194,13 +194,14 @@ function tileClick(i){
     ${hl<HAB_MAX_LVL?`<div class="row"><button class="btn purple sm" id="hup" ${canPay(HAB_UP(hl))?"":"disabled"}>⬆ Улучшить до ур.${hl+1} (${costStr(HAB_UP(hl))}) → ${HAB_CAP(b,hl+1)} мест, лимит 🪙${fmt(HAB_STORE(b,hl+1))}</button></div>`:"<small>Максимальный уровень жилища</small>"}<div class="picker" style="margin:8px 0">${t.dragons.map(id=>`<img src="assets/${id}.png" title="${dInfo(id).name}" data-rm="${id}">`).join("")||"<i>Пусто — посели дракона</i>"}</div>`;
     const free=ownedIds().filter(id=>!allTiles().some(tt=>tt.dragons.includes(id))&&dInfo(id).els.includes(b.el));
     if(t.dragons.length<HAB_CAP(b,habLvl(t)))html+=`<p><b>Можно поселить:</b></p><div class="picker">${free.map(id=>`<img src="assets/${id}.png" title="${dInfo(id).name}" data-add="${id}">`).join("")||"<i>Нет свободных драконов этой стихии</i>"}</div>`;
-  }else html+=`<p>Производит <b>${inc.food?"🍖"+inc.food:"💎"+inc.gems}</b> раз в ${Math.round(HARVEST_TIME/1000)} с.</p>${ready?"":`<div class="bar" style="margin:4px 0"><div style="width:${Math.min(100,(Date.now()-t.last)/HARVEST_TIME*100)}%;background:linear-gradient(#b8f39a,#4a9a2a)"></div></div>`}`;
+  }else html+=`<p>${b.food?`Ферма · уровень <b>${t.lvl||1}/${FARM_MAX_LVL}</b>. `:""}Производит <b>${inc.food?"🍖"+inc.food:"💎"+inc.gems}</b> раз в ${Math.round(HARVEST_TIME/1000)} с.</p>${b.food&&(t.lvl||1)<FARM_MAX_LVL?`<div class="row"><button class="btn purple sm" id="fup" ${canPay(FARM_UP(b,t.lvl||1))?"":"disabled"}>⬆ Улучшить до ур.${(t.lvl||1)+1} (${costStr(FARM_UP(b,t.lvl||1))}) → 🍖${Math.round(b.food*FARM_MULT[t.lvl||1]*ECON_SCALE(S.level)*islBonus("food",t))}</button></div>`:""}${ready?"":`<div class="bar" style="margin:4px 0"><div style="width:${Math.min(100,(Date.now()-t.last)/HARVEST_TIME*100)}%;background:linear-gradient(#b8f39a,#4a9a2a)"></div></div>`}`;
   html+=`<div class="row"><button class="btn green" id="collect" ${(b.el?inc.gold>0:ready&&(inc.food||inc.gems))?"":"disabled"}>${b.el?"Собрать 🪙"+inc.gold:ready?"Собрать":"Готово через "+left+" с"}</button><button class="btn blue" id="mv">📦 Переместить</button><button class="btn red" id="del">Снести</button>${b.el&&t.dragons.length?`<button class="btn purple" id="enter">🚪 Зайти в жилище</button>`:""}</div>`;
   const m=modal(html);
   $("#mv",m).onclick=()=>{moveFrom=i;closeModal();renderMap()};
   const en=$("#enter",m);if(en)en.onclick=()=>enterHabitat(i);
   $$("[data-add]",m).forEach(im=>im.onclick=()=>{const id=im.dataset.add;if(isHoused(id)){toast("Этот дракон уже поселён");closeModal();return}t.dragons.push(id);S.pending=(S.pending||[]).filter(x=>x!==id);save();closeModal();renderMap();toast("🐲 Дракон поселён!")});
   $$("[data-rm]",m).forEach(im=>im.onclick=()=>{t.dragons=t.dragons.filter(x=>x!==im.dataset.rm);save();closeModal();renderMap()});
+  const fu=$("#fup",m);if(fu)fu.onclick=()=>{pay(FARM_UP(b,t.lvl||1));t.lvl=(t.lvl||1)+1;addXP(60);save();toast(`⬆ ${b.name} улучшена до ур.${t.lvl}`);closeModal();tileClick(i)};
   const hu=$("#hup",m);if(hu)hu.onclick=()=>{const g=habStored(t);S.gold+=g;pay(HAB_UP(habLvl(t)));t.lvl=habLvl(t)+1;t.last=Date.now();addXP(80);save();toast(`⬆ ${b.name} улучшено до ур.${t.lvl}`);closeModal();tileClick(i)};
   $("#collect",m).onclick=()=>{if(!b.el&&!tileReady(t)){toast("⏳ Ещё не готово");return}S.gold+=inc.gold||0;S.food+=inc.food||0;S.gems+=inc.gems||0;t.last=Date.now();addXP(b.el?Math.min(60,10+Math.floor((inc.gold||0)/20)):15);save();closeModal();renderMap();toast(`+${costStr(inc)}`)};
   $("#del",m).onclick=()=>{if(t.dragons.length){toast("Сначала выселите драконов");return}S.gold+=Math.floor((b.cost.gold||0)/2);t.b=null;save();closeModal();renderMap();updateTop()};
@@ -522,7 +523,7 @@ function endBattle(win){$("#navbar").classList.remove("locked");
   const opp=B.opp;const hpLeft={};B.allies.forEach(f=>hpLeft[f.id]=f.hp);B=null;
   if(opp.onEnd){opp.onEnd(win,hpLeft);return}
   let gold=0,xp=0,gems=0,food=0;
-  if(win){gold=200*opp.lvl+rnd(0,100);xp=40+60*opp.lvl;food=50*opp.lvl;const idx=OPPONENTS.indexOf(opp);if(idx>=0&&idx===S.wins){S.wins++;gems=10;}else if(idx<0)gems=opp.diff==="hard"?rnd(3,6):opp.diff==="normal"?rnd(1,3):rnd(0,1);
+  if(win){const es=ECON_SCALE(S.level);gold=Math.round((200*opp.lvl+rnd(0,100))*es);xp=40+60*opp.lvl;food=Math.round(50*opp.lvl*es);const idx=OPPONENTS.indexOf(opp);if(idx>=0&&idx===S.wins){S.wins++;gems=10;}else if(idx<0)gems=opp.diff==="hard"?rnd(3,6):opp.diff==="normal"?rnd(1,3):rnd(0,1);
     S.gold+=gold;S.food+=food;S.gems+=gems;addXP(xp);
     // прогресс квестов
     S.quests.wins=(S.quests.wins||0)+1;S.scrolls=(S.scrolls||0)+SCROLL_PER_WIN(opp.lvl);}
