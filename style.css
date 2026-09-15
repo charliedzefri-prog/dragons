@@ -470,3 +470,8 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 .iso-base.isl-cloud{box-shadow:0 30px 0 #fff,0 46px 0 #cfe4ff,0 60px 60px rgba(255,255,255,.4),inset 0 -20px 40px rgba(180,200,255,.4)!important;border-radius:45%/50%}
 .iso-base.isl-night{box-shadow:0 30px 0 #1a1030,0 46px 0 #0a0818,0 60px 60px rgba(120,60,255,.35),inset 0 -20px 40px rgba(60,0,120,.5)!important}
 .iso-base.isl-jungle{box-shadow:0 30px 0 #5a4a2a,0 46px 0 #3a2a1a,0 60px 40px rgba(0,0,60,.4),inset 0 -20px 40px rgba(0,80,0,.5)!important}
+
+.charge{position:absolute;top:-14px;left:8%;right:8%;height:12px;background:#200;border:2px solid #ff4030;border-radius:6px;overflow:hidden;z-index:4}.charge span{display:block;height:100%;background:linear-gradient(90deg,#ff8a30,#ff2010);transition:width .4s}.charge b{position:absolute;inset:0;font-size:9px;color:#fff;line-height:12px;text-shadow:0 0 3px #000}.charge.hot{animation:chargeblink .5s infinite}@keyframes chargeblink{50%{box-shadow:0 0 12px #ff3020}}
+.banmark{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%) rotate(-18deg);background:#c00;color:#fff;font-weight:900;font-size:16px;letter-spacing:2px;padding:2px 8px;border:3px solid #fff;box-shadow:0 0 0 2px #c00;z-index:6;pointer-events:none}
+.fighter.banned img{filter:grayscale(1) contrast(1.4) brightness(.35)!important}
+.soviet-card{border-color:#ff4030!important;background:linear-gradient(#3a0a0a,#1a0505)!important;color:#ffdcdc}.soviet-card h2{color:#ff6a5a}

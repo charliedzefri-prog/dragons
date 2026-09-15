@@ -331,8 +331,8 @@ function matchmake(diff){const best=bestOwn(3);if(!best.length)return {name:"С�
     const cand=pool.filter(d=>d.els.includes(el)&&!ids.includes(d.id));const d=cand.length?cand[Math.floor(rng()*cand.length)]:pool[Math.floor(rng()*pool.length)];if(!ids.includes(d.id))ids.push(d.id)}
   const names={easy:["Разминка","Лёгкий спарринг","Новички арены"],normal:["Достойный соперник","Равный бой","Ветераны арены"],hard:["Контр-отряд","Элита арены","Кошмар для твоей тройки"]}[diff];
   return {name:names[Math.floor(rng()*names.length)],lvl,ids,random:true,diff}}
-function enemySkills(id,lvl){const d=dInfo(id);const b=baseSkills(id).filter((k,i)=>lvl>=SLOT_LEVEL[i]);if(lvl>=8)b.push(ELEMENT_SPREAD[d.els[0]]);if(lvl>=12)b.push(ELEMENT_ABILITY[d.els[0]]);return b}
-function mkFighter(id,ov,side,i){const st=dragonStats(id,ov);const d=dInfo(id);return {id,side,i,name:d.name,els:d.els,skills:ov?enemySkills(id,ov.lvl):dSkills(id),hp:st.hp,maxhp:st.hp,atk:st.atk,def:st.def,spd:st.spd,cds:{},buffAtk:0,buffDef:0,debuff:0,crit:st.crit,timeb:st.timeb,lifesteal:st.lifesteal||0,dmgB:st.dmg||{},shield:Math.round(st.hp*(st.startshield||0)),fx:[],tb:st.tb||{},reviveUsed:false,lvl:ov?ov.lvl:S.dragons[id].lvl}}
+function enemySkills(id,lvl){const d=dInfo(id);if(d.els.includes("soviet"))return ["sovhit","sovhit_s","sovban"];const b=baseSkills(id).filter((k,i)=>lvl>=SLOT_LEVEL[i]);if(lvl>=8)b.push(ELEMENT_SPREAD[d.els[0]]);if(lvl>=12)b.push(ELEMENT_ABILITY[d.els[0]]);return b}
+function mkFighter(id,ov,side,i){const st=dragonStats(id,ov);const d=dInfo(id);if(d.els.includes("soviet")){st.hp=Math.round(st.hp*0.55)}return {id,side,i,name:d.name,els:d.els,skills:ov?enemySkills(id,ov.lvl):dSkills(id),hp:st.hp,maxhp:st.hp,atk:st.atk,def:st.def,spd:st.spd,cds:{},buffAtk:0,buffDef:0,debuff:0,crit:st.crit,timeb:st.timeb,lifesteal:st.lifesteal||0,dmgB:st.dmg||{},shield:Math.round(st.hp*(st.startshield||0)),fx:[],tb:st.tb||{},reviveUsed:false,soviet:d.els.includes("soviet"),charge:d.els.includes("soviet")?-i:0,lvl:ov?ov.lvl:S.dragons[id].lvl}}
 function startBattle(opp){
   if(team.length===0){toast("Выбери хотя бы одного дракона!");return}
   const ov={lvl:opp.lvl,stars:1+Math.floor(opp.lvl/10),enemy:true};
@@ -369,6 +369,7 @@ function nextTurn(first){
     if(e.k==="hot"){const h=Math.round(f0.maxhp*0.1);f0.hp=Math.min(f0.maxhp,f0.hp+h);log(`💚 ${f0.name} восстанавливает ${h}`)}
     if(e.k==="stun"||e.k==="freeze"){skip=true;log(`${e.k==="stun"?"💫":"🧊"} ${f0.name} пропускает ход!`)}
     return e.t>0});
+  if(f0.soviet&&f0.hp>0){f0.charge=(f0.charge||0)+1;if(f0.charge>=3){log(`🖥️ ${f0.name}: ЦЕЛЬ НАЙДЕНА`)}else{sndPlay("init",.7);log(`🖥️ ${f0.name} загружается… (${Math.max(0,f0.charge)}/3)`)}}
   if(f0.tb.regen&&f0.hp>0){const h=Math.round(f0.maxhp*f0.tb.regen);f0.hp=Math.min(f0.maxhp,f0.hp+h);log(`💚 ${f0.name} регенерирует ${h}`)}
   if(f0.hp<=0){renderBattle();setTimeout(nextTurn,500);return}
   if(skip){renderBattle();setTimeout(nextTurn,900);return}
@@ -381,7 +382,7 @@ function lootBonus(){return team.reduce((a,id)=>a+((treeBonuses(id).loot)||0),0)
 function battleBg(){const o=B&&B.opp;if(!o)return null;if(o.bg)return o.bg;if(o.final)return BATTLE_BG.final;if(o.boss)return BATTLE_BG.boss;if(o.campaign)return BATTLE_BG.campaign[o.ch]||BATTLE_BG.default;if(o.pvp)return BATTLE_BG.pvp;return BATTLE_BG.default}
 function renderBattle(){
   const root=$("#scr-battle");const f=B.cur;
-  const fh=(x)=>`<div class="fighter ${x.side} ${dInfo(x.id).noflip?"noflip":""} ${dInfo(x.id).big?"bigspr":""} ${x.hp<=0?"dead":""} ${x===f?"active":""} pos${x.i}" data-side="${x.side}" data-i="${x.i}"><img src="assets/${x.id}.png"><div class="hpbar"><div class="${x.hp/x.maxhp<.3?"low":""}" style="width:${x.hp/x.maxhp*100}%"></div>${x.shield?`<div class="shieldbar" style="width:${Math.min(100,x.shield/x.maxhp*100)}%"></div>`:""}</div><div class="fn">${x.name} <small>ур.${x.lvl}</small></div><div>${x.els.map(elIco).join("")}</div>${x.buffAtk?"<small>⚔️↑</small>":""}${x.buffDef?"<small>🛡️↑</small>":""}${x.debuff?"<small>⚔️↓</small>":""}${x.shield?`<small>🔰${x.shield}</small>`:""}${(x.fx||[]).map(e=>({burn:"🔥",hot:"💚",stun:"💫",freeze:"🧊",slow:"🐌",vuln:"💔"})[e.k]||"").join("")}</div>`;
+  const fh=(x)=>`<div class="fighter ${x.side} ${dInfo(x.id).noflip?"noflip":""} ${dInfo(x.id).big?"bigspr":""} ${x.banned?"banned":""} ${x.hp<=0?"dead":""} ${x===f?"active":""} pos${x.i}" data-side="${x.side}" data-i="${x.i}"><img src="assets/${x.id}.png"><div class="hpbar"><div class="${x.hp/x.maxhp<.3?"low":""}" style="width:${x.hp/x.maxhp*100}%"></div>${x.shield?`<div class="shieldbar" style="width:${Math.min(100,x.shield/x.maxhp*100)}%"></div>`:""}</div>${x.soviet&&x.hp>0?`<div class="charge ${x.charge>=2?"hot":""}"><span style="width:${Math.min(100,(x.charge||0)/3*100)}%"></span><b>${x.charge>=3?"⚠ BANNED!":"⏳ "+Math.max(0,x.charge||0)+"/3"}</b></div>`:""}${x.banned?`<div class="banmark">BANNED</div>`:""}<div class="fn">${x.name} <small>ур.${x.lvl}</small></div><div>${x.els.map(elIco).join("")}</div>${x.buffAtk?"<small>⚔️↑</small>":""}${x.buffDef?"<small>🛡️↑</small>":""}${x.debuff?"<small>⚔️↓</small>":""}${x.shield?`<small>🔰${x.shield}</small>`:""}${(x.fx||[]).map(e=>({burn:"🔥",hot:"💚",stun:"💫",freeze:"🧊",slow:"🐌",vuln:"💔"})[e.k]||"").join("")}</div>`;
   root.innerHTML=`<div class="arena">
    ${B.pvp?`<div class="pvp-head"><span>${S.profile.name} ${leagueOf(S.pvp.rating).ico}</span><span class="pvp-timer" id="pvpt">10</span><span>${B.opp.name}</span></div>`:""}<div class="turn-order">${[f,...B.queue].map(x=>`<img src="assets/${x.id}.png" class="${x===f?"now":""} ${x.side==="enemy"?"en":""}">`).join("")}</div>
    <div class="arena-field iso-arena" style="${battleBg()?`background:url(assets/bg/${battleBg()}.jpg) center/cover`:""}"><div class="arena-floor" ${battleBg()?'style="opacity:.35"':""}></div><div class="team allies">${B.allies.map(fh).join("")}</div><div class="team enemies">${B.enemies.map(fh).join("")}</div></div>
@@ -455,6 +456,10 @@ function applySkill(actor,k,target,atkM,blk){
   lunge(fEl(actor),actor.side==="ally"?1:-1);
   if(s.aoe)flash(s.el);
   const foes=actor.side==="ally"?B.enemies:B.allies,friends=actor.side==="ally"?B.allies:B.enemies;
+  if(s.type==="attack"&&s.oneshot&&target){sndPlay("found",.9);const t=target;const el=fEl(t);if(el){el.classList.add("hit");vfx(el,"glitch")}
+    if(t.tb.dodge&&RNG()<t.tb.dodge){pop(el,"УКЛОНЕНИЕ","weak");log(`💨 ${t.name} чудом уклонился от BANNED!`)}
+    else{t.hp=0;t.shield=0;t.banned=true;t.reviveUsed=true;if(el){el.classList.add("banned");const b=document.createElement("div");b.className="banmark";b.textContent="BANNED";el.append(b)}pop(el,"BANNED","crit");log(`🚫 <b>${t.name}</b> ЗАБАНЕН: удалён из боя одним ударом!`)}
+    setTimeout(()=>{[...B.allies,...B.enemies].forEach(x=>{const e=fEl(x);if(!e)return;const bar=$(".hpbar div",e);bar.style.width=(x.hp/x.maxhp*100)+"%";e.classList.toggle("dead",x.hp<=0)});B.busy=false;nextTurn()},1200);return}
   if(s.type==="attack"){
     const targets=s.aoe?alive(foes):[target];
     let healed=0;
@@ -500,6 +505,8 @@ function aiTurn(){
   // приоритеты: лечить если кто-то <35%, иначе самый сильный навык, цель — по стихии
   const hurt=friends.find(x=>x.hp/x.maxhp<.35);
   let k=null,t=null;
+  if(f.soviet&&f.charge>=3){f.charge=0;const tg=foes.slice().sort((a,b)=>b.hp-a.hp)[0];useSkill(f,"sovban",tg);return}
+  if(f.soviet){const r2=ready.filter(k=>k!=="sovban");useSkill(f,r2[Math.floor(RNG()*r2.length)]||"sovhit",foes[Math.floor(RNG()*foes.length)]);return}
   const heals=ready.filter(k=>SKILLS[k].type==="heal");
   if(hurt&&heals.length){k=heals[0];t=hurt}
   else{const atks=ready.filter(k=>SKILLS[k].type==="attack").sort((a,b)=>SKILLS[b].power*(SKILLS[b].aoe?foes.length*.8:1)-SKILLS[a].power*(SKILLS[a].aoe?foes.length*.8:1));
@@ -726,6 +733,14 @@ const QUESTS=[
   {id:"build",name:"Построить 3 здания",need:3,reward:{gems:8,scrolls:5}},
   {id:"feed",name:"Покормить драконов 10 раз",need:10,reward:{food:500,gems:3,scrolls:3},dup:true},
 ];
+function sovietUnlocked(){return !!S.sovietFound||campProgress()>=CAMPAIGN_NODES.length}
+function startSoviet(){if(S.level<SOVIET_EVENT.req){toast("Нужен уровень "+SOVIET_EVENT.req);return}closeModal();pickTeamModal("🖥️ Советские Компьютеры","<div class='desc'>init… init… ЦЕЛЬ НАЙДЕНА. Три машины, каждая — BANNED раз в 3 хода.</div>",()=>{
+  const lvl=S.level+SOVIET_EVENT.lvlBonus;S.sovietLast=Date.now();save();
+  playDialog([["d131","Советский Компьютер","INIT… INIT… ЗАГРУЗКА 3%…"],["d131","Советский Компьютер","ХРАНИТЕЛЬ ОБНАРУЖЕН. СТАТУС: НЕЖЕЛАТЕЛЬНЫЙ. ПОДГОТОВКА К УДАЛЕНИЮ."],["av0","Хранитель","Это… три красных ящика? Почему у них лица?"],["d131","Советский Компьютер","BANNED. BANNED. BANNED. НАЧАТЬ."]],()=>{
+    startBattle({name:"Советские Компьютеры",lvl,ids:SOVIET_EVENT.ids,bg:BATTLE_BG.dungeon,music:"gbt",boss:true,onEnd:(win)=>{
+      if(win){S.sovietWins=(S.sovietWins||0)+1;const r=SOVIET_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(400+40*lvl);let egg="";if(S.sovietWins===1){giveEgg(SOVIET_EVENT.egg,"soviet");egg="<p><b>🥚 Яйцо Мэдли Паладина!</b></p>"}
+        save();updateTop();modal(`<div class="result win">СИСТЕМА ОТКЛЮЧЕНА</div><p class="center">«…ошибка… ошибка… перезагрузка через 12 часов…»</p><div class="center" style="font-weight:900">+🪙${fmt(r.gold)} +💎${r.gems} +📜${r.scrolls}</div>${egg}<div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('events')">Ок</button></div>`,{closable:false})}
+      else{save();modal(`<div class="result lose">BANNED</div><p class="center">Вся команда удалена. Перезагрузка через 12 часов.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">Ок</button></div>`,{closable:false})}}})})})}
 function renderEvents(){
   const f=featured();const root=$("#scr-events");
   const feat=(d,title,badge,end,key,disc)=>{const own=S.dragons[d.id];const r=RARITY[d.rarity];const price=Math.round(r.price*disc);const claimed=S.quests["claim_"+key];
@@ -740,9 +755,12 @@ function renderEvents(){
   <div class="panel"><h2>🎪 Другие события</h2><div class="skill"><span>📞 <b>Звонок MR 333</b><br><small>Построй Телефонную будку (ур.${BUILDINGS.phone.req}) и брось вызов команде 3:00. Каждая 3-я победа — яйцо MR 333.</small></span><button class="btn sm" id="gophone" ${allTiles().some(t=>t.b==="phone")?"":"disabled"}>${allTiles().some(t=>t.b==="phone")?"📞":"нет будки"}</button></div>
   <div class="skill"><span>🏚️ <b>Темница</b><br><small>Построй Темницу (ур.${BUILDINGS.dungeon.req}): бесконечный спуск по этажам с растущей наградой.</small></span><button class="btn sm" id="godg" ${allTiles().some(t=>t.b==="dungeon")?"":"disabled"}>${allTiles().some(t=>t.b==="dungeon")?"⬇":"нет темницы"}</button></div></div>
   <div class="panel"><h2>📜 Задания</h2>${QUESTS.map(q=>{const p=Math.min(q.need,S.quests[q.id]||0);const done=S.quests["done_"+q.id];return `<div class="quest ${done?"done":""}"><span>${q.name}<br><small>${p}/${q.need}</small></span>${done?"✅":`<button class="btn sm green" data-q="${q.id}" ${p>=q.need?"":"disabled"}>${costStr(q.reward)}</button>`}</div>`}).join("")}</div>
-  <div class="panel"><h2>📊 Статистика</h2><div class="stat"><span>Драконов</span><span>${ownedIds().length}/${DRAGONS.filter(d=>!d.boss).length}</span></div><div class="stat"><span>Побед</span><span>${S.wins}</span></div><div class="stat"><span>Боёв</span><span>${S.battles}</span></div><div class="stat"><span>Островов</span><span>${S.islands.length}/${ISLANDS.length}</span></div><div class="stat"><span>Построек</span><span>${allTiles().filter(t=>t.b).length}</span></div><div class="stat"><span>Открыто клеток</span><span>${allTiles().filter(t=>t.unlocked).length}/${allTiles().length}</span></div>
+  ${sovietUnlocked()?`<div class="panel soviet-card"><h2>🖥️ СЕКРЕТНЫЙ УРОВЕНЬ: Советские Компьютеры <span class="badge" style="background:#b0201a">???</span></h2><div class="phone-card" style="background:linear-gradient(135deg,#1a0505,#4a0a0a);border-color:#ff4030"><img src="assets/d131.png" style="height:100px;filter:none"><div><b>Три красных ящика.</b><br><small>У них огромный запас HP, а каждый 3-й ход каждый из них <b>удаляет одного твоего бойца одним ударом</b> (BANNED). Следи за индикатором загрузки и убивай самого заряженного первым. Уклонение спасает.</small><br><small>Награда: 🪙${fmt(SOVIET_EVENT.reward.gold)} 💎${SOVIET_EVENT.reward.gems} 📜${SOVIET_EVENT.reward.scrolls}, первая победа — 🥚 Мэдли Паладин.</small></div></div>
+  <div class="row"><button class="btn red" id="gosoviet" ${(S.sovietLast||0)+SOVIET_EVENT.cooldown>Date.now()?"disabled":""}>${(S.sovietLast||0)+SOVIET_EVENT.cooldown>Date.now()?"⏳ Перезагрузка: "+tleft(S.sovietLast+SOVIET_EVENT.cooldown):"▶ ЗАПУСТИТЬ"}</button></div></div>`:""}
+  <div class="panel"><h2 id="stat-title">📊 Статистика</h2><div class="stat"><span>Драконов</span><span>${ownedIds().length}/${DRAGONS.filter(d=>!d.boss).length}</span></div><div class="stat"><span>Побед</span><span>${S.wins}</span></div><div class="stat"><span>Боёв</span><span>${S.battles}</span></div><div class="stat"><span>Островов</span><span>${S.islands.length}/${ISLANDS.length}</span></div><div class="stat"><span>Построек</span><span>${allTiles().filter(t=>t.b).length}</span></div><div class="stat"><span>Открыто клеток</span><span>${allTiles().filter(t=>t.unlocked).length}/${allTiles().length}</span></div>
   <div class="row"><button class="btn red sm" id="reset">Сбросить прогресс</button></div></div></div>`;
-  bindZodiac(root);const gp=$("#gophone",root);if(gp)gp.onclick=openPhone;const gd=$("#godg",root);if(gd)gd.onclick=openDungeon;
+  bindZodiac(root);const gp=$("#gophone",root);if(gp)gp.onclick=openPhone;const gs=$("#gosoviet",root);if(gs)gs.onclick=startSoviet;
+  const stt=$("#stat-title",root);if(stt){stt.onclick=()=>{S._sovTap=(S._sovTap||0)+1;if(S._sovTap>=5&&!S.sovietFound){S.sovietFound=true;save();sndPlay("init",.8);toast("🖥️ …init. Что-то нашлось.");renderEvents()}}}const gd=$("#godg",root);if(gd)gd.onclick=openDungeon;
   $$("[data-buy]",root).forEach(b=>b.onclick=()=>{const p=+b.dataset.price;if(S.level<DRAGON_REQ[b.dataset.buy]){toast("Нужен уровень "+DRAGON_REQ[b.dataset.buy]);return}if(S.gold<p){toast("Не хватает золота");return}S.gold-=p;giveEgg(b.dataset.buy,"event");addXP(150);save();renderEvents()});
   $$("[data-claim]",root).forEach(b=>b.onclick=()=>{S.quests["claim_"+b.dataset.claim]=1;S.gold+=1000;S.gems+=10;S.food+=300;S.scrolls=(S.scrolls||0)+5;addXP(50);save();toast("🎁 +🪙1000 +💎10 +🍖300 +📜5");renderEvents()});
   $$("[data-q]",root).forEach(b=>b.onclick=()=>{const q=QUESTS.find(x=>x.id===b.dataset.q);S.quests["done_"+q.id]=1;S.gold+=q.reward.gold||0;S.gems+=q.reward.gems||0;S.food+=q.reward.food||0;S.scrolls=(S.scrolls||0)+(q.reward.scrolls||0);addXP(80);save();toast("✅ "+costStr(q.reward));renderEvents()});
@@ -785,6 +803,7 @@ document.addEventListener("click",e=>{if(e.target.id==="collect")S.quests.collec
 function sfxCtx(){try{MUSIC.ctx=MUSIC.ctx||new (window.AudioContext||window.webkitAudioContext)();if(MUSIC.ctx.state==="suspended")MUSIC.ctx.resume();return MUSIC.ctx}catch(e){return null}}
 function tone({f=440,f2,type="sine",d=.2,v=.3,t=0,curve="exp"}){const c=sfxCtx();if(!c||!S||S.music===false)return;const o=c.createOscillator(),gn=c.createGain();o.type=type;const t0=c.currentTime+t;o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),t0+d);gn.gain.setValueAtTime(.0001,t0);gn.gain.linearRampToValueAtTime(v,t0+.008);gn.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(gn);gn.connect(c.destination);o.start(t0);o.stop(t0+d+.05)}
 function noise({d=.2,v=.3,t=0,lp=2000,hp=100}){const c=sfxCtx();if(!c||!S||S.music===false)return;const n=c.sampleRate*d,b=c.createBuffer(1,n,c.sampleRate),ch=b.getChannelData(0);for(let i=0;i<n;i++)ch[i]=(Math.random()*2-1)*(1-i/n);const s=c.createBufferSource();s.buffer=b;const l=c.createBiquadFilter();l.type="lowpass";l.frequency.value=lp;const h=c.createBiquadFilter();h.type="highpass";h.frequency.value=hp;const gn=c.createGain();gn.gain.value=v;s.connect(l);l.connect(h);h.connect(gn);gn.connect(c.destination);s.start(c.currentTime+t)}
+const SND={};function sndPlay(n,v){if(!S||S.music===false)return;try{let a=SND[n];if(!a){a=new Audio("assets/"+n+".ogg");SND[n]=a}a.volume=v||.8;a.currentTime=0;a.play().catch(()=>{})}catch(e){}}
 const SFX={
   click(){tone({f:900,f2:1300,type:"square",d:.06,v:.12})},
   select(){tone({f:600,type:"triangle",d:.08,v:.15});tone({f:900,type:"triangle",d:.1,v:.15,t:.07})},
@@ -1059,7 +1078,7 @@ function renderAdminMore(p){const box=modal(`<h2>⋯ ${p.name} <small style="opa
     if(x==="note"){const note=prompt("Заметка (видна только админам):",p.note||"");if(note!==null)netSend({t:"admin_note",id,note});return}
     if(x==="delete"&&!confirm("Удалить аккаунт безвозвратно?"))return;if(x==="reset"&&!confirm("Сбросить прогресс игрока?"))return;
     netSend({t:"admin_"+x,id})})}
-function renderAdminDragon(p){const opts=DRAGONS.filter(d=>d.id!=="d109").map(d=>`<option value="${d.id}">${d.id} — ${d.name} (${d.rarity})</option>`).join("");
+function renderAdminDragon(p){const opts=DRAGONS.filter(d=>!d.boss).map(d=>`<option value="${d.id}">${d.id} — ${d.name} (${d.rarity})</option>`).join("");
   const box=modal(`<h2>🐲 Драконы игрока ${p.name}</h2><p>У игрока драконов: ${p.dragons||0}</p>
   <div class="row"><select id="ad_id" style="flex:1">${opts}</select><input id="ad_lvl" type="number" min="1" max="50" value="1" style="width:70px" title="уровень"></div>
   <div class="row"><button class="btn sm green" id="ad_give">Выдать / установить уровень</button><button class="btn sm red" id="ad_rm">Забрать</button><button class="btn sm" id="ad_back">← Назад</button></div><small>Г.Б.Т. (d109) — только босс, выдать нельзя.</small>`);

@@ -13,11 +13,13 @@ const ELEMENTS = {
   beast:{name:"Зверь",ico:"🐾",color:"#b8793c",strong:["cat", "bird"],weak:["doc", "money"]},
   money:{name:"Бабло",ico:"💰",color:"#3cbf5a",strong:["sheep", "beast"],weak:["bird", "cyber"]},
   zodiac:{name:"Зодиак",ico:"♈",color:"#ffd700",strong:["clock", "night"],weak:["glitch", "cyber"]},
-  legend:{name:"Легенда",ico:"👑",color:"#ff4fe6",strong:["digit", "clock", "night", "cat", "doc", "bird", "cyber", "glitch", "sheep", "royal", "beast", "money", "zodiac"],weak:["divine"]},
+  legend:{name:"Легенда",ico:"👑",color:"#ff4fe6",strong:["digit", "clock", "night", "cat", "doc", "bird", "cyber", "glitch", "sheep", "royal", "beast", "money", "zodiac", "german"],weak:["divine"]},
   divine:{name:"Божество",ico:"🔱",color:"#ffe680",strong:["legend"],weak:["tyrant"]},
-  tyrant:{name:"Тиран",ico:"💀",color:"#8b0000",strong:["divine", "legend"],weak:[]}
+  tyrant:{name:"Тиран",ico:"💀",color:"#8b0000",strong:["divine", "legend"],weak:[]},
+  german:{name:"Немец",ico:"🪖",color:"#6b6b5a",strong:["doc", "money"],weak:["digit", "cyber"]},
+  soviet:{name:"Совет",ico:"🖥️",color:"#b0201a",strong:["german", "cyber"],weak:[]}
 };
-const BASE_ELEMENTS=["digit","clock","night","cat","doc","bird","cyber","glitch","sheep","royal","beast","money","zodiac"];
+const BASE_ELEMENTS=["digit","clock","night","cat","doc","bird","cyber","glitch","sheep","royal","beast","money","zodiac","german"];
 const ELEMENT_KEYS = Object.keys(ELEMENTS);
 
 const RARITY = {
@@ -45,6 +47,12 @@ const SKILLS = {
   inject_s: {name:"Эпидемия",        type:"attack", power:0.62,el:"doc",    aoe:true, desc:"Заражает всех"},
   peck:     {name:"Клевок",          type:"attack", power:1.0, el:"bird",   desc:"Точный удар клювом"},
   peck_s:   {name:"Налёт стаи",      type:"attack", power:0.62,el:"bird",   aoe:true, desc:"Перья по всем"},
+  march:    {name:"Марш",            type:"attack", power:1.05,el:"german", desc:"Чеканный удар строем"},
+  march_s:  {name:"Артобстрел",      type:"attack", power:0.62,el:"german", aoe:true, desc:"Залп по всем врагам"},
+  ordnung:  {name:"Орднунг",         type:"attack", power:0.85,el:"german", aoe:true, effect:"weaken", chance:0.5, desc:"Порядок! Все враги слабеют (50%)"},
+  sovhit:   {name:"Перфокарта",      type:"attack", power:0.9, el:"soviet", desc:"Тяжёлый удар корпусом"},
+  sovhit_s: {name:"Ошибка 404",      type:"attack", power:0.55,el:"soviet", aoe:true, desc:"Помехи по всем"},
+  sovban:   {name:"BANNED",          type:"attack", power:0.1, el:"soviet", oneshot:true, cd:2, desc:"Уничтожает одного бойца"},
   laser:    {name:"Лазер",           type:"attack", power:1.0, el:"cyber",  desc:"Луч из визора"},
   laser_s:  {name:"Перегрузка сети", type:"attack", power:0.62,el:"cyber",  aoe:true, desc:"Разряд по всем"},
   corrupt:  {name:"Порча данных",    type:"attack", power:1.0, el:"glitch", desc:"Ошибка в цели"},
@@ -83,16 +91,16 @@ const SKILLS = {
   divinegrace:{name:"Благодать",     type:"heal",   power:0.25,el:"divine", aoe:true, desc:"Лечит всех на 25%"},
   tyrantfear:{name:"Страх",          type:"debuff", power:0.45,el:"tyrant", effect:"vuln", desc:"Враги: +45% получаемого урона"},
 };
-const ELEMENT_ATTACK={digit:"count",clock:"threeam",night:"nightfall",cat:"scratch",doc:"inject",bird:"peck",cyber:"laser",glitch:"corrupt",sheep:"ram",royal:"decree",beast:"maul",money:"bribe",zodiac:"starfall",legend:"legendary",divine:"divine",tyrant:"tyrant"};
+const ELEMENT_ATTACK={german:"march",soviet:"sovhit",digit:"count",clock:"threeam",night:"nightfall",cat:"scratch",doc:"inject",bird:"peck",cyber:"laser",glitch:"corrupt",sheep:"ram",royal:"decree",beast:"maul",money:"bribe",zodiac:"starfall",legend:"legendary",divine:"divine",tyrant:"tyrant"};
 const ELEMENT_SPREAD=Object.fromEntries(Object.entries(ELEMENT_ATTACK).map(([e,k])=>[e,k+"_s"]));
-const ELEMENT_ABILITY={digit:"multiply",clock:"midnight",night:"lullaby",cat:"ninelives",doc:"surgery",bird:"flock",cyber:"overclock",glitch:"crash",sheep:"woolshield",royal:"royaldecree",beast:"frenzy",money:"bailout",zodiac:"horoscope",legend:"legendrage",divine:"divinegrace",tyrant:"tyrantfear"};
+const ELEMENT_ABILITY={german:"ordnung",soviet:"sovban",digit:"multiply",clock:"midnight",night:"lullaby",cat:"ninelives",doc:"surgery",bird:"flock",cyber:"overclock",glitch:"crash",sheep:"woolshield",royal:"royaldecree",beast:"frenzy",money:"bailout",zodiac:"horoscope",legend:"legendrage",divine:"divinegrace",tyrant:"tyrantfear"};
 const SLOT_LEVEL=[1,4,10];
 
 // ====== АКАДЕМИЯ: древо стихии (6 уровней, как в оригинале) ======
 // 1: +10% урона атак стихии · 2: пассив стихии · 3: разброс стихии (атака по всем) · 4: способность стихии · 5: пассив x2 · 6: выбор одного из двух бонусов
 const TREE_COST=[3,5,8,12,16,20];
 const TREE_MAX=6;
-const TREE_PASSIVE={digit:"crit",clock:"atk",night:"spd",cat:"spd",doc:"hp",bird:"spd",cyber:"crit",glitch:"atk",sheep:"def",royal:"hp",beast:"atk",money:"def",zodiac:"crit",legend:"atk",divine:"hp",tyrant:"atk"};
+const TREE_PASSIVE={german:"def",soviet:"hp",digit:"crit",clock:"atk",night:"spd",cat:"spd",doc:"hp",bird:"spd",cyber:"crit",glitch:"atk",sheep:"def",royal:"hp",beast:"atk",money:"def",zodiac:"crit",legend:"atk",divine:"hp",tyrant:"atk"};
 const PASSIVE_INFO={hp:{n:"Здоровье",ico:"❤️",v:0.06},atk:{n:"Атака",ico:"⚔️",v:0.06},def:{n:"Защита",ico:"🛡️",v:0.06},spd:{n:"Скорость",ico:"💨",v:0.05},crit:{n:"Шанс крита",ico:"🎯",v:0.04}};
 const FINAL_OPTIONS={
   digit:[{k:"crit",v:0.1,n:"Точный расчёт: +10% крита"},{k:"execute",v:0.25,n:"Округление: удары по врагу с HP<25% наносят ×1.5"},{k:"firststrike",v:1,n:"Единица: в 1-м раунде ходит первым"}],
@@ -110,6 +118,8 @@ const FINAL_OPTIONS={
   zodiac:[{k:"crit",v:0.12,n:"Судьба: +12% крита"},{k:"revive",v:0.35,n:"Перерождение: 1 раз воскресает с 35% HP"},{k:"firststrike",v:1,n:"Предсказание: первый ход в 1-м раунде"}],
   legend:[{k:"atk",v:0.2,n:"Легендарная мощь: +20% атаки"},{k:"hp",v:0.2,n:"Легендарная стойкость: +20% HP"},{k:"teamatk",v:0.1,n:"Вдохновение: вся команда +10% атаки"}],
   divine:[{k:"hp",v:0.25,n:"Бессмертие: +25% HP"},{k:"regen",v:0.06,n:"Благодать: +6% HP каждый ход"},{k:"revive",v:0.5,n:"Воскрешение: 1 раз встаёт с 50% HP"}],
+  german:[{k:"def",v:0.2,n:"Дисциплина: +20% защиты"},{k:"teamdef",v:0.1,n:"Строй: вся команда +10% защиты"},{k:"firststrike",v:1,n:"Блицкриг: первый ход в 1-м раунде"}],
+  soviet:[{k:"hp",v:0.3,n:"Железо: +30% HP"},{k:"thorns",v:0.2,n:"Короткое замыкание: возврат 20% урона"},{k:"stunaura",v:0.2,n:"Зависание: оглушение 20%"}],
   tyrant:[{k:"atk",v:0.25,n:"Гнёт: +25% атаки"},{k:"startshield",v:0.3,n:"Трон: щит 30% HP"},{k:"stunaura",v:0.25,n:"Страх: атаки оглушают (25%)"}],
 };
 
@@ -126,6 +136,7 @@ const BUILDINGS = {
   habitat_money:  {req:13,name:"Банк",             ico:"🏦", el:"money",  cost:{gold:2500}, cap:2, income:16},
   habitat_glitch: {req:15,name:"Сбойная зона",     ico:"🧩", el:"glitch", cost:{gold:3000}, cap:2, income:18},
   habitat_sheep:  {req:17,name:"Овчарня",          ico:"🐏", el:"sheep",  cost:{gold:3500}, cap:2, income:19},
+  habitat_german: {req:14,name:"Казарма",           ico:"🪖", el:"german", cost:{gold:4500}, cap:3, income:22},
   habitat_zodiac: {req:18,name:"Обсерватория",     ico:"🔭", el:"zodiac", cost:{gold:6000}, cap:2, income:30},
   habitat_royal:  {req:19,name:"Дворец",           ico:"🏰", el:"royal",  cost:{gold:5000}, cap:2, income:22},
   habitat_legend: {req:20,name:"Легендарный трон", ico:"👑", el:"legend", cost:{gold:8000,gems:20}, cap:1, income:40},
@@ -263,23 +274,24 @@ const DRAGONS = [
   {id:"d111", name:"Амальгамет 444", els:["glitch", "digit", "beast"], rarity:"epic", base:{"hp": 140, "atk": 38, "def": 17, "spd": 12}, desc:"Три Четвёрки, сросшиеся в одного. Ходят вместе, думают порознь. Если спросить «сколько вас?», ответит «четыре»."},
   {id:"d112", name:"Амальгамет Сундук", els:["glitch", "money", "cyber"], rarity:"epic", base:{"hp": 150, "atk": 30, "def": 22, "spd": 10}, desc:"Сундук, из которого выросли зелёные глаза. Смотрит на золото. Смотрит на тебя. Открывать не рекомендуется."},
   {id:"d113", name:"Сайбер Вульф Заяц", els:["cyber", "beast", "glitch"], rarity:"epic", base:{"hp": 125, "atk": 40, "def": 14, "spd": 19}, desc:"Наполовину розовый, наполовину синий, целиком странный. Ни волк, ни заяц — уши длинные, зубы кроличьи, а глаза светятся. В жёлтой кофте, потому что так надо."},
-  {id:"d114", name:"Немецкий Мэдли", els:["doc", "clock", "glitch"], rarity:"rare", big:true, base:{"hp": 115, "atk": 26, "def": 15, "spd": 13}, desc:"Мэдли из другой ветки истории. Фуражка, красные глаза, странный символ. Говорит с акцентом и считает, что у него всё под контролем."},
-  {id:"d115", name:"Мэдли в Каске", els:["doc", "sheep", "digit"], rarity:"rare", big:true, base:{"hp": 130, "atk": 22, "def": 20, "spd": 10}, desc:"Серая каска, серое лицо, серые мысли. Первым идёт в атаку, последним понимает, куда."},
-  {id:"d116", name:"Мэдли Кокос", els:["doc", "beast", "glitch"], rarity:"rare", big:true, base:{"hp": 125, "atk": 24, "def": 18, "spd": 11}, desc:"Кокос с бананами вместо крыльев. Настоящий. Никто не знает, как он оказался в отряде Мэдли и почему он там главный по припасам."},
-  {id:"d117", name:"Мэдли Джексон", els:["doc", "royal", "night"], rarity:"epic", big:true, base:{"hp": 120, "atk": 34, "def": 14, "spd": 18}, desc:"Шляпа, очки, красный шарф. Двигается лунной походкой и уходит от ударов. Хи-хи."},
-  {id:"d118", name:"Мэдли Патрик", els:["doc", "money", "glitch"], rarity:"rare", big:true, base:{"hp": 120, "atk": 26, "def": 16, "spd": 12}, desc:"Зелёный цилиндр вместо фуражки, зелёные глаза. Приносит удачу отряду и невезение всем остальным."},
-  {id:"d119", name:"Мэдли Петух", els:["doc", "bird", "clock"], rarity:"epic", big:true, base:{"hp": 125, "atk": 36, "def": 15, "spd": 16}, desc:"Красный гребень, огненный хвост. Кукарекает ровно в 3:00 и будит весь отряд. Отряд его ненавидит."},
-  {id:"d120", name:"Мэдли Подтанцовщик", els:["doc", "cat", "money"], rarity:"rare", big:true, base:{"hp": 115, "atk": 28, "def": 14, "spd": 17}, desc:"Соломенная шляпа, клетчатый шарф, бирюзовый бок. Танцует на заднем плане у Джексона и мечтает о сольной карьере."},
-  {id:"d121", name:"Мэдли Паладин", els:["legend", "doc", "royal"], rarity:"legendary", base:{"hp": 150, "atk": 42, "def": 24, "spd": 12}, desc:"Золотые доспехи, боевой молот, щит с солнцем. Единственный Мэдли, у которого есть кодекс чести. Правда, он его сам написал."},
-  {id:"d122", name:"Антон Гусев", els:["legend", "doc", "clock"], rarity:"legendary", big:true, eventOnly:true, base:{"hp": 145, "atk": 46, "def": 18, "spd": 15}, desc:"Глава немецких Мэдли. Красные глаза, фуражка с символом. Уверен, что история движется по его расписанию. Расписание составлено на 3:00."},
+  {id:"d114", name:"Немецкий Мэдли", els:["german", "doc", "clock"], rarity:"rare", big:true, base:{"hp": 115, "atk": 26, "def": 15, "spd": 13}, desc:"Мэдли из другой ветки истории. Фуражка, красные глаза, странный символ. Говорит с акцентом и считает, что у него всё под контролем."},
+  {id:"d115", name:"Мэдли в Каске", els:["german", "doc", "sheep"], rarity:"rare", big:true, base:{"hp": 130, "atk": 22, "def": 20, "spd": 10}, desc:"Серая каска, серое лицо, серые мысли. Первым идёт в атаку, последним понимает, куда."},
+  {id:"d116", name:"Мэдли Кокос", els:["german", "doc", "beast"], rarity:"rare", big:true, base:{"hp": 125, "atk": 24, "def": 18, "spd": 11}, desc:"Кокос с бананами вместо крыльев. Настоящий. Никто не знает, как он оказался в отряде Мэдли и почему он там главный по припасам."},
+  {id:"d117", name:"Мэдли Джексон", els:["german", "doc", "royal"], rarity:"epic", big:true, base:{"hp": 120, "atk": 34, "def": 14, "spd": 18}, desc:"Шляпа, очки, красный шарф. Двигается лунной походкой и уходит от ударов. Хи-хи."},
+  {id:"d118", name:"Мэдли Патрик", els:["german", "doc", "money"], rarity:"rare", big:true, base:{"hp": 120, "atk": 26, "def": 16, "spd": 12}, desc:"Зелёный цилиндр вместо фуражки, зелёные глаза. Приносит удачу отряду и невезение всем остальным."},
+  {id:"d119", name:"Мэдли Петух", els:["german", "doc", "bird"], rarity:"epic", big:true, base:{"hp": 125, "atk": 36, "def": 15, "spd": 16}, desc:"Красный гребень, огненный хвост. Кукарекает ровно в 3:00 и будит весь отряд. Отряд его ненавидит."},
+  {id:"d120", name:"Мэдли Подтанцовщик", els:["german", "doc", "cat"], rarity:"rare", big:true, base:{"hp": 115, "atk": 28, "def": 14, "spd": 17}, desc:"Соломенная шляпа, клетчатый шарф, бирюзовый бок. Танцует на заднем плане у Джексона и мечтает о сольной карьере."},
+  {id:"d121", name:"Мэдли Паладин", els:["legend", "german", "doc"], rarity:"legendary", base:{"hp": 150, "atk": 42, "def": 24, "spd": 12}, desc:"Золотые доспехи, боевой молот, щит с солнцем. Единственный Мэдли, у которого есть кодекс чести. Правда, он его сам написал."},
+  {id:"d122", name:"Антон Гусев", els:["legend", "german", "clock"], rarity:"legendary", big:true, eventOnly:true, base:{"hp": 145, "atk": 46, "def": 18, "spd": 15}, desc:"Глава немецких Мэдли. Красные глаза, фуражка с символом. Уверен, что история движется по его расписанию. Расписание составлено на 3:00."},
   {id:"d123", name:"Птица Грей", els:["bird", "night", "money"], rarity:"epic", base:{"hp": 120, "atk": 34, "def": 14, "spd": 19}, desc:"Серая птица в цилиндре с розовым глазом. Заговорщица. Продаёт секреты обеим сторонам и всегда остаётся в плюсе."},
-  {id:"d124", name:"Немецкая Луна", els:["night", "clock", "royal"], rarity:"epic", base:{"hp": 130, "atk": 35, "def": 16, "spd": 14}, desc:"Полумесяц с закрытыми глазами и повязкой на плаще. Светит только для своих. Улыбается, потому что знает, чем всё кончится."},
-  {id:"d125", name:"Червяк Немец", els:["beast", "glitch"], rarity:"common", base:{"hp": 100, "atk": 20, "def": 14, "spd": 12}, desc:"Чёрный червяк с повязкой. Самый младший в организации. Носит письма и очень старается."},
+  {id:"d124", name:"Немецкая Луна", els:["german", "night", "clock"], rarity:"epic", base:{"hp": 130, "atk": 35, "def": 16, "spd": 14}, desc:"Полумесяц с закрытыми глазами и повязкой на плаще. Светит только для своих. Улыбается, потому что знает, чем всё кончится."},
+  {id:"d125", name:"Червяк Немец", els:["german", "beast"], rarity:"common", base:{"hp": 100, "atk": 20, "def": 14, "spd": 12}, desc:"Чёрный червяк с повязкой. Самый младший в организации. Носит письма и очень старается."},
   {id:"d126", name:"Баран Альт", els:["sheep", "digit", "royal"], rarity:"rare", base:{"hp": 115, "atk": 24, "def": 17, "spd": 13}, desc:"Барашка в очках, с рыжей чёлкой и в бордовом топе. Альтернативная версия из соседней вселенной. Умнее оригинала и знает об этом."},
   {id:"d127", name:"Бисквит Альт", els:["cat", "night"], rarity:"rare", base:{"hp": 110, "atk": 25, "def": 14, "spd": 16}, desc:"Седая кошка с футболкой «Переходи на сторону психов». Альтернативная Бисквит. Спокойная, пока не трогать колокольчик."},
-  {id:"d128", name:"Бисквит Анархокоммунист", els:["cat", "money", "sheep"], rarity:"epic", base:{"hp": 120, "atk": 32, "def": 16, "spd": 15}, desc:"Красная фуражка с серпом, гимнастёрка, усики. Требует поделить всю еду в жилищах поровну. Себе — чуть больше."},
+  {id:"d128", name:"Бисквит Анархокоммунист", els:["german", "cat", "money"], rarity:"epic", base:{"hp": 120, "atk": 32, "def": 16, "spd": 15}, desc:"Красная фуражка с серпом, гимнастёрка, усики. Требует поделить всю еду в жилищах поровну. Себе — чуть больше."},
   {id:"d129", name:"Анти-Бисквит", els:["glitch", "cat", "night"], rarity:"epic", big:false, base:{"hp": 125, "atk": 34, "def": 15, "spd": 16}, desc:"Чёрная корона с зелёными кристаллами, зелёные полоски. Противоположность Бисквит: где та мурлычет, эта шипит."},
   {id:"d130", name:"Бисквит Антистраус", els:["clock", "cat", "glitch"], rarity:"epic", base:{"hp": 120, "atk": 36, "def": 14, "spd": 17}, desc:"Повязка на глазу, «666» на щеке и надпись Teh. Объявила войну всем страусам. Страусы не в курсе."},
+  {id:"d131", name:"Советский Компьютер", els:["soviet", "cyber", "glitch"], rarity:"tyrant", eventOnly:true, boss:true, noflip:true, base:{"hp": 150, "atk": 26, "def": 22, "spd": 8}, desc:"Красный ящик с лицом. Загружается очень долго, зато когда найдёт цель — удаляет её из команды навсегда. BANNED."},
   {id:"d106", name:"Телец", els:["legend", "zodiac", "beast"], rarity:"legendary", base:{"hp": 140, "atk": 40, "def": 18, "spd": 13}, eventOnly:true, desc:"Голубой бык с кольцом в носу и огоньком на лбу. Не машите красным."},
 ];
 
@@ -380,5 +392,7 @@ CAMPAIGN[4].nodes[CAMPAIGN[4].nodes.length-1].final=true;
 const CAMPAIGN_NODES=CAMPAIGN.flatMap(c=>c.nodes.map(n=>({...n,ch:c.ch})));
 
 // ---- фоны (assets/bg) ----
-const HAB_BG={night:"nightmare_hall",glitch:"darknet",clock:"ice_hell",cyber:"base",digit:"room1",royal:"gallery",sheep:"snow",bird:"skyship",beast:"darkside",cat:"room1",doc:"base",money:"gallery",zodiac:"skyship"};
+const HAB_BG={german:"base",night:"nightmare_hall",glitch:"darknet",clock:"ice_hell",cyber:"base",digit:"room1",royal:"gallery",sheep:"snow",bird:"skyship",beast:"darkside",cat:"room1",doc:"base",money:"gallery",zodiac:"skyship"};
 const BATTLE_BG={default:"versus",pvp:"versus",phone:"ice_hell",zodiac:"skyship",dungeon:"nightmare1",campaign:{1:"snow",2:"base",3:"nightmare_hall",4:"nightmare2"},boss:"darkside",final:"nightmare0"};
+
+const SOVIET_EVENT={req:30, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold:20000,gems:60,scrolls:40}, egg:"d121", cooldown:12*60*60*1000};
