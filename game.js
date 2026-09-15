@@ -101,9 +101,11 @@ document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("but
 
 /* ================= КАРТА ================= */
 // Масштабируем остров под доступную ширину/высоту экрана (крупнее на больших мониторах, целиком на маленьких)
-function fitIsland(){const fit=$("#isofit");if(!fit)return;const iso=$(".iso",fit);const W=iso.offsetWidth,H=iso.offsetHeight;
-  const availW=fit.parentElement.clientWidth-20;const availH=Math.max(320,window.innerHeight-fit.getBoundingClientRect().top-170);
-  const s=Math.max(.55,Math.min(availW/W,availH/H,2.2));iso.style.transform=`scale(${s})`;iso.style.transformOrigin="top center";fit.style.width=W*s+"px";fit.style.height=H*s+"px";fit.style.margin="0 auto"}
+function fitIsland(){const fit=$("#isofit");if(!fit)return;const iso=$(".iso",fit);const W=iso.offsetWidth,H=iso.offsetHeight-60; // без запаса под тень
+  const scr=$("#scr-map");const availW=scr.clientWidth-24;
+  const bottomUi=($(".map-hint")?.offsetHeight||0)+($("#collectall")?.offsetHeight||0)+40;
+  const availH=Math.max(360,window.innerHeight-fit.getBoundingClientRect().top-bottomUi-($("#navbar")?.offsetHeight||70));
+  const s=Math.max(.6,Math.min(availW/(W+40),availH/H,3.2));iso.style.transform=`scale(${s})`;iso.style.transformOrigin="top center";fit.style.width=Math.min(availW,W*s)+"px";fit.style.height=H*s+"px";fit.style.margin="0 auto"}
 window.addEventListener("resize",()=>{fitIsland();document.documentElement.style.setProperty("--vw",window.innerWidth+"px")});
 function toggleFullscreen(){const d=document;if(!d.fullscreenElement){(d.documentElement.requestFullscreen||d.documentElement.webkitRequestFullscreen).call(d.documentElement).catch(()=>toast("Браузер не разрешил полный экран"))}else (d.exitFullscreen||d.webkitExitFullscreen).call(d)}
 document.addEventListener("fullscreenchange",()=>{const b=$("#fsbtn");if(b)b.textContent=document.fullscreenElement?"🗗":"⛶";setTimeout(fitIsland,100)});

@@ -390,7 +390,7 @@ body{font-size:1rem}
 #topbar{font-size:1.05rem}.logo{font-size:1.5rem}.res{font-size:1rem}.res b{font-size:1.05em}
 #navbar button{font-size:1.2rem;padding:.4rem .2rem}#navbar button span{font-size:.75rem}
 .panel h2{font-size:1.25rem}.panel,.desc,.skill,.stat,.map-hint{font-size:.95rem}
-.iso-scroll{max-width:none;overflow:visible;padding:10px 10px 20px}
+.iso-scroll{max-width:none;overflow:visible;padding:4px 10px 10px}
 .iso-fit{position:relative;overflow:visible}
 .isl-tabs{max-width:none}.isl-tabs button{font-size:.9rem}
 .island-name{font-size:1.5rem}
@@ -406,3 +406,8 @@ body{font-size:1rem}
 .dlg{width:min(1100px,100%)}.dlg-img{height:clamp(200px,24vh,320px);max-width:clamp(180px,16vw,300px)}.dlg-text{font-size:1.15rem}
 .modal{width:min(96vw,clamp(560px,45vw,900px));font-size:1rem}
 @media(min-width:1600px){.tile .dr-mini{width:44px;height:44px}.modal{max-width:1000px}}
+
+#scr-map .island-name{margin:2px 0}
+#scr-map .isl-tabs{gap:4px}
+#scr-map .isl-tabs button{padding:3px 8px}
+#scr-map .map-hint{margin-top:4px}
