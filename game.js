@@ -61,10 +61,10 @@ function closeModal(){$("#modal-root").innerHTML=""}
 function elIco(el,small){const e=ELEMENTS[el];return `<span class="el" title="${e.name}" style="background:${e.color}">${e.ico}</span>`}
 function updateTop(){const av=$("#avatar");if(av){av.src="assets/av/"+S.profile.avatar+".jpg";av.title=S.profile.name}
   $("#r-gold").textContent=fmt(S.gold);$("#r-food").textContent=fmt(S.food);$("#r-gems").textContent=fmt(S.gems);
-  $("#r-level").textContent=S.level;const sc=$("#r-scroll");if(sc)sc.textContent=S.scrolls||0;const sp=$("#r-sp");if(sp)sp.textContent=S.sp||0;$("#r-xp").style.width=(S.xp/xpNeed(S.level)*100)+"%";
+  $("#r-level").textContent=S.level>=LEVEL_CAP?"MAX":S.level;const sc=$("#r-scroll");if(sc)sc.textContent=S.scrolls||0;const sp=$("#r-sp");if(sp)sp.textContent=S.sp||0;$("#r-xp").style.width=(S.level>=LEVEL_CAP?0:S.xp/xpNeed(S.level)*100)+"%";
 }
 function xpNeed(l){return l<XP_TABLE.length?XP_TABLE[l]:Math.round(120*Math.pow(l,1.7))}
-function addXP(n){S.xp+=Math.round(n*MULT("xpMult"));while(S.xp>=xpNeed(S.level)){S.xp-=xpNeed(S.level);S.level++;S.gems+=5;S.gold+=500*S.level;S.scrolls=(S.scrolls||0)+3;const unl=[...ISLANDS.filter(i=>i.req===S.level).map(i=>"🏝️ "+i.name),...Object.entries(BUILDINGS).filter(([k,b])=>b.req===S.level).map(([k,b])=>b.ico+" "+b.name),...DRAGONS.filter(dr=>DRAGON_REQ[dr.id]===S.level&&!isSpecial(dr.id)).map(dr=>"🐲 "+dr.name)];modal(`<h2>⭐ Уровень ${S.level}!</h2><p class="center">+5 💎, +🪙${500*S.level}, +📜3</p>${unl.length?`<p><b>Открыто:</b></p><ul style="margin-left:18px">${unl.map(u=>`<li>${u}</li>`).join("")}</ul>`:""}<div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal()">Ура!</button><button class="btn blue" onclick="showRoad()">🛣️ Дорога наград</button></div>`)}updateTop()}
+function addXP(n){if(S.level>=LEVEL_CAP){S.xp=0;return}S.xp+=Math.round(n*MULT("xpMult"));while(S.level<LEVEL_CAP&&S.xp>=xpNeed(S.level)){S.xp-=xpNeed(S.level);S.level++;S.gems+=5;S.gold+=500*S.level;S.scrolls=(S.scrolls||0)+3;const unl=[...ISLANDS.filter(i=>i.req===S.level).map(i=>"🏝️ "+i.name),...Object.entries(BUILDINGS).filter(([k,b])=>b.req===S.level).map(([k,b])=>b.ico+" "+b.name),...DRAGONS.filter(dr=>DRAGON_REQ[dr.id]===S.level&&!isSpecial(dr.id)).map(dr=>"🐲 "+dr.name)];modal(`<h2>⭐ Уровень ${S.level}!</h2><p class="center">+5 💎, +🪙${500*S.level}, +📜3</p>${unl.length?`<p><b>Открыто:</b></p><ul style="margin-left:18px">${unl.map(u=>`<li>${u}</li>`).join("")}</ul>`:""}<div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal()">Ура!</button><button class="btn blue" onclick="showRoad()">🛣️ Дорога наград</button></div>`)}updateTop()}
 function canPay(cost){return (!cost.gold||S.gold>=cost.gold)&&(!cost.gems||S.gems>=cost.gems)&&(!cost.food||S.food>=cost.food)}
 function pay(cost){S.gold-=cost.gold||0;S.gems-=cost.gems||0;S.food-=cost.food||0;updateTop()}
 function costStr(c){return [c.gold&&`🪙${fmt(c.gold)}`,c.food&&`🍖${fmt(c.food)}`,c.gems&&`💎${c.gems}`,c.scrolls&&`📜${c.scrolls}`].filter(Boolean).join(" ")}
@@ -145,7 +145,7 @@ function renderMap(){
   fitIsland();
   $("#collectall",root).onclick=()=>{let g=0;allTiles().forEach(t=>{const v=habStored(t);if(v>0){g+=v;t.last=Date.now()}});if(!g){toast("Пока нечего собирать");return}S.gold+=g;addXP(Math.min(120,10+Math.ceil(g/20)));save();updateTop();renderMap();toast(`+🪙${fmt(g)}`)};
   $$("[data-isl]",root).forEach(b=>b.onclick=()=>{const df=ISLANDS[+b.dataset.isl];const ci=S.islands.findIndex(x=>x.id===df.id);
-    if(ci>=0){S.cur=ci;moveFrom=null;save();renderMap();return}
+    if(ci>=0){const was=S.cur;S.cur=ci;moveFrom=null;if(was===ci){const g=Math.max(5,Math.round((10+S.level*3)*(1+Math.random())));S.gold+=g;save();updateTop();coinBurst(b,g);return}save();renderMap();return}
     if(S.level<df.req){toast(`Остров откроется на уровне ${df.req}`);return}
     modal(`<h2>🏝️ ${df.name}</h2><p>Купить новый остров за <b>${costStr(df.cost)}</b>? Размер ${df.w}×${df.h}.${df.bonusText?`<br><b>Бонус острова:</b> ${df.bonusText}`:""}</p><div class="row"><button class="btn green" id="ok" ${canPay(df.cost)?"":"disabled"}>Купить</button></div>`);
     $("#ok").onclick=()=>{pay(df.cost);S.islands.push(makeIsland(df));S.cur=S.islands.length-1;addXP(500);save();closeModal();renderMap();toast("🏝️ Новый остров открыт!")}});
@@ -163,6 +163,7 @@ function tileHtml(t,i,left,top,z){
   return `<div class="itile built" data-i="${i}" title="${b.name}" style="${style}"><div class="rhomb" style="background:linear-gradient(135deg,#fff8,${col})"><div class="rside" style="background:${col}"></div></div><span class="bico ${b.special==="phone"?"phone":""}">${b.ico}</span>${dr}${cnt}${ready?`<span class="ready">${inc.gold?"🪙":inc.food?"🍖":"💎"}</span>`:lib?`<span class="ready">📜</span>`:""}</div>`;
 }
 let moveFrom=null;
+function coinBurst(anchor,g){const r=anchor.getBoundingClientRect();for(let k=0;k<6;k++){const c=document.createElement("div");c.className="coinfx";c.textContent="🪙";c.style.left=(r.left+r.width/2+(Math.random()-.5)*60)+"px";c.style.top=(r.top+r.height/2)+"px";c.style.setProperty("--dx",((Math.random()-.5)*120)+"px");c.style.animationDelay=(k*60)+"ms";document.body.append(c);setTimeout(()=>c.remove(),1300)}const t=document.createElement("div");t.className="coinfx big";t.textContent="+"+g;t.style.left=(r.left+r.width/2)+"px";t.style.top=(r.top-6)+"px";document.body.append(t);setTimeout(()=>t.remove(),1300);if(typeof SFX!=="undefined"&&SFX.coin)SFX.coin();else if(typeof SFX!=="undefined"&&SFX.click)SFX.click()}
 function tileClick(i){
   const t=S.tiles[i];
   if(moveFrom!==null){const from=S.tiles[moveFrom];
@@ -359,8 +360,10 @@ function nextTurn(first){
   if(!B)return;
   if(!alive(B.allies).length||!alive(B.enemies).length){endBattle(alive(B.allies).length>0);return}
   if(!B.queue.length){B.round++;const src=B.pvp&&!B.opp.host?[...B.enemies,...B.allies]:[...B.allies,...B.enemies];src.forEach((f,i)=>{f._j=(RNG()-.5)*4;f._o=i});B.queue=alive(src).sort((a,b)=>(B.round===1?((b.tb.firststrike?1000:0)-(a.tb.firststrike?1000:0)):0)||(b.spd+b._j)-(a.spd+a._j)||a._o-b._o);
+    // Стая: разогнанные бойцы (spdT>0) ходят дважды за раунд
+    const fast=B.queue.filter(f=>f.spdT>0);if(fast.length){B.queue=B.queue.concat(fast)}
     // тик баффов/кд
-    [...B.allies,...B.enemies].forEach(f=>{Object.keys(f.cds).forEach(k=>f.cds[k]=Math.max(0,f.cds[k]-1));if(f.buffAtk>0)f.buffAtkT--;if(f.buffAtkT<=0)f.buffAtk=0;if(f.buffDef>0)f.buffDefT--;if(f.buffDefT<=0)f.buffDef=0;if(f.debuff>0)f.debuffT--;if(f.debuffT<=0)f.debuff=0});
+    [...B.allies,...B.enemies].forEach(f=>{Object.keys(f.cds).forEach(k=>f.cds[k]=Math.max(0,f.cds[k]-1));if(f.buffAtk>0)f.buffAtkT--;if(f.buffAtkT<=0)f.buffAtk=0;if(f.buffDef>0)f.buffDefT--;if(f.buffDefT<=0)f.buffDef=0;if(f.debuff>0)f.debuffT--;if(f.debuffT<=0)f.debuff=0;if(f.spdT>0){f.spdT--;if(f.spdT<=0&&f._spd0){f.spd=f._spd0}}});
     log(`— Раунд ${B.round} —${B.round>SUDDEN_DEATH.from?` ⚡ урон +${Math.round((B.round-SUDDEN_DEATH.from)*SUDDEN_DEATH.step*100)}%`:""}`)}
   B.cur=B.queue.shift();if(B.cur.hp<=0){nextTurn();return}
   // тик эффектов текущего бойца
@@ -491,7 +494,7 @@ function applySkill(actor,k,target,atkM,blk){
       if(s.effect==="hot"){t.fx=t.fx||[];t.fx.push({k:"hot",t:2})}
       if(s.effect==="cleanse"){t.fx=(t.fx||[]).filter(e=>e.k==="hot");t.debuff=0}SFX.heal();vfx(fEl(t),"heal");pop(fEl(t),"+"+h,"heal");log(`${actor.name} лечит ${t.name} на ${h}`)});
   }else if(s.type==="buff"){
-    alive(friends).forEach(t=>{if(k==="armor"){t.buffDef=1;t.buffDefT=3}else{t.buffAtk=s.power;t.buffAtkT=3}vfx(fEl(t),"buff");pop(fEl(t),k==="armor"?"🛡️↑":"⚔️↑","heal")});SFX.buff();log(`${actor.name}: ${s.name} на всю команду!`);
+    alive(friends).forEach(t=>{if(k==="armor"){t.buffDef=1;t.buffDefT=3}else if(s.effect==="spd"){if(!t._spd0)t._spd0=t.spd;t.spd=Math.round(t._spd0*2.2);t.spdT=3;t.buffAtk=Math.max(t.buffAtk,s.power);t.buffAtkT=3;pop(fEl(t),"💨💨 x2.2","heal")}else{t.buffAtk=s.power;t.buffAtkT=3}vfx(fEl(t),"buff");pop(fEl(t),k==="armor"?"🛡️↑":"⚔️↑","heal")});SFX.buff();log(`${actor.name}: ${s.name} на всю команду!`);
   }else if(s.type==="debuff"){
     alive(foes).forEach(t=>{t.debuff=s.power;t.debuffT=3;vfx(fEl(t),"debuff");pop(fEl(t),"⚔️↓","weak")});SFX.debuff();log(`${actor.name}: ${s.name} на всех врагов!`);
   }
@@ -601,12 +604,13 @@ function academyDragon(id){const d=dInfo(id),o=S.dragons[id];const inTrain=S.aca
         {n:"Выбор одного из двух бонусов",ico:"🏁"}];
       let html=`<small>Древо стихии <b>${E.ico} ${E.name}</b> — 6 уровней, как в оригинале. Каждый уровень покупается за 📘 по порядку.</small><div class="tree">`;
       nodes.forEach((nd,i)=>{const lv=i+1;const st=L>=lv?"done":L===lv-1?"next":"lock";const c=TREE_COST[i];
-        html+=`<div class="tnode ${st}" style="--c:${E.color}"><div class="tico">${nd.ico}</div><div class="tt"><b>Ур. ${lv}</b> ${nd.n}${lv===6&&L>=6&&t.final!=null?`<br><small>✅ ${FINAL_OPTIONS[el][t.final].n}</small>`:""}</div>${st==="next"?`<button class="btn sm green" data-tl="${lv}" ${dSP(id)<c?"disabled":""}>📘${c}</button>`:st==="done"?"✅":"🔒"}</div>`});
+        html+=`<div class="tnode ${st}" style="--c:${E.color}"><div class="tico">${nd.ico}</div><div class="tt"><b>Ур. ${lv}</b> ${nd.n}${lv===6&&L>=6&&t.final!=null?`<br><small>✅ ${FINAL_OPTIONS[el][t.final].n}</small> <button class="btn sm" data-respec="1" ${S.gems<FINAL_RESPEC.gems?"disabled":""}>🔄 Сменить за 💎${FINAL_RESPEC.gems}</button>`:""}</div>${st==="next"?`<button class="btn sm green" data-tl="${lv}" ${dSP(id)<c?"disabled":""}>📘${c}</button>`:st==="done"?"✅":"🔒"}</div>`});
       html+=`</div>`;
       if(L>=6&&t.final==null)html+=`<p><b>🏁 Выбери финальный бонус:</b></p>`+FINAL_OPTIONS[el].map((f,i)=>`<div class="skill"><span>${f.n}</span><button class="btn sm purple" data-final="${i}">Выбрать</button></div>`).join("");
       body.innerHTML=html;
       $$("[data-tl]",m).forEach(b=>b.onclick=()=>{const lv=+b.dataset.tl;o.sp-=TREE_COST[lv-1];t.lvl=lv;save();toast(`${E.ico} ${E.name}: уровень ${lv}`);$$(".tabs button",m).forEach(bt=>{if(bt.dataset.t===el)bt.innerHTML=`${E.ico} ${E.name} ${lv}/${TREE_MAX}`});draw()});
-      $$("[data-final]",m).forEach(b=>b.onclick=()=>{t.final=+b.dataset.final;save();toast("🏁 "+FINAL_OPTIONS[el][t.final].n);draw()})}}
+      $$("[data-final]",m).forEach(b=>b.onclick=()=>{t.final=+b.dataset.final;save();toast("🏁 "+FINAL_OPTIONS[el][t.final].n);draw()});
+      const rs=$("[data-respec]",m);if(rs)rs.onclick=()=>{if(S.gems<FINAL_RESPEC.gems){toast("Нужно 💎"+FINAL_RESPEC.gems);return}S.gems-=FINAL_RESPEC.gems;t.final=null;save();updateTop();toast("🔄 Финальный бонус сброшен — выбери новый");draw()}}}
   $$(".tabs button",m).forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});draw();
 }
 setInterval(()=>{if($("#scr-academy").classList.contains("active")&&!$("#modal-root").innerHTML)renderAcademy()},3000);
@@ -712,7 +716,7 @@ function levelRewards(l){const r=[];
   if(l===TYRANT_BREED.minLvl)r.push({ico:"💀",t:"Разведение тиранских (Божество+Божество)",big:true});
   return r}
 function showRoad(){const MAXL=30;
-  const m=modal(`<h2>🛣️ Дорога наград <span class="badge gold">ур. ${S.level}</span></h2><small>Что открывается на каждом уровне Хранителя. Опыт даётся за бои, постройки, кормление и сбор дохода.</small>
+  const m=modal(`<h2>🛣️ Дорога наград <span class="badge gold">ур. ${S.level>=LEVEL_CAP?"MAX":S.level}</span></h2><small>Что открывается на каждом уровне Хранителя. Опыт даётся за бои, постройки, кормление и сбор дохода.</small>
   <div class="road">${Array.from({length:MAXL},(_,i)=>i+1).map(l=>{const rw=levelRewards(l);const st=l<S.level?"done":l===S.level?"now":"lock";
     return `<div class="road-row ${st}" ${st==="now"?'id="road-now"':""}><div class="road-lvl">${st==="done"?"✅":st==="now"?"⭐":"🔒"}<b>${l}</b></div><div class="road-items">${rw.map(x=>x.img?`<div class="road-item dr" title="${x.t}" style="border-color:${RARITY[x.rar].color}"><img src="assets/${x.img}.png"><span>${x.t}</span></div>`:`<div class="road-item ${x.big?"big":""}" title="${x.t}"><i>${x.ico}</i><span>${x.t}</span></div>`).join("")}</div>${st==="now"?`<div class="road-xp"><div class="bar"><div style="width:${S.xp/xpNeed(S.level)*100}%"></div></div><small>${fmt(S.xp)} / ${fmt(xpNeed(S.level))} XP</small></div>`:""}</div>`}).join("")}</div>`);
   const now=$("#road-now",m);if(now)setTimeout(()=>now.scrollIntoView({block:"center",behavior:"smooth"}),50);

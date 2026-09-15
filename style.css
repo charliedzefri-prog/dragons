@@ -476,3 +476,7 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 .fighter.banned img{filter:grayscale(1) contrast(1.4) brightness(.35)!important}
 .soviet-card{border-color:#ff4030!important;background:linear-gradient(#3a0a0a,#1a0505)!important;color:#ffdcdc}.soviet-card h2{color:#ff6a5a}
 .fighter.ally.flipally img{transform:scaleX(-1)}.fighter.enemy.flipally img{transform:none}.dr-mini.walk.flipally{animation-name:walk-nf}
+
+.coinfx{position:fixed;z-index:9999;pointer-events:none;font-size:22px;transform:translate(-50%,-50%);animation:coinfly 1.2s ease-out forwards}
+.coinfx.big{font-size:18px;font-weight:900;color:var(--gold,#ffd54a);text-shadow:1px 1px 0 #000,-1px -1px 0 #000}
+@keyframes coinfly{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}20%{opacity:1;transform:translate(calc(-50% + var(--dx,0px)*.3),-90px) scale(1.2)}100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),-160px) scale(.8)}}

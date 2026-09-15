@@ -79,7 +79,7 @@ const SKILLS = {
   lullaby:  {name:"Колыбельная",     type:"attack", power:0.8, el:"night",  aoe:true, effect:"freeze",chance:0.4, desc:"Усыпляет: 40% пропуск хода"},
   ninelives:{name:"Девять жизней",   type:"heal", cd:2,   power:0.35,el:"cat",    effect:"hot", desc:"Лечит союзника 35% + 10% 2 хода"},
   surgery:  {name:"Операция",        type:"heal", cd:2,   power:0.22,el:"doc",    aoe:true, effect:"cleanse", desc:"Лечит всех 22% и снимает эффекты"},
-  flock:    {name:"Стая",            type:"buff",   power:0.5, el:"bird",   effect:"spd", desc:"Команда: +50% скорости"},
+  flock:    {name:"Стая",            type:"buff",   power:0.6, el:"bird",   effect:"spd", desc:"Команда разгоняется: ×2.2 скорости, +60% атаки и ДВА хода за раунд (2 раунда)"},
   overclock:{name:"Разгон",          type:"buff",   power:0.4, el:"cyber",  effect:"atk", desc:"Команда: +40% атаки на 2 хода"},
   crash:    {name:"Краш",            type:"debuff", power:0.4, el:"glitch", effect:"vuln", desc:"Враги: +40% получаемого урона"},
   woolshield:{name:"Шерстяной щит",  type:"buff",   power:0.25,el:"sheep",  effect:"shield", desc:"Щит на 25% HP каждому"},
@@ -311,7 +311,9 @@ const HAB_STORE = (b,lvl) => Math.round(b.income*60*lvl*lvl);
 // Экономика поздней игры: масштаб от уровня игрока (ур.1 ×1 … ур.20 ×2.9 … ур.40 ×4.9)
 const ECON_SCALE = plvl => 1 + Math.max(0,plvl-1)*0.10;
 // Фермы улучшаются: ур.1..5, еда ×(1,2,3.5,5.5,8), цена улучшения растёт
+const LEVEL_CAP = 30; // после 30 уровень показывается как MAX
 const FARM_MAX_LVL = 5;
+const FINAL_RESPEC = {gems:40}; // смена 6-го перка академии
 const FARM_MULT = [1,2,3.5,5.5,8];
 const FARM_UP = (b,lvl) => ({gold: Math.round((b.cost.gold||300)*2*Math.pow(2.5,lvl-1))});
 const GOLD_PER_MIN = (b,dragonLvl,rarityMult) => Math.round(b.income*0.5*(1+dragonLvl*0.35)*rarityMult*(typeof S!=="undefined"&&S?ECON_SCALE(S.level):1));
@@ -322,7 +324,7 @@ const ISLANDS = [
   {id:"frost",  name:"Ледяной остров",     req:16, cost:{gold:200000,gems:30}, w:8, h:7, start:14, theme:"#9fd8e8", ground:"#dff6ff", edge:"#7fb8d0", tile:"ice", deco:["❄️","🧊","⛄"], sky:"linear-gradient(#0b1a3a,#2d5aa0 50%,#9fd8e8)", bonus:{store:1.5}, bonusText:"🏦 лимит хранилищ ×1.5"},
   {id:"volcano",name:"Вулканический остров",req:21, cost:{gold:600000,gems:80}, w:9, h:7, start:16, theme:"#7a3a2a", ground:"#4a2a22", edge:"#2a1a14", tile:"lava", deco:["🌋","🔥","🪨"], sky:"linear-gradient(#1a0a0a,#5a1a0a 60%,#ff6a2a)", bonus:{gold:1.3}, bonusText:"🪙 доход жилищ +30%"},
   {id:"sky",    name:"Небесный остров",    req:26, cost:{gold:1500000,gems:150}, w:9, h:8, start:16, theme:"#bfe0ff", ground:"#e8f4ff", edge:"#ffffff", tile:"cloud", deco:["☁️","🌈","⭐"], sky:"linear-gradient(#1a1a5a,#4a6ad0 50%,#bfe0ff)", bonus:{gems:2}, bonusText:"💎 шахты ×2"},
-  {id:"night",  name:"Остров Кошмаров",    req:32, cost:{gold:4000000,gems:300}, w:10, h:8, start:18, theme:"#3a2a5a", ground:"#4a3a6a", edge:"#1a1030", tile:"night", deco:["🌙","🕯️","🦇"], sky:"linear-gradient(#050510,#1a0a3a 60%,#4a2a7a)", bonus:{gold:1.5,store:2}, bonusText:"🪙 доход +50%, хранилища ×2"},
+  {id:"night",  name:"Остров Кошмаров",    req:30, cost:{gold:4000000,gems:300}, w:10, h:8, start:18, theme:"#3a2a5a", ground:"#4a3a6a", edge:"#1a1030", tile:"night", deco:["🌙","🕯️","🦇"], sky:"linear-gradient(#050510,#1a0a3a 60%,#4a2a7a)", bonus:{gold:1.5,store:2}, bonusText:"🪙 доход +50%, хранилища ×2"},
 ];
 const TRAININGS = [
   {name:"Короткая",  time:60*1000,   sp:2,  cost:{gold:300}},
