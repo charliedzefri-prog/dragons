@@ -191,15 +191,15 @@ function tileClick(i){
     ${hl<HAB_MAX_LVL?`<div class="row"><button class="btn purple sm" id="hup" ${canPay(HAB_UP(hl))?"":"disabled"}>⬆ Улучшить до ур.${hl+1} (${costStr(HAB_UP(hl))}) → ${HAB_CAP(b,hl+1)} мест, лимит 🪙${fmt(HAB_STORE(b,hl+1))}</button></div>`:"<small>Максимальный уровень жилища</small>"}<div class="picker" style="margin:8px 0">${t.dragons.map(id=>`<img src="assets/${id}.png" title="${dInfo(id).name}" data-rm="${id}">`).join("")||"<i>Пусто — посели дракона</i>"}</div>`;
     const free=ownedIds().filter(id=>!allTiles().some(tt=>tt.dragons.includes(id))&&dInfo(id).els.includes(b.el));
     if(t.dragons.length<HAB_CAP(b,habLvl(t)))html+=`<p><b>Можно поселить:</b></p><div class="picker">${free.map(id=>`<img src="assets/${id}.png" title="${dInfo(id).name}" data-add="${id}">`).join("")||"<i>Нет свободных драконов этой стихии</i>"}</div>`;
-  }else html+=`<p>Производит <b>${inc.food?"🍖"+inc.food:"💎"+inc.gems}</b> за сбор.</p>`;
-  html+=`<div class="row"><button class="btn green" id="collect" ${(inc.gold||inc.food||inc.gems)?"":"disabled"}>${b.el?"Собрать 🪙"+inc.gold:ready?"Собрать":"Готово через "+left+" с"}</button><button class="btn blue" id="mv">📦 Переместить</button><button class="btn red" id="del">Снести</button>${b.el&&t.dragons.length?`<button class="btn purple" id="enter">🚪 Зайти в жилище</button>`:""}</div>`;
+  }else html+=`<p>Производит <b>${inc.food?"🍖"+inc.food:"💎"+inc.gems}</b> раз в ${Math.round(HARVEST_TIME/1000)} с.</p>${ready?"":`<div class="bar" style="margin:4px 0"><div style="width:${Math.min(100,(Date.now()-t.last)/HARVEST_TIME*100)}%;background:linear-gradient(#b8f39a,#4a9a2a)"></div></div>`}`;
+  html+=`<div class="row"><button class="btn green" id="collect" ${(b.el?inc.gold>0:ready&&(inc.food||inc.gems))?"":"disabled"}>${b.el?"Собрать 🪙"+inc.gold:ready?"Собрать":"Готово через "+left+" с"}</button><button class="btn blue" id="mv">📦 Переместить</button><button class="btn red" id="del">Снести</button>${b.el&&t.dragons.length?`<button class="btn purple" id="enter">🚪 Зайти в жилище</button>`:""}</div>`;
   const m=modal(html);
   $("#mv",m).onclick=()=>{moveFrom=i;closeModal();renderMap()};
   const en=$("#enter",m);if(en)en.onclick=()=>enterHabitat(i);
   $$("[data-add]",m).forEach(im=>im.onclick=()=>{const id=im.dataset.add;if(isHoused(id)){toast("Этот дракон уже поселён");closeModal();return}t.dragons.push(id);S.pending=(S.pending||[]).filter(x=>x!==id);save();closeModal();renderMap();toast("🐲 Дракон поселён!")});
   $$("[data-rm]",m).forEach(im=>im.onclick=()=>{t.dragons=t.dragons.filter(x=>x!==im.dataset.rm);save();closeModal();renderMap()});
   const hu=$("#hup",m);if(hu)hu.onclick=()=>{const g=habStored(t);S.gold+=g;pay(HAB_UP(habLvl(t)));t.lvl=habLvl(t)+1;t.last=Date.now();addXP(80);save();toast(`⬆ ${b.name} улучшено до ур.${t.lvl}`);closeModal();tileClick(i)};
-  $("#collect",m).onclick=()=>{S.gold+=inc.gold||0;S.food+=inc.food||0;S.gems+=inc.gems||0;t.last=Date.now();addXP(b.el?Math.min(60,10+Math.floor((inc.gold||0)/20)):15);save();closeModal();renderMap();toast(`+${costStr(inc)}`)};
+  $("#collect",m).onclick=()=>{if(!b.el&&!tileReady(t)){toast("⏳ Ещё не готово");return}S.gold+=inc.gold||0;S.food+=inc.food||0;S.gems+=inc.gems||0;t.last=Date.now();addXP(b.el?Math.min(60,10+Math.floor((inc.gold||0)/20)):15);save();closeModal();renderMap();toast(`+${costStr(inc)}`)};
   $("#del",m).onclick=()=>{if(t.dragons.length){toast("Сначала выселите драконов");return}S.gold+=Math.floor((b.cost.gold||0)/2);t.b=null;save();closeModal();renderMap();updateTop()};
 }
 function enterHabitat(i){
@@ -918,6 +918,7 @@ function netHandle(m){
     closeAuth();if($("#b_login"))closeModal();afterLogin(m);S.profile.acc=m.me.id;save();updateTop();refreshNetUI();toast("👋 "+m.me.name+", вы вошли");if(NET.isAdmin)addAdminButton();return}
   if(m.t==="save_ok"){return}
   if(m.t==="save_rejected"){toast("🚫 Сохранение отклонено сервером: "+m.msg);if(m.data){try{applyState(JSON.parse(m.data))}catch(e){}}return}
+  if(m.t==="visit"){renderVisit(m);return}
   if(m.t==="admin_data"){renderAdmin(m);return}
   if(m.t==="admin_save"){renderAdminSave(m);return}
   if(m.t==="settings"){NET.settings=m.settings||{};if(NET.settings.motd&&NET.settings.motd!==NET.lastMotd){NET.lastMotd=NET.settings.motd;toast("📌 "+NET.settings.motd)}return}
@@ -965,13 +966,14 @@ function renderFriends(){const root=$("#scr-friends");const on=NET.status==="onl
   <div class="avgrid">${AVATARS.map(a=>`<img src="assets/av/${a.id}.jpg" class="av ${S.profile.avatar===a.id?"sel":""}" data-av="${a.id}" title="${a.n}">`).join("")}</div></div>
   <div class="panel"><h2>➕ Добавить друга</h2><div class="row"><input id="fcode" placeholder="Код друга, напр. A1B2C3" maxlength="6" style="text-transform:uppercase"><button class="btn green" id="fadd" ${on?"":"disabled"}>Отправить заявку</button></div></div>
   ${NET.requests.length?`<div class="panel"><h2>📨 Заявки (${NET.requests.length})</h2>${NET.requests.map(p=>`<div class="frow"><img src="assets/av/${p.avatar}.jpg" class="av"><b>${p.name}</b><small>${leagueOf(p.rating).ico} ${p.rating}</small><button class="btn sm green" data-acc="${p.id}">✓</button><button class="btn sm" data-dec="${p.id}">✕</button></div>`).join("")}</div>`:""}
-  <div class="panel"><h2>👥 Друзья (${NET.friends.length})</h2>${NET.friends.map(p=>`<div class="frow"><img src="assets/av/${p.avatar}.jpg" class="av"><span class="dot ${p.online?"on":""}"></span><b>${p.name}</b><small>${leagueOf(p.rating).ico} ${p.rating} · ⚡${p.power}</small><button class="btn sm red" data-ch="${p.id}" ${p.online&&team.length?"":"disabled"}>⚔️ Вызвать</button><button class="btn sm" data-rm="${p.id}">🗑</button></div>`).join("")||`<small>${on?"Добавь друзей по коду — и вызывай их на PvP-бой.":"Нет связи с сервером."}</small>`}<p><small>Друг показан «не в сети», пока он не <b>вошёл в аккаунт</b> в игре (индикатор в шапке должен быть 🟢).</small></p>${``}</div></div>`;
+  <div class="panel"><h2>👥 Друзья (${NET.friends.length})</h2>${NET.friends.map(p=>`<div class="frow"><img src="assets/av/${p.avatar}.jpg" class="av"><span class="dot ${p.online?"on":""}"></span><b>${p.name}</b><small>${leagueOf(p.rating).ico} ${p.rating} · ⚡${p.power}</small><button class="btn sm blue" data-visit="${p.id}" title="Посетить остров и сравнить драконов">🏝️ В гости</button><button class="btn sm red" data-ch="${p.id}" ${p.online&&team.length?"":"disabled"}>⚔️ Вызвать</button><button class="btn sm" data-rm="${p.id}">🗑</button></div>`).join("")||`<small>${on?"Добавь друзей по коду — и вызывай их на PvP-бой.":"Нет связи с сервером."}</small>`}<p><small>Друг показан «не в сети», пока он не <b>вошёл в аккаунт</b> в игре (индикатор в шапке должен быть 🟢).</small></p>${``}</div></div>`;
   const lo=$("#alogout",root);if(lo)lo.onclick=()=>{if(confirm("Выйти из аккаунта?"))logout()};const li=$("#alogin",root);if(li)li.onclick=()=>{NET.wantAuth=true;sessionStorage.removeItem("dml_offline");showAuth("login")};
   $("#pname",root).onchange=e=>{S.profile.name=e.target.value.trim()||"Хранитель";save();updateTop();netSend({t:"profile",name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team})};
   $$("[data-av]",root).forEach(a=>a.onclick=()=>{S.profile.avatar=a.dataset.av;save();updateTop();netSend({t:"profile",name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team});renderFriends()});
   $("#fadd",root).onclick=()=>{const c=$("#fcode",root).value.trim();if(c.length<4)return;netSend({t:"friend_add",code:c});$("#fcode",root).value=""};
   $$("[data-acc]",root).forEach(b=>b.onclick=()=>netSend({t:"friend_accept",id:b.dataset.acc}));$$("[data-dec]",root).forEach(b=>b.onclick=()=>netSend({t:"friend_decline",id:b.dataset.dec}));
   $$("[data-rm]",root).forEach(b=>b.onclick=()=>{if(confirm("Удалить из друзей?"))netSend({t:"friend_remove",id:b.dataset.rm})});
+  $$("[data-visit]",root).forEach(b=>b.onclick=()=>{netSend({t:"visit",id:b.dataset.visit});modal(`<h2>🏝️ Летим в гости…</h2><p>Загружаем остров друга.</p>`)});
   $$("[data-ch]",root).forEach(b=>b.onclick=()=>{netSend({t:"profile",name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team});netSend({t:"challenge",to:b.dataset.ch})})}
 
 /* ================= АДМИН-ПАНЕЛЬ ================= */
@@ -1056,6 +1058,43 @@ function renderAdminSave(m){const box=modal(`<h2>💾 Сохранение: ${m.
   $("#as_back").onclick=()=>renderAdmin(ADM.data);
   $("#as_dl").onclick=()=>{const a=document.createElement("a");a.href="data:application/json;charset=utf-8,"+encodeURIComponent($("#as_txt").value);a.download=m.name+"_save.json";a.click()};
   $("#as_save").onclick=()=>{try{JSON.parse($("#as_txt").value)}catch(e){toast("⚠️ Некорректный JSON");return}if(confirm("Заменить сохранение игрока?"))netSend({t:"admin_setsave",id:m.id,data:$("#as_txt").value})}}
+
+
+/* ================= ВИЗИТ К ДРУГУ ================= */
+const VISIT={st:null,cur:0,tab:"island"};
+function renderVisit(m){if(!m.save){modal(`<h2>🏝️ ${m.name}</h2><p>У друга ещё нет облачного сохранения (он играет офлайн или не заходил в аккаунт).</p><div class="row"><button class="btn" onclick="closeModal()">Ок</button></div>`);return}
+  let st;try{st=JSON.parse(m.save)}catch(e){toast("⚠️ Не удалось загрузить остров");return}
+  st.islands=st.islands||[];st.dragons=st.dragons||{};st.cur=0;VISIT.st=st;VISIT.cur=0;VISIT.tab="island";VISIT.name=m.name;VISIT.avatar=m.avatar;VISIT.rating=m.rating;drawVisit()}
+function drawVisit(){const st=VISIT.st;const real=S;
+  const tab=(id,l)=>`<button class="btn sm ${VISIT.tab===id?"green":""}" data-vt="${id}">${l}</button>`;
+  let body="";
+  if(VISIT.tab==="island"){
+    // временно подменяем S, чтобы переиспользовать отрисовку клеток (только чтение)
+    S=Object.assign({},st,{cur:VISIT.cur});installTilesGetter(S);
+    try{const isl=st.islands[VISIT.cur];const def=ISLANDS.find(x=>x.id===isl.id)||ISLANDS[0];const TW=92,TH=46,IW=isl.w,IH=isl.h,W=(IW+IH)*TW/2,H=(IW+IH)*TH/2;let tiles="";
+      for(let y=0;y<IH;y++)for(let x=0;x<IW;x++){const i=y*IW+x;tiles+=tileHtml(isl.tiles[i],i,(x-y)*TW/2+W/2-TW/2,(x+y)*TH/2,x+y)}
+      body=`<div class="isl-tabs">${st.islands.map((x,k)=>{const d=ISLANDS.find(q=>q.id===x.id)||ISLANDS[0];return `<button class="${k===VISIT.cur?"active":""}" data-vi="${k}">🏝️ ${d.name}</button>`}).join("")}</div>
+      <div class="visit-scroll"><div class="iso" style="width:${W}px;height:${H+120}px;transform:scale(${Math.min(1,(Math.min(window.innerWidth*.9,1050)-40)/(W+60))});transform-origin:top center"><div class="iso-base" style="width:${W+60}px;height:${H+60}px;left:-30px;top:-10px;background:radial-gradient(ellipse at 50% 40%,${def.theme},${def.theme} 60%,#2c5a22)"></div>${tiles}</div></div><small>Остров только для просмотра. Наведи на здание — увидишь название.</small>`}
+    finally{S=real}
+  }
+  if(VISIT.tab==="compare"){
+    const mine=Object.keys(real.dragons),his=Object.keys(st.dragons);const both=mine.filter(id=>st.dragons[id]),onlyHis=his.filter(id=>!real.dragons[id]),onlyMine=mine.filter(id=>!st.dragons[id]);
+    const pw=(id,o)=>{try{return power(id,Object.assign({lvl:1,stars:1},o))}catch(e){return 0}};
+    const sum=(ids,src)=>ids.reduce((a,id)=>a+pw(id,src[id]),0);
+    const myTop=[...mine].sort((a,b)=>pw(b,real.dragons[b])-pw(a,real.dragons[a])).slice(0,3),hisTop=[...his].sort((a,b)=>pw(b,st.dragons[b])-pw(a,st.dragons[a])).slice(0,3);
+    const card=(id,o)=>{const d=dInfo(id);if(!d)return"";const oo=Object.assign({lvl:1,stars:1},o);return `<div class="vcard"><img src="assets/${id}.png"><b>${d.name}</b><small>ур.${oo.lvl} ${"⭐".repeat(oo.stars||1)} · ⚡${pw(id,o)}</small></div>`};
+    const cmp=(a,b)=>a>b?"<span style='color:#1a8a1a'>▲</span>":a<b?"<span style='color:#c02020'>▼</span>":"=";
+    const row=id=>{const d=dInfo(id);if(!d)return"";const a=Object.assign({lvl:1,stars:1},real.dragons[id]),b=Object.assign({lvl:1,stars:1},st.dragons[id]);const pa=pw(id,real.dragons[id]),pb=pw(id,st.dragons[id]);return `<tr><td><img src="assets/${id}.png" class="av" style="width:28px;height:28px;border-radius:6px"> ${d.name}</td><td>ур.${a.lvl} ${"⭐".repeat(a.stars||1)}<br>⚡${pa}</td><td style="font-size:1.2rem;text-align:center">${cmp(pa,pb)}</td><td>ур.${b.lvl} ${"⭐".repeat(b.stars||1)}<br>⚡${pb}</td></tr>`};
+    body=`<div class="vsum"><div class="panel sub"><h3>Ты</h3><p>🐲 ${mine.length} драконов · ⚡ ${fmt(sum(mine,real.dragons))} общая сила<br>⭐ уровень ${real.level} · 🏆 ${NET.me?NET.me.rating:"—"}</p><div class="vcards">${myTop.map(id=>card(id,real.dragons[id])).join("")}</div></div>
+      <div class="panel sub"><h3>${VISIT.name}</h3><p>🐲 ${his.length} драконов · ⚡ ${fmt(sum(his,st.dragons))} общая сила<br>⭐ уровень ${st.level||1} · 🏆 ${VISIT.rating||"—"}</p><div class="vcards">${hisTop.map(id=>card(id,st.dragons[id])).join("")}</div></div></div>
+      <h3>Общие драконы (${both.length})</h3><div class="adm-wrap" style="max-height:32vh"><table class="adm"><tr><th>Дракон</th><th>Ты</th><th></th><th>${VISIT.name}</th></tr>${both.map(row).join("")||"<tr><td colspan=4>Общих драконов пока нет</td></tr>"}</table></div>
+      <h3>Есть только у ${VISIT.name} (${onlyHis.length})</h3><div class="picker">${onlyHis.map(id=>dInfo(id)?`<img src="assets/${id}.png" title="${dInfo(id).name} ур.${(st.dragons[id]||{}).lvl||1}">`:"").join("")||"<i>—</i>"}</div>
+      <h3>Есть только у тебя (${onlyMine.length})</h3><div class="picker">${onlyMine.map(id=>dInfo(id)?`<img src="assets/${id}.png" title="${dInfo(id).name}">`:"").join("")||"<i>—</i>"}</div>`}
+  const box=modal(`<h2><img src="assets/av/${VISIT.avatar||"av0"}.jpg" class="av" style="width:32px;height:32px;vertical-align:middle"> В гостях у ${VISIT.name} <span class="badge">ур.${st.level||1} · 🪙${fmt(st.gold||0)}</span></h2>
+    <div class="row">${tab("island","🏝️ Остров")}${tab("compare","⚖️ Сравнить драконов")}</div>${body}`);box.classList.add("wide");
+  $$("[data-vt]",box).forEach(b=>b.onclick=()=>{VISIT.tab=b.dataset.vt;drawVisit()});
+  $$("[data-vi]",box).forEach(b=>b.onclick=()=>{VISIT.cur=+b.dataset.vi;drawVisit()});
+  $$(".itile",box).forEach(el=>{el.onclick=null;el.style.cursor="default"})}
 
 /* ================= ФОНОВАЯ ВКЛАДКА: не останавливать игру ================= */
 // Браузеры замедляют setTimeout в фоне до 1 раза/сек, а WebAudio продолжает работать. Держим «тикер» через Web Worker, который не троттлится.

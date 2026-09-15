@@ -132,6 +132,7 @@ wss.on("connection",ws=>{
       if(m.t==="admin_admin"){if(tgt.user&&ADMINS.includes(tgt.user.toLowerCase())){send(ws,{t:"err",msg:"Это главный админ"});return}tgt.admin=!tgt.admin;alog(me.user,(tgt.admin?"назначил админом ":"снял с админа ")+tgt.user);saveDB();send(ws,{t:"admin_ok",msg:tgt.admin?"Назначен админом":"Снят с админа"});return}
       if(m.t==="admin_delete"){alog(me.user,"удалил аккаунт "+tgt.user);if(isAdmin(tgt)&&tgt.id!==me.id){send(ws,{t:"err",msg:"Нельзя удалить админа"});return}const w=online.get(tgt.id);if(w){try{w.close()}catch(e){}}delete DB.players[tgt.id];Object.values(DB.players).forEach(p=>{p.friends=(p.friends||[]).filter(f=>f!==tgt.id);p.requests=(p.requests||[]).filter(f=>f!==tgt.id)});saveDB();send(ws,{t:"admin_ok",msg:"Удалён"});return}
       return}
+    if(m.t==="visit"){const p=DB.players[m.id];if(!p||!(me.friends||[]).includes(p.id)){send(ws,{t:"err",msg:"Можно посещать только друзей"});return}send(ws,{t:"visit",id:p.id,name:p.name,avatar:p.avatar,rating:p.rating||1000,save:p.save||null});return}
     if(m.t==="top"){send(ws,{t:"top",top:leaderboard(),online:online.size});return}
     // ---- друзья ----
     if(m.t==="friend_add"){const c=String(m.code||"").trim().toUpperCase();const p=Object.values(DB.players).find(x=>x.code===c);
