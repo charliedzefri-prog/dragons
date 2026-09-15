@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Легенды Дракономании</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <!-- Верхняя панель ресурсов -->
+  <header id="topbar">
+    <div class="logo">🐉 Легенды <span>Дракономании</span></div>
+    <div class="res"><span class="ico">🪙</span><b id="r-gold">0</b></div>
+    <div class="res"><span class="ico">🍖</span><b id="r-food">0</b></div>
+    <div class="res"><span class="ico">💎</span><b id="r-gems">0</b></div>
+    <div class="res" id="r-scroll-box" title="Свитки обучения — конвертируй в 📘 в Академии"><span class="ico">📜</span><b id="r-scroll">0</b></div>
+    <div class="res lvl"><span class="ico">⭐</span><b id="r-level">1</b><div class="xpbar"><div id="r-xp"></div></div></div>
+  </header>
+
+  <!-- Экраны -->
+  <main id="screens">
+    <section id="scr-map" class="screen active"></section>
+    <section id="scr-dragons" class="screen"></section>
+    <section id="scr-battle" class="screen"></section>
+    <section id="scr-events" class="screen"></section>
+    <section id="scr-shop" class="screen"></section>
+    <section id="scr-academy" class="screen"></section>
+    <section id="scr-breed" class="screen"></section>
+    <section id="scr-campaign" class="screen"></section>
+    <section id="scr-pvp" class="screen"></section>
+    <section id="scr-friends" class="screen"></section>
+  </main>
+
+  <!-- Нижняя навигация -->
+  <nav id="navbar">
+    <button data-scr="map" class="active">🗺️<span>Остров</span></button>
+    <button data-scr="dragons">🐲<span>Драконы</span></button>
+    <button data-scr="breed">💞<span>Гнездо</span></button>
+    <button data-scr="battle">⚔️<span>Арена</span></button>
+    <button data-scr="academy">🎓<span>Академия</span></button>
+    <button data-scr="events">🏆<span>События</span></button>
+    <button data-scr="shop">🏪<span>Магазин</span></button>
+  </nav>
+
+  <div id="modal-root"></div>
+  <div id="toasts"></div>
+</div>
+<script src="data.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
