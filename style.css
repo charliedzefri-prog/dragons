@@ -411,3 +411,8 @@ body{font-size:1rem}
 #scr-map .isl-tabs{gap:4px}
 #scr-map .isl-tabs button{padding:3px 8px}
 #scr-map .map-hint{margin-top:4px}
+
+.modal.auth{width:min(94vw,420px)}
+.modal.auth label{display:block;font-weight:900;margin:8px 0 2px}
+.modal.auth input{width:100%;font:inherit;font-size:1.05rem;padding:8px 10px;border-radius:8px;border:2px solid #5a3313;background:#fff8e6;margin-top:2px}
+.autherr{color:#b3261e;font-weight:900;min-height:20px;margin:6px 0}

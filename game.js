@@ -31,7 +31,8 @@ function newState(){
   tiles[first[3]].b="farm";tiles[first[4]].b="incubator";
   installTilesGetter(s);return s;
 }
-function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(S))}
+function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(S));cloudSave()}
+let _cloudT=null;function cloudSave(){if(!NET.me)return;clearTimeout(_cloudT);_cloudT=setTimeout(()=>netSend({t:"save",data:JSON.stringify(S)}),1500)}
 function load(){try{const j=localStorage.getItem(SAVE_KEY);if(j){S=JSON.parse(j);migrate();return}}catch(e){}S=newState()}
 function migrate(){
   S.profile=S.profile||{name:"Хранитель",avatar:"av0"};S.pvp=S.pvp||{rating:1000,wins:0,games:0};S.camp=S.camp||{done:Math.min(S.wins||0,CAMPAIGN_NODES.length),seen:{}};if(S.music===undefined)S.music=true;
@@ -850,19 +851,44 @@ function playDialog(lines,done){if(!lines||!lines.length){done();return}let i=0;
     $(".dlg-overlay").onclick=e=>{if(e.target.id==="dskip"){clearInterval(tw);root.innerHTML="";done();return}if(k<text.length){clearInterval(tw);el.textContent=text;k=text.length;return}i++;if(i<lines.length)draw();else{root.innerHTML="";done()}}}
   draw()}
 
+/* ================= АККАУНТ: регистрация / вход ================= */
+function showAuth(mode){mode=mode||"login";if($("#authbox"))return renderAuth(mode);const root=$("#modal-root");root.innerHTML=`<div class="panel modal auth" id="authbox"></div>`;renderAuth(mode)}
+function renderAuth(mode){const box=$("#authbox");if(!box)return;const reg=mode==="register";
+  box.innerHTML=`<h2>${reg?"📝 Регистрация":"🔐 Вход"}</h2><p><small>Аккаунт нужен для PvP, друзей и облачного сохранения прогресса. Играть можно и без него — офлайн.</small></p>
+  <label>Имя игрока<input id="au" maxlength="16" autocomplete="username" placeholder="3–16 символов"></label>
+  <label>Пароль<input id="ap" type="password" maxlength="64" autocomplete="${reg?"new-password":"current-password"}"></label>
+  ${reg?`<label>Повтори пароль<input id="ap2" type="password" maxlength="64"></label>`:""}
+  <div id="autherr" class="autherr"></div>
+  <div class="row"><button class="btn green" id="ago">${reg?"Создать аккаунт":"Войти"}</button><button class="btn" id="aswitch">${reg?"У меня есть аккаунт":"Регистрация"}</button></div>
+  <div class="row"><button class="btn sm" id="askip">Играть офлайн</button></div>`;
+  $("#au").focus();
+  const go=()=>{const u=$("#au").value.trim(),p=$("#ap").value;if(reg&&p!==$("#ap2").value){$("#autherr").textContent="Пароли не совпадают";return}if(NET.status!=="online"){$("#autherr").textContent="Нет связи с сервером, попробуй позже";return}
+    NET.authFresh=true;netSend({t:reg?"register":"login",user:u,pass:p,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team})};
+  $("#ago").onclick=go;box.onkeydown=e=>{if(e.key==="Enter")go()};
+  $("#aswitch").onclick=()=>renderAuth(reg?"login":"register");
+  $("#askip").onclick=()=>{closeAuth();localStorage.setItem("dml_offline","1");toast("Играем офлайн. Войти можно на экране «Друзья».")}}
+function closeAuth(){if($("#authbox"))$("#modal-root").innerHTML=""}
+function logout(){netSend({t:"logout"});NET.me=null;localStorage.removeItem("dml_token");localStorage.removeItem("dml_offline");refreshNetUI();showAuth("login")}
+
 /* ================= СЕТЬ: PvP + друзья ================= */
 const NET={ws:null,me:null,friends:[],requests:[],top:[],online:0,status:"offline",queued:false,room:null,retry:1000};
 function serverUrl(){const c=localStorage.getItem("dml_server");if(c)return c;const l=location;if(l.protocol==="file:")return "";return (l.protocol==="https:"?"wss://":"ws://")+l.host}
 function netConnect(){const url=serverUrl();if(!url){NET.status="offline";return}try{NET.ws=new WebSocket(url)}catch(e){NET.status="offline";return}
   NET.status="connecting";const ws=NET.ws;
-  ws.onopen=()=>{NET.retry=1000;NET.status="online";netSend({t:"hello",token:localStorage.getItem("dml_token"),name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team})};
+  ws.onopen=()=>{NET.retry=1000;NET.status="online";if(!localStorage.getItem("dml_token")){if(!localStorage.getItem("dml_offline"))showAuth("login");refreshNetUI();return}netSend({t:"hello",token:localStorage.getItem("dml_token"),name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team})};
   ws.onclose=()=>{NET.status="offline";NET.queued=false;refreshNetUI();setTimeout(netConnect,Math.min(15000,NET.retry*=1.6))};
   ws.onerror=()=>{};
   ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}netHandle(m)}}
 function netSend(m){if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify(m))}
 function pvpSend(m){netSend(m)}
 function netHandle(m){
-  if(m.t==="welcome"){NET.me=m.me;localStorage.setItem("dml_token",m.token);NET.top=m.top;NET.online=m.online;S.pvp.rating=m.me.rating;save();refreshNetUI();return}
+  if(m.t==="welcome"){NET.me=m.me;localStorage.setItem("dml_token",m.token);NET.top=m.top;NET.online=m.online;
+    // облачный прогресс: если на сервере сохранение новее/богаче локального — берём его
+    if(m.save){try{const cs=JSON.parse(m.save);const better=!S.created||(cs.level||0)>(S.level||0)||((cs.level||0)===(S.level||0)&&(cs.battles||0)>=(S.battles||0));if(better&&NET.authFresh){S=cs;installTilesGetter(S);migrate();localStorage.setItem(SAVE_KEY,JSON.stringify(S));toast("☁️ Прогресс загружен из аккаунта");show("map")}}catch(e){}}
+    NET.authFresh=false;S.profile.name=m.me.name;S.pvp.rating=m.me.rating;save();updateTop();closeAuth();refreshNetUI();toast("👋 "+m.me.name+", вы вошли");return}
+  if(m.t==="need_auth"){NET.me=null;localStorage.removeItem("dml_token");if(!localStorage.getItem("dml_offline")||NET.wantAuth)showAuth();NET.wantAuth=false;return}
+  if(m.t==="auth_err"){const e=$("#autherr");if(e)e.textContent=m.msg;else toast("⚠️ "+m.msg);return}
+  if(m.t==="kicked"){toast("⚠️ В аккаунт вошли с другого устройства");return}
   if(m.t==="me"){NET.me=m.me;S.pvp.rating=m.me.rating;save();refreshNetUI();return}
   if(m.t==="friends"){NET.friends=m.list;NET.requests=m.requests;refreshNetUI();if(m.requests.length&&!$("#scr-friends").classList.contains("active"))toast(`👥 Заявки в друзья: ${m.requests.length}`);return}
   if(m.t==="top"){NET.top=m.top;NET.online=m.online;refreshNetUI();return}
@@ -896,11 +922,12 @@ function renderPvp(){const root=$("#scr-pvp");const r=S.pvp.rating||1000,L=leagu
   <div class="panel"><h2>Лиги</h2>${LEAGUES.map(l=>`<div class="stat"><span>${l.ico} ${l.n}</span><span>от ${l.min}</span></div>`).join("")}</div></div>`;
   const f=$("#find",root);if(f)f.onclick=()=>{netSend({t:"profile",name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team});if(NET.queued)netSend({t:"dequeue"});else netSend({t:"queue"})}}
 function renderFriends(){const root=$("#scr-friends");const on=NET.status==="online";const me=NET.me;
-  root.innerHTML=`<div class="pvp-menu"><div class="panel"><h2>👤 Профиль</h2><div class="prof"><img src="assets/av/${S.profile.avatar}.jpg" class="av big" id="pickav"><div><input id="pname" maxlength="20" value="${S.profile.name.replace(/"/g,"&quot;")}"><br><small>Твой код друга: <b class="code">${me?me.code:"— (офлайн)"}</b></small><br><small>Нажми на аватар, чтобы сменить</small></div></div>
+  root.innerHTML=`<div class="pvp-menu"><div class="panel"><h2>👤 ${me?"Аккаунт: "+me.name:"Аккаунт"}</h2>${me?`<p><small>☁️ Прогресс сохраняется в аккаунт автоматически.</small> <button class="btn sm" id="alogout">Выйти</button></p>`:`<p>Вы играете офлайн. <button class="btn sm green" id="alogin" ${on?"":"disabled"}>Войти / Регистрация</button></p>`}<div class="prof"><img src="assets/av/${S.profile.avatar}.jpg" class="av big" id="pickav"><div><input id="pname" maxlength="20" value="${S.profile.name.replace(/"/g,"&quot;")}" ${me?"disabled title='Имя = логин аккаунта'":""}><br><small>Твой код друга: <b class="code">${me?me.code:"— (офлайн)"}</b></small><br><small>Нажми на аватар, чтобы сменить</small></div></div>
   <div class="avgrid">${AVATARS.map(a=>`<img src="assets/av/${a.id}.jpg" class="av ${S.profile.avatar===a.id?"sel":""}" data-av="${a.id}" title="${a.n}">`).join("")}</div></div>
   <div class="panel"><h2>➕ Добавить друга</h2><div class="row"><input id="fcode" placeholder="Код друга, напр. A1B2C3" maxlength="6" style="text-transform:uppercase"><button class="btn green" id="fadd" ${on?"":"disabled"}>Отправить заявку</button></div></div>
   ${NET.requests.length?`<div class="panel"><h2>📨 Заявки (${NET.requests.length})</h2>${NET.requests.map(p=>`<div class="frow"><img src="assets/av/${p.avatar}.jpg" class="av"><b>${p.name}</b><small>${leagueOf(p.rating).ico} ${p.rating}</small><button class="btn sm green" data-acc="${p.id}">✓</button><button class="btn sm" data-dec="${p.id}">✕</button></div>`).join("")}</div>`:""}
   <div class="panel"><h2>👥 Друзья (${NET.friends.length})</h2>${NET.friends.map(p=>`<div class="frow"><img src="assets/av/${p.avatar}.jpg" class="av"><span class="dot ${p.online?"on":""}"></span><b>${p.name}</b><small>${leagueOf(p.rating).ico} ${p.rating} · ⚡${p.power}</small><button class="btn sm red" data-ch="${p.id}" ${p.online&&team.length?"":"disabled"}>⚔️ Вызвать</button><button class="btn sm" data-rm="${p.id}">🗑</button></div>`).join("")||`<small>${on?"Добавь друзей по коду — и вызывай их на PvP-бой.":"Нет связи с сервером."}</small>`}</div></div>`;
+  const lo=$("#alogout",root);if(lo)lo.onclick=()=>{if(confirm("Выйти из аккаунта?"))logout()};const li=$("#alogin",root);if(li)li.onclick=()=>{NET.wantAuth=true;localStorage.removeItem("dml_offline");showAuth("login")};
   $("#pname",root).onchange=e=>{S.profile.name=e.target.value.trim()||"Хранитель";save();updateTop();netSend({t:"profile",name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team})};
   $$("[data-av]",root).forEach(a=>a.onclick=()=>{S.profile.avatar=a.dataset.av;save();updateTop();netSend({t:"profile",name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team});renderFriends()});
   $("#fadd",root).onclick=()=>{const c=$("#fcode",root).value.trim();if(c.length<4)return;netSend({t:"friend_add",code:c});$("#fcode",root).value=""};

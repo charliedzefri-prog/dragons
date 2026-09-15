@@ -10,6 +10,7 @@ const MIME={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=u
 
 // ---------- база (простой JSON) ----------
 let DB={players:{}};try{DB=JSON.parse(fs.readFileSync(DB_FILE,"utf8"))}catch(e){}
+{const before=Object.keys(DB.players).length;for(const id of Object.keys(DB.players)){if(!DB.players[id].user)delete DB.players[id]}for(const p of Object.values(DB.players)){p.friends=(p.friends||[]).filter(f=>DB.players[f]);p.requests=(p.requests||[]).filter(f=>DB.players[f])}const after=Object.keys(DB.players).length;if(before!==after)console.log("purged anonymous sessions:",before-after)}
 let saveT=null;const saveDB=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{fs.writeFileSync(DB_FILE,JSON.stringify(DB))}catch(e){console.error("db save",e.message)}},500)};
 const code=()=>{let c;do{c=crypto.randomBytes(3).toString("hex").toUpperCase()}while(Object.values(DB.players).some(p=>p.code===c));return c};
 
@@ -47,15 +48,29 @@ function endRoom(R,reason,loser){if(!rooms.has(R.id))return;clearTimeout(R.timer
 wss.on("connection",ws=>{
   let me=null;ws.isAlive=true;ws.on("pong",()=>ws.isAlive=true);
   ws.on("message",raw=>{let m;try{m=JSON.parse(raw)}catch(e){return}
-    if(m.t==="hello"){
-      let p=m.token&&Object.values(DB.players).find(x=>x.token===m.token);
-      if(!p){const id="p"+crypto.randomBytes(5).toString("hex");p=DB.players[id]={id,token:crypto.randomBytes(16).toString("hex"),code:code(),name:"Хранитель",avatar:"av0",rating:1000,friends:[],requests:[],wins:0,losses:0,created:Date.now()}}
-      me=p;p.name=String(m.name||p.name).slice(0,20);p.avatar=m.avatar||p.avatar;p.power=m.power|0;p.team=(m.team||[]).slice(0,3);p.last=Date.now();
-      const old=online.get(p.id);if(old&&old!==ws){try{old.close()}catch(e){}}
+    // ---- аккаунты: регистрация / вход / сессия ----
+    const finishLogin=(p)=>{me=p;p.avatar=m.avatar||p.avatar;p.power=m.power|0;p.team=(m.team||[]).slice(0,3);p.last=Date.now();
+      const old=online.get(p.id);if(old&&old!==ws){send(old,{t:"kicked"});try{old.close()}catch(e){}}
       online.set(p.id,ws);saveDB();
-      send(ws,{t:"welcome",me:pub(p),token:p.token,online:online.size,top:leaderboard()});pushFriends(p.id);notifyFriends(p.id);return}
+      send(ws,{t:"welcome",me:pub(p),token:p.token,online:online.size,top:leaderboard(),save:p.save||null});pushFriends(p.id);notifyFriends(p.id)};
+    if(m.t==="register"){const u=String(m.user||"").trim();const pw=String(m.pass||"");
+      if(!/^[A-Za-zА-Яа-яЁё0-9_]{3,16}$/.test(u)){send(ws,{t:"auth_err",msg:"Имя: 3–16 символов, буквы/цифры/_"});return}
+      if(pw.length<4){send(ws,{t:"auth_err",msg:"Пароль минимум 4 символа"});return}
+      if(Object.values(DB.players).some(x=>x.user&&x.user.toLowerCase()===u.toLowerCase())){send(ws,{t:"auth_err",msg:"Имя уже занято"});return}
+      const salt=crypto.randomBytes(8).toString("hex");const hash=crypto.scryptSync(pw,salt,32).toString("hex");
+      const id="p"+crypto.randomBytes(5).toString("hex");const p=DB.players[id]={id,user:u,name:u,salt,hash,token:crypto.randomBytes(16).toString("hex"),code:code(),avatar:"av0",rating:1000,friends:[],requests:[],wins:0,losses:0,created:Date.now()};
+      finishLogin(p);return}
+    if(m.t==="login"){const u=String(m.user||"").trim().toLowerCase();const pw=String(m.pass||"");
+      const p=Object.values(DB.players).find(x=>x.user&&x.user.toLowerCase()===u);
+      if(!p||crypto.scryptSync(pw,p.salt,32).toString("hex")!==p.hash){send(ws,{t:"auth_err",msg:"Неверное имя или пароль"});return}
+      p.token=crypto.randomBytes(16).toString("hex"); // новая сессия, старые обнуляются
+      finishLogin(p);return}
+    if(m.t==="hello"){const p=m.token&&Object.values(DB.players).find(x=>x.token===m.token&&x.user);
+      if(!p){send(ws,{t:"need_auth"});return}finishLogin(p);return}
+    if(m.t==="logout"){if(me){me.token=crypto.randomBytes(16).toString("hex");saveDB();online.delete(me.id);notifyFriends(me.id);me=null}send(ws,{t:"need_auth"});return}
     if(!me)return;
     if(m.t==="profile"){me.name=String(m.name||me.name).slice(0,20);me.avatar=m.avatar||me.avatar;me.power=m.power|0;me.team=(m.team||[]).slice(0,3);saveDB();notifyFriends(me.id);send(ws,{t:"me",me:pub(me)});return}
+    if(m.t==="save"){if(typeof m.data==="string"&&m.data.length<400000){me.save=m.data;me.saveAt=Date.now();saveDB()}return}
     if(m.t==="top"){send(ws,{t:"top",top:leaderboard(),online:online.size});return}
     // ---- друзья ----
     if(m.t==="friend_add"){const c=String(m.code||"").trim().toUpperCase();const p=Object.values(DB.players).find(x=>x.code===c);
