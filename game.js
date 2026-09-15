@@ -64,7 +64,7 @@ function updateTop(){const av=$("#avatar");if(av){av.src="assets/av/"+S.profile.
   $("#r-level").textContent=S.level;const sc=$("#r-scroll");if(sc)sc.textContent=S.scrolls||0;const sp=$("#r-sp");if(sp)sp.textContent=S.sp||0;$("#r-xp").style.width=(S.xp/xpNeed(S.level)*100)+"%";
 }
 function xpNeed(l){return l<XP_TABLE.length?XP_TABLE[l]:Math.round(120*Math.pow(l,1.7))}
-function addXP(n){S.xp+=n;while(S.xp>=xpNeed(S.level)){S.xp-=xpNeed(S.level);S.level++;S.gems+=5;S.gold+=500*S.level;S.scrolls=(S.scrolls||0)+3;const unl=[...ISLANDS.filter(i=>i.req===S.level).map(i=>"🏝️ "+i.name),...Object.entries(BUILDINGS).filter(([k,b])=>b.req===S.level).map(([k,b])=>b.ico+" "+b.name),...DRAGONS.filter(dr=>DRAGON_REQ[dr.id]===S.level&&!isSpecial(dr.id)).map(dr=>"🐲 "+dr.name)];modal(`<h2>⭐ Уровень ${S.level}!</h2><p class="center">+5 💎, +🪙${500*S.level}, +📜3</p>${unl.length?`<p><b>Открыто:</b></p><ul style="margin-left:18px">${unl.map(u=>`<li>${u}</li>`).join("")}</ul>`:""}<div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal()">Ура!</button><button class="btn blue" onclick="showRoad()">🛣️ Дорога наград</button></div>`)}updateTop()}
+function addXP(n){S.xp+=Math.round(n*MULT("xpMult"));while(S.xp>=xpNeed(S.level)){S.xp-=xpNeed(S.level);S.level++;S.gems+=5;S.gold+=500*S.level;S.scrolls=(S.scrolls||0)+3;const unl=[...ISLANDS.filter(i=>i.req===S.level).map(i=>"🏝️ "+i.name),...Object.entries(BUILDINGS).filter(([k,b])=>b.req===S.level).map(([k,b])=>b.ico+" "+b.name),...DRAGONS.filter(dr=>DRAGON_REQ[dr.id]===S.level&&!isSpecial(dr.id)).map(dr=>"🐲 "+dr.name)];modal(`<h2>⭐ Уровень ${S.level}!</h2><p class="center">+5 💎, +🪙${500*S.level}, +📜3</p>${unl.length?`<p><b>Открыто:</b></p><ul style="margin-left:18px">${unl.map(u=>`<li>${u}</li>`).join("")}</ul>`:""}<div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal()">Ура!</button><button class="btn blue" onclick="showRoad()">🛣️ Дорога наград</button></div>`)}updateTop()}
 function canPay(cost){return (!cost.gold||S.gold>=cost.gold)&&(!cost.gems||S.gems>=cost.gems)&&(!cost.food||S.food>=cost.food)}
 function pay(cost){S.gold-=cost.gold||0;S.gems-=cost.gems||0;S.food-=cost.food||0;updateTop()}
 function costStr(c){return [c.gold&&`🪙${fmt(c.gold)}`,c.food&&`🍖${fmt(c.food)}`,c.gems&&`💎${c.gems}`,c.scrolls&&`📜${c.scrolls}`].filter(Boolean).join(" ")}
@@ -114,11 +114,12 @@ window.addEventListener("resize",()=>{fitIsland();document.documentElement.style
 function toggleFullscreen(){const d=document;if(!d.fullscreenElement){(d.documentElement.requestFullscreen||d.documentElement.webkitRequestFullscreen).call(d.documentElement).catch(()=>toast("Браузер не разрешил полный экран"))}else (d.exitFullscreen||d.webkitExitFullscreen).call(d)}
 document.addEventListener("fullscreenchange",()=>{const b=$("#fsbtn");if(b)b.textContent=document.fullscreenElement?"🗗":"⛶";setTimeout(fitIsland,100)});
 function habLvl(t){return t.lvl||1}
-function habRate(t){const b=BUILDINGS[t.b];let r=0;t.dragons.forEach(id=>{const o=S.dragons[id];if(o)r+=GOLD_PER_MIN(b,o.lvl,RARITY[dInfo(id).rarity].mult)});return r}
+const MULT=k=>(NET.settings&&+NET.settings[k])||1;
+function habRate(t){const b=BUILDINGS[t.b];let r=0;t.dragons.forEach(id=>{const o=S.dragons[id];if(o)r+=GOLD_PER_MIN(b,o.lvl,RARITY[dInfo(id).rarity].mult)});return r*MULT("goldMult")}
 function habStored(t){const b=BUILDINGS[t.b];if(!b||!b.el)return 0;return Math.min(HAB_STORE(b,habLvl(t)),Math.floor(habRate(t)*(Date.now()-t.last)/60000))}
 function tileIncome(t){const b=BUILDINGS[t.b];if(!b)return null;
   if(b.el){return {gold:habStored(t)}}
-  if(b.food)return {food:b.food};if(b.gems)return {gems:b.gems};return null}
+  if(b.food)return {food:b.food};if(b.gems)return {gems:Math.round(b.gems*MULT("gemsMult"))};return null}
 function tileReady(t){const b=BUILDINGS[t.b];if(b&&b.el)return habStored(t)>=Math.max(10,habRate(t));if(b&&b.special==="library")return Date.now()-t.last>=LIBRARY.time;return Date.now()-t.last>=HARVEST_TIME}
 function unlockCost(){const isl=curIsland();const df=ISLANDS.find(x=>x.id===isl.id)||ISLANDS[0];const n=isl.tiles.filter(t=>t.unlocked).length;return {gold:Math.round(400*Math.pow(1.35,n-df.start)*(S.islands.indexOf(isl)+1))}}
 
@@ -913,15 +914,17 @@ function netConnect(){const url=serverUrl();if(!url){NET.status="offline";return
 function netSend(m){if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify(m))}
 function pvpSend(m){netSend(m)}
 function netHandle(m){
-  if(m.t==="welcome"){NET.me=m.me;localStorage.setItem("dml_token",m.token);NET.top=m.top;NET.online=m.online;NET.isAdmin=!!m.me.admin;
+  if(m.t==="welcome"){NET.settings=m.settings||{};if(NET.settings.motd){setTimeout(()=>toast("📌 "+NET.settings.motd),1500)}NET.me=m.me;localStorage.setItem("dml_token",m.token);NET.top=m.top;NET.online=m.online;NET.isAdmin=!!m.me.admin;
     closeAuth();if($("#b_login"))closeModal();afterLogin(m);S.profile.acc=m.me.id;save();updateTop();refreshNetUI();toast("👋 "+m.me.name+", вы вошли");if(NET.isAdmin)addAdminButton();return}
   if(m.t==="save_ok"){return}
   if(m.t==="save_rejected"){toast("🚫 Сохранение отклонено сервером: "+m.msg);if(m.data){try{applyState(JSON.parse(m.data))}catch(e){}}return}
   if(m.t==="admin_data"){renderAdmin(m);return}
+  if(m.t==="admin_save"){renderAdminSave(m);return}
+  if(m.t==="settings"){NET.settings=m.settings||{};if(NET.settings.motd&&NET.settings.motd!==NET.lastMotd){NET.lastMotd=NET.settings.motd;toast("📌 "+NET.settings.motd)}return}
   if(m.t==="admin_ok"){toast("✅ "+(m.msg||"Готово"));netSend({t:"admin_list"});return}
   if(m.t==="need_auth"){NET.me=null;localStorage.removeItem("dml_token");if(NET.booting){NET.booting=false;return}if(!sessionStorage.getItem("dml_offline")||NET.wantAuth)showAuth();NET.wantAuth=false;return}
   if(m.t==="auth_err"){const e=$("#autherr");if(e)e.textContent=m.msg;else toast("⚠️ "+m.msg);return}
-  if(m.t==="broadcast"){modal(`<h2>📢 Сообщение администратора</h2><p>${m.msg}</p><div class="row"><button class="btn green" onclick="closeModal()">Ок</button></div>`);return}
+  if(m.t==="broadcast"){modal(`<h2>📢 Сообщение администратора${m.from?" ("+m.from+")":""}</h2><p>${m.msg}</p><div class="row"><button class="btn green" onclick="closeModal()">Ок</button></div>`);return}
   if(m.t==="banned"){modal(`<h2>🚫 Аккаунт заблокирован</h2><p>${m.msg||""}</p>`,{closable:false});return}
   if(m.t==="kicked"){toast("⚠️ В аккаунт вошли с другого устройства");return}
   if(m.t==="me"){NET.me=m.me;S.pvp.rating=m.me.rating;save();refreshNetUI();return}
@@ -973,20 +976,86 @@ function renderFriends(){const root=$("#scr-friends");const on=NET.status==="onl
 
 /* ================= АДМИН-ПАНЕЛЬ ================= */
 function addAdminButton(){if($("#adminbtn"))return;const b=document.createElement("button");b.id="adminbtn";b.className="btn sm";b.textContent="🛠";b.title="Админ-панель";b.onclick=()=>{netSend({t:"admin_list"});modal(`<h2>🛠 Админ-панель</h2><p>Загрузка…</p>`)};$("#topbar").append(b)}
-function renderAdmin(m){const rows=m.players.map(p=>`<tr><td><img src="assets/av/${p.avatar}.jpg" class="av" style="width:24px;height:24px"> <b>${p.name}</b>${p.admin?" 👑":""}${p.banned?" 🚫":""}</td><td>${p.online?"🟢":"⚪"}</td><td>ур.${p.level||"-"}</td><td>🪙${fmt(p.gold||0)} 💎${p.gems||0}</td><td>${p.rating}</td><td>${p.flags||0}</td>
-   <td class="adm-act"><button class="btn sm" data-a="give" data-id="${p.id}">🎁</button><button class="btn sm" data-a="reset" data-id="${p.id}">♻️</button><button class="btn sm ${p.banned?"green":"red"}" data-a="ban" data-id="${p.id}">${p.banned?"разбан":"бан"}</button><button class="btn sm" data-a="kick" data-id="${p.id}">⏏</button>${p.admin&&p.id!==NET.me.id?"":`<button class="btn sm purple" data-a="admin" data-id="${p.id}">${p.admin?"−адм":"+адм"}</button>`}<button class="btn sm red" data-a="delete" data-id="${p.id}">🗑</button></td></tr>`).join("");
-  const box=modal(`<h2>🛠 Админ-панель <span class="badge gold">игроков ${m.players.length} · онлайн ${m.online}</span></h2>
-  <div class="row"><button class="btn sm" id="adm_refresh">🔄 Обновить</button><button class="btn sm" id="adm_broadcast">📢 Сообщение всем</button><button class="btn sm" id="adm_dl">⬇ Скачать db.json</button></div>
-  <div class="adm-wrap"><table class="adm"><tr><th>Игрок</th><th></th><th>Ур.</th><th>Ресурсы</th><th>Рейт.</th><th>⚠️</th><th>Действия</th></tr>${rows}</table></div>
-  <small>⚠️ — число отклонённых сервером подозрительных сохранений. 🎁 выдать ресурсы · ♻️ сбросить прогресс · ⏏ выкинуть из сети.</small>`);
+const ADM={tab:"players",q:"",sort:"last",data:null};
+function admAge(t){if(!t)return "—";const d=Date.now()-t;if(d<6e4)return "только что";if(d<36e5)return Math.floor(d/6e4)+" мин";if(d<864e5)return Math.floor(d/36e5)+" ч";return Math.floor(d/864e5)+" дн"}
+function renderAdmin(m){ADM.data=m;const st=m.stats||{players:m.players.length,online:m.online};const cfg=m.settings||{};
+  let pl=m.players.filter(p=>!ADM.q||(p.name||"").toLowerCase().includes(ADM.q)||(p.id||"").includes(ADM.q));
+  const srt={last:(a,b)=>(b.last||0)-(a.last||0),level:(a,b)=>(b.level||0)-(a.level||0),gold:(a,b)=>(b.gold||0)-(a.gold||0),rating:(a,b)=>(b.rating||0)-(a.rating||0),flags:(a,b)=>(b.flags||0)-(a.flags||0),name:(a,b)=>(a.name||"").localeCompare(b.name||""),created:(a,b)=>(b.created||0)-(a.created||0)}[ADM.sort];
+  if(ADM.tab==="flagged")pl=pl.filter(p=>p.flags||p.banned);if(ADM.tab==="online")pl=pl.filter(p=>p.online);
+  pl.sort(srt);
+  const rows=pl.map(p=>`<tr class="${p.banned?"adm-ban":""}"><td><img src="assets/av/${p.avatar}.jpg" class="av" style="width:24px;height:24px"> <b>${p.name}</b>${p.admin?" 👑":""}${p.banned?" 🚫":""}${p.muted?" 🔇":""}${p.note?` <span title="${p.note.replace(/"/g,"'")}">📝</span>`:""}<br><small style="opacity:.6">${p.id} · рег. ${p.created?new Date(p.created).toLocaleDateString("ru"):"—"}</small></td><td>${p.online?"🟢":"⚪ "+admAge(p.last)}</td><td>ур.${p.level||"-"}<br><small>🐲${p.dragons||0}</small></td><td>🪙${fmt(p.gold||0)}<br>💎${p.gems||0}</td><td>${p.rating}<br><small>${p.wins||0}W/${p.losses||0}L</small></td><td title="${p.lastFlag?p.lastFlag.why+" ("+admAge(p.lastFlag.t)+" назад)":""}">${p.flags?"⚠️"+p.flags:"—"}</td>
+   <td class="adm-act"><button class="btn sm" data-a="give" data-id="${p.id}" title="Выдать ресурсы">🎁</button><button class="btn sm" data-a="setres" data-id="${p.id}" title="Установить ресурсы/уровень">✏️</button><button class="btn sm" data-a="dragon" data-id="${p.id}" title="Выдать/забрать дракона">🐲</button><button class="btn sm" data-a="msg" data-id="${p.id}" title="Личное сообщение">✉️</button><button class="btn sm" data-a="more" data-id="${p.id}" title="Ещё">⋯</button><button class="btn sm ${p.banned?"green":"red"}" data-a="ban" data-id="${p.id}">${p.banned?"разбан":"бан"}</button></td></tr>`).join("");
+  const tab=(id,l)=>`<button class="btn sm ${ADM.tab===id?"green":""}" data-tab="${id}">${l}</button>`;
+  let body="";
+  if(["players","online","flagged"].includes(ADM.tab)){body=`<div class="row" style="align-items:center;gap:6px;flex-wrap:wrap"><input id="adm_q" placeholder="🔍 поиск по имени / id" value="${ADM.q}" style="flex:1;min-width:140px"><select id="adm_sort"><option value="last">по активности</option><option value="created">по дате регистрации</option><option value="level">по уровню</option><option value="gold">по золоту</option><option value="rating">по рейтингу</option><option value="flags">по флагам</option><option value="name">по имени</option></select><span class="badge">${pl.length}</span></div>
+    <div class="adm-wrap"><table class="adm"><tr><th>Игрок</th><th>Сеть</th><th>Ур.</th><th>Ресурсы</th><th>Рейт.</th><th>⚠️</th><th>Действия</th></tr>${rows||"<tr><td colspan=7>Пусто</td></tr>"}</table></div>
+    <small>🎁 выдать · ✏️ установить точные значения · 🐲 драконы · ✉️ сообщение · ⋯ ещё (переименовать, пароль, рейтинг, заметка, мут, кик, сброс, сохранение, админ, удалить)</small>`}
+  if(ADM.tab==="global"){body=`<div class="adm-grid">
+    <div class="panel sub"><h3>📢 Рассылка</h3><textarea id="adm_bc" rows="3" placeholder="Текст всем игрокам онлайн"></textarea><button class="btn sm" id="adm_broadcast">Отправить всем</button></div>
+    <div class="panel sub"><h3>📌 Сообщение дня</h3><input id="adm_motd" value="${(cfg.motd||"").replace(/"/g,"&quot;")}" placeholder="Показывается при входе"><button class="btn sm" id="adm_motd_save">Сохранить</button></div>
+    <div class="panel sub"><h3>🎁 Подарок всем</h3><div class="row"><input id="ga_gold" type="number" placeholder="🪙 золото" style="width:100px"><input id="ga_gems" type="number" placeholder="💎" style="width:70px"><input id="ga_scr" type="number" placeholder="📜" style="width:70px"></div><button class="btn sm green" id="adm_giveall">Выдать всем</button></div>
+    <div class="panel sub"><h3>⚡ Множители событий</h3><div class="row">🪙×<input id="m_gold" type="number" step="0.1" value="${cfg.goldMult||1}" style="width:60px"> 💎×<input id="m_gems" type="number" step="0.1" value="${cfg.gemsMult||1}" style="width:60px"> ⭐×<input id="m_xp" type="number" step="0.1" value="${cfg.xpMult||1}" style="width:60px"></div><button class="btn sm" id="adm_mult">Применить</button><br><small>Действуют на доход построек, награды боёв и опыт (0.1–10).</small></div>
+    <div class="panel sub"><h3>⚙️ Режим техработ</h3><p>Сейчас: <b>${cfg.maint?"🔴 ВКЛЮЧЁН — вход только админам":"🟢 выключен"}</b></p><button class="btn sm ${cfg.maint?"green":"red"}" id="adm_maint">${cfg.maint?"Выключить":"Включить"}</button> <button class="btn sm" id="adm_kickall">⏏ Отключить всех</button></div>
+    <div class="panel sub"><h3>🧹 Обслуживание</h3><button class="btn sm" id="adm_clearflags">Сбросить все флаги</button> <button class="btn sm" id="adm_dl">⬇ Скачать db.json</button></div>
+  </div>`}
+  if(ADM.tab==="stats"){const p=m.players;const sum=k=>p.reduce((a,x)=>a+(x[k]||0),0);const top=(k,l)=>[...p].sort((a,b)=>(b[k]||0)-(a[k]||0)).slice(0,5).map(x=>`<li>${x.name} — ${l(x)}</li>`).join("");
+    body=`<div class="adm-grid"><div class="panel sub"><h3>📊 Сервер</h3><p>Игроков: <b>${st.players}</b> · онлайн: <b>${st.online}</b> · активны за сутки: <b>${st.today||0}</b></p><p>В очереди арены: ${st.queue||0} · боёв идёт: ${st.rooms||0}</p><p>Забанено: ${st.banned||0} · с флагами: ${st.flagged||0}</p><p>Аптайм: ${Math.floor((st.uptime||0)/3600)}ч ${Math.floor(((st.uptime||0)%3600)/60)}м · память: ${st.mem||0} МБ</p></div>
+    <div class="panel sub"><h3>💰 Экономика</h3><p>Всего золота: ${fmt(sum("gold"))} · алмазов: ${fmt(sum("gems"))}</p><p>Средний уровень: ${(sum("level")/Math.max(1,p.length)).toFixed(1)} · всего драконов: ${sum("dragons")}</p></div>
+    <div class="panel sub"><h3>🏆 Топ по рейтингу</h3><ol>${top("rating",x=>x.rating)}</ol></div><div class="panel sub"><h3>⭐ Топ по уровню</h3><ol>${top("level",x=>"ур."+(x.level||0))}</ol></div><div class="panel sub"><h3>🪙 Топ по золоту</h3><ol>${top("gold",x=>fmt(x.gold||0))}</ol></div><div class="panel sub"><h3>⚠️ Подозрительные</h3><ol>${top("flags",x=>(x.flags||0)+" флаг.")}</ol></div></div>`}
+  if(ADM.tab==="log"){body=`<div class="row"><button class="btn sm red" id="adm_clearlog">Очистить журнал</button></div><div class="adm-wrap"><table class="adm"><tr><th>Когда</th><th>Кто</th><th>Что</th></tr>${(m.log||[]).map(l=>`<tr><td>${new Date(l.t).toLocaleString("ru")}</td><td>${l.who}</td><td>${l.what}</td></tr>`).join("")||"<tr><td colspan=3>Журнал пуст</td></tr>"}</table></div>`}
+  const box=modal(`<h2>🛠 Админ-панель <span class="badge gold">игроков ${st.players} · онлайн ${st.online}</span> <button class="btn sm" id="adm_refresh">🔄</button></h2>
+  <div class="row adm-tabs">${tab("players","👥 Игроки")}${tab("online","🟢 Онлайн")}${tab("flagged","⚠️ Подозрительные")}${tab("global","🌍 Сервер")}${tab("stats","📊 Статистика")}${tab("log","📜 Журнал")}</div>${body}`);
   box.classList.add("wide");
+  const rr=()=>renderAdmin(ADM.data);
   $("#adm_refresh").onclick=()=>netSend({t:"admin_list"});
-  $("#adm_broadcast").onclick=()=>{const t=prompt("Текст сообщения всем игрокам:");if(t)netSend({t:"admin_broadcast",msg:t})};
-  $("#adm_dl").onclick=()=>{const a=document.createElement("a");a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(m.raw||m.players,null,1));a.download="db_export.json";a.click()};
-  $$("[data-a]",box).forEach(b=>b.onclick=()=>{const a=b.dataset.a,id=b.dataset.id;
+  $$("[data-tab]",box).forEach(b=>b.onclick=()=>{ADM.tab=b.dataset.tab;rr()});
+  const q=$("#adm_q");if(q){q.oninput=()=>{ADM.q=q.value.toLowerCase();const pos=q.selectionStart;rr();const nq=$("#adm_q");nq.focus();nq.setSelectionRange(pos,pos)}}
+  const so=$("#adm_sort");if(so){so.value=ADM.sort;so.onchange=()=>{ADM.sort=so.value;rr()}}
+  const on=(id,f)=>{const e=$("#"+id);if(e)e.onclick=f};
+  on("adm_broadcast",()=>{const t=$("#adm_bc").value.trim();if(t)netSend({t:"admin_broadcast",msg:t})});
+  on("adm_motd_save",()=>netSend({t:"admin_settings",settings:{motd:$("#adm_motd").value}}));
+  on("adm_giveall",()=>{const gold=+$("#ga_gold").value||0,gems=+$("#ga_gems").value||0,scrolls=+$("#ga_scr").value||0;if(confirm(`Выдать ВСЕМ игрокам 🪙${gold} 💎${gems} 📜${scrolls}?`))netSend({t:"admin_giveall",gold,gems,scrolls})});
+  on("adm_mult",()=>netSend({t:"admin_settings",settings:{goldMult:+$("#m_gold").value||1,gemsMult:+$("#m_gems").value||1,xpMult:+$("#m_xp").value||1}}));
+  on("adm_maint",()=>{if(confirm(cfg.maint?"Выключить техработы?":"Включить техработы? Новые входы будут запрещены (кроме админов)."))netSend({t:"admin_settings",settings:{maint:!cfg.maint}})});
+  on("adm_kickall",()=>{if(confirm("Отключить всех игроков?"))netSend({t:"admin_kickall"})});
+  on("adm_clearflags",()=>{if(confirm("Сбросить флаги у всех?"))netSend({t:"admin_clearflags"})});
+  on("adm_clearlog",()=>{if(confirm("Очистить журнал?"))netSend({t:"admin_clearlog"})});
+  on("adm_dl",()=>{const a=document.createElement("a");a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(m.raw||m.players,null,1));a.download="db_export.json";a.click()});
+  $$("[data-a]",box).forEach(b=>b.onclick=()=>{const a=b.dataset.a,id=b.dataset.id,p=m.players.find(x=>x.id===id)||{};
     if(a==="give"){const gold=+prompt("Золото:",0)||0,gems=+prompt("Алмазы:",0)||0,scrolls=+prompt("Свитки:",0)||0;netSend({t:"admin_give",id,gold,gems,scrolls});return}
-    if(a==="delete"&&!confirm("Удалить аккаунт безвозвратно?"))return;if(a==="reset"&&!confirm("Сбросить прогресс игрока?"))return;
+    if(a==="setres"){const gold=prompt("Золото (пусто — не менять):",p.gold||0),gems=prompt("Алмазы:",p.gems||0),level=prompt("Уровень (1–60):",p.level||1),food=prompt("Еда (пусто — не менять):","");const o={t:"admin_setres",id};if(gold!==null&&gold!=="")o.gold=+gold;if(gems!==null&&gems!=="")o.gems=+gems;if(level!==null&&level!=="")o.level=+level;if(food!==null&&food!=="")o.food=+food;netSend(o);return}
+    if(a==="dragon"){renderAdminDragon(p);return}
+    if(a==="msg"){const t=prompt("Сообщение игроку "+p.name+":");if(t)netSend({t:"admin_msg",id,msg:t});return}
+    if(a==="more"){renderAdminMore(p);return}
     netSend({t:"admin_"+a,id})})}
+function renderAdminMore(p){const box=modal(`<h2>⋯ ${p.name} <small style="opacity:.6">${p.id}</small></h2>
+  <p>Ур.${p.level||"-"} · 🪙${fmt(p.gold||0)} 💎${p.gems||0} · рейтинг ${p.rating} (${p.wins||0}W/${p.losses||0}L) · флаги ${p.flags||0}${p.lastFlag?` — последний: «${p.lastFlag.why}»`:""}</p>
+  <p>📝 Заметка: <i>${p.note||"нет"}</i></p>
+  <div class="adm-more">
+   <button class="btn sm" data-x="rename">✏️ Переименовать</button><button class="btn sm" data-x="password">🔑 Сменить пароль</button><button class="btn sm" data-x="rating">🏆 Рейтинг</button><button class="btn sm" data-x="note">📝 Заметка</button>
+   <button class="btn sm" data-x="mute">${p.muted?"🔊 Размьютить":"🔇 Заглушить"}</button><button class="btn sm" data-x="flags">🧹 Снять флаги</button><button class="btn sm" data-x="kick">⏏ Кикнуть</button><button class="btn sm" data-x="getsave">💾 Сохранение (JSON)</button>
+   ${p.admin&&p.id!==NET.me.id?"":`<button class="btn sm purple" data-x="admin">${p.admin?"👑 Снять админа":"👑 Сделать админом"}</button>`}<button class="btn sm red" data-x="reset">♻️ Сбросить прогресс</button><button class="btn sm red" data-x="delete">🗑 Удалить аккаунт</button>
+  </div><div class="row"><button class="btn sm" id="adm_back">← Назад</button></div>`);
+  $("#adm_back").onclick=()=>renderAdmin(ADM.data);
+  $$("[data-x]",box).forEach(b=>b.onclick=()=>{const x=b.dataset.x,id=p.id;
+    if(x==="rename"){const name=prompt("Новое имя:",p.name);if(name)netSend({t:"admin_rename",id,name});return}
+    if(x==="password"){const pass=prompt("Новый пароль (мин. 4):");if(pass)netSend({t:"admin_password",id,pass});return}
+    if(x==="rating"){const r=prompt("Рейтинг:",p.rating);if(r===null)return;netSend({t:"admin_rating",id,rating:+r,resetWL:confirm("Обнулить также победы/поражения?")});return}
+    if(x==="note"){const note=prompt("Заметка (видна только админам):",p.note||"");if(note!==null)netSend({t:"admin_note",id,note});return}
+    if(x==="delete"&&!confirm("Удалить аккаунт безвозвратно?"))return;if(x==="reset"&&!confirm("Сбросить прогресс игрока?"))return;
+    netSend({t:"admin_"+x,id})})}
+function renderAdminDragon(p){const opts=DRAGONS.filter(d=>d.id!=="d109").map(d=>`<option value="${d.id}">${d.id} — ${d.name} (${d.rarity})</option>`).join("");
+  const box=modal(`<h2>🐲 Драконы игрока ${p.name}</h2><p>У игрока драконов: ${p.dragons||0}</p>
+  <div class="row"><select id="ad_id" style="flex:1">${opts}</select><input id="ad_lvl" type="number" min="1" max="50" value="1" style="width:70px" title="уровень"></div>
+  <div class="row"><button class="btn sm green" id="ad_give">Выдать / установить уровень</button><button class="btn sm red" id="ad_rm">Забрать</button><button class="btn sm" id="ad_back">← Назад</button></div><small>Г.Б.Т. (d109) — только босс, выдать нельзя.</small>`);
+  $("#ad_back").onclick=()=>renderAdmin(ADM.data);
+  $("#ad_give").onclick=()=>netSend({t:"admin_dragon",id:p.id,dragon:$("#ad_id").value,lvl:+$("#ad_lvl").value||1});
+  $("#ad_rm").onclick=()=>{if(confirm("Забрать дракона?"))netSend({t:"admin_dragon",id:p.id,dragon:$("#ad_id").value,remove:true})}}
+function renderAdminSave(m){const box=modal(`<h2>💾 Сохранение: ${m.name}</h2><textarea id="as_txt" rows="14" style="width:100%;font-family:monospace;font-size:11px">${m.save?JSON.stringify(JSON.parse(m.save),null,1).replace(/</g,"&lt;"):""}</textarea>
+  <div class="row"><button class="btn sm green" id="as_save">Записать игроку</button><button class="btn sm" id="as_dl">⬇ Скачать</button><button class="btn sm" id="as_back">← Назад</button></div><small>Осторожно: некорректный JSON может сломать прогресс игрока.</small>`);box.classList.add("wide");
+  $("#as_back").onclick=()=>renderAdmin(ADM.data);
+  $("#as_dl").onclick=()=>{const a=document.createElement("a");a.href="data:application/json;charset=utf-8,"+encodeURIComponent($("#as_txt").value);a.download=m.name+"_save.json";a.click()};
+  $("#as_save").onclick=()=>{try{JSON.parse($("#as_txt").value)}catch(e){toast("⚠️ Некорректный JSON");return}if(confirm("Заменить сохранение игрока?"))netSend({t:"admin_setsave",id:m.id,data:$("#as_txt").value})}}
 
 /* ================= ФОНОВАЯ ВКЛАДКА: не останавливать игру ================= */
 // Браузеры замедляют setTimeout в фоне до 1 раза/сек, а WebAudio продолжает работать. Держим «тикер» через Web Worker, который не троттлится.
