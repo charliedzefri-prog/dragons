@@ -75,7 +75,7 @@ function dragonStats(id, ov){
   const m=RARITY[d.rarity].mult*(1+(o.lvl-1)*0.12)*(1+(o.stars-1)*0.25);
   const hpm=ov&&ov.enemy?1.6:2.4; // у врагов запас HP меньше — бои короче
   const tb=treeBonuses(id,o);const pk=k=>1+(tb[k]||0);
-  return {hp:Math.round(d.base.hp*m*hpm*pk("hp")),atk:Math.round(d.base.atk*m*pk("atk")),def:Math.round(d.base.def*m*pk("def")),spd:Math.round(d.base.spd*(1+(o.lvl-1)*0.02)*(1+(o.stars-1)*0.1)*pk("spd")),crit:0.1+(tb.crit||0),timeb:tb.timing||0,lifesteal:tb.lifesteal||0,startshield:tb.startshield||0,dmg:tb.dmg||{}};
+  return {hp:Math.round(d.base.hp*m*hpm*pk("hp")),atk:Math.round(d.base.atk*m*pk("atk")),def:Math.round(d.base.def*m*pk("def")),spd:Math.round(d.base.spd*(1+(o.lvl-1)*0.02)*(1+(o.stars-1)*0.1)*pk("spd")),crit:0.1+(tb.crit||0),timeb:tb.timing||0,lifesteal:tb.lifesteal||0,startshield:tb.startshield||0,dmg:tb.dmg||{},tb};
 }
 function treeLvl(id,el,o){o=o||S.dragons[id];return (o&&o.tree&&o.tree[el]&&o.tree[el].lvl)||0}
 function treeBonuses(id,o){o=o||S.dragons[id];const b={dmg:{}};if(!o||!o.tree)return b;const d=dInfo(id);
@@ -115,11 +115,13 @@ function toggleFullscreen(){const d=document;if(!d.fullscreenElement){(d.documen
 document.addEventListener("fullscreenchange",()=>{const b=$("#fsbtn");if(b)b.textContent=document.fullscreenElement?"🗗":"⛶";setTimeout(fitIsland,100)});
 function habLvl(t){return t.lvl||1}
 const MULT=k=>(NET.settings&&+NET.settings[k])||1;
-function habRate(t){const b=BUILDINGS[t.b];let r=0;t.dragons.forEach(id=>{const o=S.dragons[id];if(o)r+=GOLD_PER_MIN(b,o.lvl,RARITY[dInfo(id).rarity].mult)});return r*MULT("goldMult")}
-function habStored(t){const b=BUILDINGS[t.b];if(!b||!b.el)return 0;return Math.min(HAB_STORE(b,habLvl(t)),Math.floor(habRate(t)*(Date.now()-t.last)/60000))}
+function islDef(isl){isl=isl||curIsland();return ISLANDS.find(x=>x.id===isl.id)||ISLANDS[0]}
+function islBonus(k,t){let isl=curIsland();if(t){isl=S.islands.find(i=>i.tiles.includes(t))||isl}return (islDef(isl).bonus||{})[k]||1}
+function habRate(t){const b=BUILDINGS[t.b];let r=0;t.dragons.forEach(id=>{const o=S.dragons[id];if(o)r+=GOLD_PER_MIN(b,o.lvl,RARITY[dInfo(id).rarity].mult)});return Math.round(r*MULT("goldMult")*islBonus("gold",t))}
+function habStored(t){const b=BUILDINGS[t.b];if(!b||!b.el)return 0;return Math.min(Math.round(HAB_STORE(b,habLvl(t))*islBonus("store",t)),Math.floor(habRate(t)*(Date.now()-t.last)/60000))}
 function tileIncome(t){const b=BUILDINGS[t.b];if(!b)return null;
   if(b.el){return {gold:habStored(t)}}
-  if(b.food)return {food:b.food};if(b.gems)return {gems:Math.round(b.gems*MULT("gemsMult"))};return null}
+  if(b.food)return {food:Math.round(b.food*islBonus("food",t))};if(b.gems)return {gems:Math.round(b.gems*MULT("gemsMult")*islBonus("gems",t))};return null}
 function tileReady(t){const b=BUILDINGS[t.b];if(b&&b.el)return habStored(t)>=Math.max(10,habRate(t));if(b&&b.special==="library")return Date.now()-t.last>=LIBRARY.time;return Date.now()-t.last>=HARVEST_TIME}
 function unlockCost(){const isl=curIsland();const df=ISLANDS.find(x=>x.id===isl.id)||ISLANDS[0];const n=isl.tiles.filter(t=>t.unlocked).length;return {gold:Math.round(400*Math.pow(1.35,n-df.start)*(S.islands.indexOf(isl)+1))}}
 
@@ -134,17 +136,18 @@ function renderMap(){
     const left=(x-y)*TW/2+W/2-TW/2, top=(x+y)*TH/2;
     tiles+=tileHtml(t,i,left,top,x+y)}
   root.innerHTML=`${clouds}<div class="map-wrap"><div class="isl-tabs">${ISLANDS.map((df,k)=>{const owned=S.islands.some(x=>x.id===df.id);const ci=S.islands.findIndex(x=>x.id===df.id);return `<button class="${ci===S.cur?"active":""} ${owned?"":"lockb"}" data-isl="${k}">${owned?"🏝️":"🔒"} ${df.name}${owned?"":`<br><small>ур.${df.req} · ${costStr(df.cost)}</small>`}</button>`}).join("")}</div>
-  <div class="island-name">🏝️ ${def.name}</div>
+  <div class="island-name">🏝️ ${def.name}${def.bonusText?` <span class="badge gold" style="font-size:12px;vertical-align:middle">${def.bonusText}</span>`:""}</div>
   ${moveFrom!==null?`<div class="map-hint" style="background:#c0506e">📦 Режим перемещения: выбери пустую клетку (или нажми на здание ещё раз для отмены)</div>`:""}<div class="row map-actions" style="justify-content:center"><button class="btn green" id="collectall">🪙 Собрать всё (${fmt(allTiles().reduce((a,t)=>a+habStored(t),0))})</button></div><div class="map-hint">Драконы в жилищах генерируют 🪙 каждую минуту (больше уровень и редкость — больше золота). Жилище накапливает золото до лимита — улучшай его, чтобы поднять лимит и число мест. Фермы дают 🍖 каждые 60 сек.</div>
-  <div class="iso-scroll"><div class="iso-fit" id="isofit"><div class="iso" style="width:${W}px;height:${H+120}px"><div class="iso-base" style="width:${W+60}px;height:${H+60}px;left:-30px;top:-10px;background:radial-gradient(ellipse at 50% 40%,${def.theme},${def.theme} 60%,#2c5a22)"></div>${tiles}</div></div></div>
+  <div class="iso-scroll"><div class="iso-fit" id="isofit"><div class="iso" style="width:${W}px;height:${H+120}px"><div class="iso-base isl-${def.tile||"grass"}" style="width:${W+60}px;height:${H+60}px;left:-30px;top:-10px;background:radial-gradient(ellipse at 50% 40%,${def.ground||def.theme},${def.theme} 60%,${def.edge||"#2c5a22"});box-shadow:0 30px 0 ${def.edge||"#b9955a"},0 46px 0 #3a2a1a,0 60px 40px rgba(0,0,60,.4)"></div>${tiles}${(def.deco||[]).map((d,k)=>`<span class="isl-deco" style="left:${8+k*38}%;top:${-30+(k%2)*20}px">${d}</span>`).join("")}</div></div></div>
 </div>`;
+  root.style.background=def.sky||"";
   $$(".itile",root).forEach(el=>el.onclick=()=>tileClick(+el.dataset.i));
   fitIsland();
   $("#collectall",root).onclick=()=>{let g=0;allTiles().forEach(t=>{const v=habStored(t);if(v>0){g+=v;t.last=Date.now()}});if(!g){toast("Пока нечего собирать");return}S.gold+=g;addXP(Math.min(120,10+Math.ceil(g/20)));save();updateTop();renderMap();toast(`+🪙${fmt(g)}`)};
   $$("[data-isl]",root).forEach(b=>b.onclick=()=>{const df=ISLANDS[+b.dataset.isl];const ci=S.islands.findIndex(x=>x.id===df.id);
     if(ci>=0){S.cur=ci;moveFrom=null;save();renderMap();return}
     if(S.level<df.req){toast(`Остров откроется на уровне ${df.req}`);return}
-    modal(`<h2>🏝️ ${df.name}</h2><p>Купить новый остров за <b>${costStr(df.cost)}</b>? Размер ${df.w}×${df.h}.</p><div class="row"><button class="btn green" id="ok" ${canPay(df.cost)?"":"disabled"}>Купить</button></div>`);
+    modal(`<h2>🏝️ ${df.name}</h2><p>Купить новый остров за <b>${costStr(df.cost)}</b>? Размер ${df.w}×${df.h}.${df.bonusText?`<br><b>Бонус острова:</b> ${df.bonusText}`:""}</p><div class="row"><button class="btn green" id="ok" ${canPay(df.cost)?"":"disabled"}>Купить</button></div>`);
     $("#ok").onclick=()=>{pay(df.cost);S.islands.push(makeIsland(df));S.cur=S.islands.length-1;addXP(500);save();closeModal();renderMap();toast("🏝️ Новый остров открыт!")}});
   // авто-скролл к центру
   const sc=$(".iso-scroll",root);sc.scrollLeft=(sc.scrollWidth-sc.clientWidth)/2;
@@ -152,7 +155,7 @@ function renderMap(){
 function tileHtml(t,i,left,top,z){
   const style=`left:${left}px;top:${top}px;z-index:${z}`;
   if(!t.unlocked)return `<div class="itile locked" data-i="${i}" style="${style}"><div class="rhomb"></div><span class="lock">🔒</span></div>`;
-  if(!t.b)return `<div class="itile" data-i="${i}" style="${style}"><div class="rhomb"></div></div>`;
+  if(!t.b)return `<div class="itile" data-i="${i}" style="${style}"><div class="rhomb" style="background:${islDef().tileColor||"rgba(255,255,255,.12)"}"></div></div>`;
   const b=BUILDINGS[t.b];const inc=tileIncome(t);let ready=inc&&tileReady(t)&&(inc.gold>0||inc.food||inc.gems);const lib=b.special==="library"&&tileReady(t);
   const dr=t.dragons.map((id,k)=>`<img class="dr-mini walk ${dInfo(id).noflip?"noflip":""}" style="left:${14+k*30}px;animation-delay:-${(i*7+k*3)%6}s;animation-duration:${5+((i+k)%3)}s" src="assets/${id}.png">`).join("");
   const cnt=b.cap?`<span class="count">${t.dragons.length}/${HAB_CAP(b,habLvl(t))}${habLvl(t)>1?" ⬆"+habLvl(t):""}</span>`:"";
@@ -272,7 +275,7 @@ function dragonDetail(id){
   $("#feed10",m).onclick=()=>{feed(id,10);dragonDetail(id)};
   $("#evo",m).onclick=()=>{pay(ec);o.stars++;addXP(200);save();toast(`✨ ${d.name} эволюционировал до ${o.stars}★!`);dragonDetail(id)};
 }
-function feed(id,n){const o=S.dragons[id];let k=0;for(let i=0;i<n;i++){const c=feedCost(id);if(o.lvl>=maxLevel(o.stars)||S.food<c)break;S.food-=c;o.lvl++;k++;addXP(25)}
+function feed(id,n){const o=S.dragons[id];let k=0;for(let i=0;i<n;i++){const c=feedCost(id);if(o.lvl>=maxLevel(o.stars)||S.food<c)break;S.food-=c;o.lvl++;k++;addXP(Math.round(25*islBonus("xp")))}
   if(k)toast(`🍖 ${dInfo(id).name} → уровень ${o.lvl}`);else toast("Не хватает еды или достигнут максимум");save();updateTop()}
 function giveEgg(id,src){S.inv=S.inv||[];S.inv.push({id,src:src||"shop"});save();toast(`🥚 Яйцо «${dInfo(id).name}» добавлено в инвентарь. Положи его в Инкубатор!`)}
 function buyDragon(id){const d=dInfo(id),r=RARITY[d.rarity];if(isSpecial(id)){toast("👑 Только через разведение или событие");return}if(S.level<DRAGON_REQ[d.id]){toast(`Нужен уровень Хранителя ${DRAGON_REQ[d.id]}`);return}const pr=dragonPrice(d);if(!canPay(pr)){toast("Не хватает "+(pr.gems?"💎 алмазов":"🪙 золота"));return}pay(pr);giveEgg(id,"shop");addXP(50);save();updateTop();closeModal();if($("#scr-dragons").classList.contains("active"))renderDragons();if($("#scr-shop").classList.contains("active"))renderShop()}
@@ -329,7 +332,7 @@ function matchmake(diff){const best=bestOwn(3);if(!best.length)return {name:"С�
   const names={easy:["Разминка","Лёгкий спарринг","Новички арены"],normal:["Достойный соперник","Равный бой","Ветераны арены"],hard:["Контр-отряд","Элита арены","Кошмар для твоей тройки"]}[diff];
   return {name:names[Math.floor(rng()*names.length)],lvl,ids,random:true,diff}}
 function enemySkills(id,lvl){const d=dInfo(id);const b=baseSkills(id).filter((k,i)=>lvl>=SLOT_LEVEL[i]);if(lvl>=8)b.push(ELEMENT_SPREAD[d.els[0]]);if(lvl>=12)b.push(ELEMENT_ABILITY[d.els[0]]);return b}
-function mkFighter(id,ov,side,i){const st=dragonStats(id,ov);const d=dInfo(id);return {id,side,i,name:d.name,els:d.els,skills:ov?enemySkills(id,ov.lvl):dSkills(id),hp:st.hp,maxhp:st.hp,atk:st.atk,def:st.def,spd:st.spd,cds:{},buffAtk:0,buffDef:0,debuff:0,crit:st.crit,timeb:st.timeb,lifesteal:st.lifesteal||0,dmgB:st.dmg||{},shield:Math.round(st.hp*(st.startshield||0)),fx:[],lvl:ov?ov.lvl:S.dragons[id].lvl}}
+function mkFighter(id,ov,side,i){const st=dragonStats(id,ov);const d=dInfo(id);return {id,side,i,name:d.name,els:d.els,skills:ov?enemySkills(id,ov.lvl):dSkills(id),hp:st.hp,maxhp:st.hp,atk:st.atk,def:st.def,spd:st.spd,cds:{},buffAtk:0,buffDef:0,debuff:0,crit:st.crit,timeb:st.timeb,lifesteal:st.lifesteal||0,dmgB:st.dmg||{},shield:Math.round(st.hp*(st.startshield||0)),fx:[],tb:st.tb||{},reviveUsed:false,lvl:ov?ov.lvl:S.dragons[id].lvl}}
 function startBattle(opp){
   if(team.length===0){toast("Выбери хотя бы одного дракона!");return}
   const ov={lvl:opp.lvl,stars:1+Math.floor(opp.lvl/10),enemy:true};
@@ -337,6 +340,7 @@ function startBattle(opp){
   RNG=opp.seed?seededRng(opp.seed):Math.random;
   B={opp,allies:team.map((id,i)=>{const f=mkFighter(id,null,"ally",i);if(opp.carry&&opp.carry[id]){f.hp=Math.min(f.maxhp,opp.carry[id])}return f}),enemies:opp.ids.map((id,i)=>mkFighter(id,ov,"enemy",i)),log:[],round:0,queue:[],busy:false,sel:null,pvp:!!opp.pvp,turnNo:0};
   if(opp.pvp){B.enemies=opp.enemyFighters;B.allies.forEach(f=>{f.hp=f.maxhp})}
+  [B.allies,B.enemies].forEach(team=>{const ta=team.reduce((a,f)=>a+(f.tb.teamatk||0),0),td=team.reduce((a,f)=>a+(f.tb.teamdef||0),0);if(ta||td)team.forEach(f=>{f.atk=Math.round(f.atk*(1+ta));f.def=Math.round(f.def*(1+td))})});
   playMusic(opp.music||(opp.pvp?"pvp":"battle"));
   S.battles++;nextTurn(true);
 }
@@ -353,7 +357,7 @@ function elMult(skillEl,attacker,target){
 function nextTurn(first){
   if(!B)return;
   if(!alive(B.allies).length||!alive(B.enemies).length){endBattle(alive(B.allies).length>0);return}
-  if(!B.queue.length){B.round++;const src=B.pvp&&!B.opp.host?[...B.enemies,...B.allies]:[...B.allies,...B.enemies];src.forEach((f,i)=>{f._j=(RNG()-.5)*4;f._o=i});B.queue=alive(src).sort((a,b)=>(b.spd+b._j)-(a.spd+a._j)||a._o-b._o);
+  if(!B.queue.length){B.round++;const src=B.pvp&&!B.opp.host?[...B.enemies,...B.allies]:[...B.allies,...B.enemies];src.forEach((f,i)=>{f._j=(RNG()-.5)*4;f._o=i});B.queue=alive(src).sort((a,b)=>(B.round===1?((b.tb.firststrike?1000:0)-(a.tb.firststrike?1000:0)):0)||(b.spd+b._j)-(a.spd+a._j)||a._o-b._o);
     // тик баффов/кд
     [...B.allies,...B.enemies].forEach(f=>{Object.keys(f.cds).forEach(k=>f.cds[k]=Math.max(0,f.cds[k]-1));if(f.buffAtk>0)f.buffAtkT--;if(f.buffAtkT<=0)f.buffAtk=0;if(f.buffDef>0)f.buffDefT--;if(f.buffDefT<=0)f.buffDef=0;if(f.debuff>0)f.debuffT--;if(f.debuffT<=0)f.debuff=0});
     log(`— Раунд ${B.round} —`)}
@@ -365,6 +369,7 @@ function nextTurn(first){
     if(e.k==="hot"){const h=Math.round(f0.maxhp*0.1);f0.hp=Math.min(f0.maxhp,f0.hp+h);log(`💚 ${f0.name} восстанавливает ${h}`)}
     if(e.k==="stun"||e.k==="freeze"){skip=true;log(`${e.k==="stun"?"💫":"🧊"} ${f0.name} пропускает ход!`)}
     return e.t>0});
+  if(f0.tb.regen&&f0.hp>0){const h=Math.round(f0.maxhp*f0.tb.regen);f0.hp=Math.min(f0.maxhp,f0.hp+h);log(`💚 ${f0.name} регенерирует ${h}`)}
   if(f0.hp<=0){renderBattle();setTimeout(nextTurn,500);return}
   if(skip){renderBattle();setTimeout(nextTurn,900);return}
   B.sel=null;B.turnNo++;$("#navbar").classList.add("locked");renderBattle();
@@ -372,24 +377,25 @@ function nextTurn(first){
   if(B.cur.side==="enemy"){B.busy=true;setTimeout(aiTurn,900)}
 }
 function log(s){B.log.push(s);if(B.log.length>40)B.log.shift()}
+function lootBonus(){return team.reduce((a,id)=>a+((treeBonuses(id).loot)||0),0)}
 function battleBg(){const o=B&&B.opp;if(!o)return null;if(o.bg)return o.bg;if(o.final)return BATTLE_BG.final;if(o.boss)return BATTLE_BG.boss;if(o.campaign)return BATTLE_BG.campaign[o.ch]||BATTLE_BG.default;if(o.pvp)return BATTLE_BG.pvp;return BATTLE_BG.default}
 function renderBattle(){
   const root=$("#scr-battle");const f=B.cur;
-  const fh=(x)=>`<div class="fighter ${x.side} ${dInfo(x.id).noflip?"noflip":""} ${x.hp<=0?"dead":""} ${x===f?"active":""} pos${x.i}" data-side="${x.side}" data-i="${x.i}"><img src="assets/${x.id}.png"><div class="hpbar"><div class="${x.hp/x.maxhp<.3?"low":""}" style="width:${x.hp/x.maxhp*100}%"></div>${x.shield?`<div class="shieldbar" style="width:${Math.min(100,x.shield/x.maxhp*100)}%"></div>`:""}</div><div class="fn">${x.name} <small>ур.${x.lvl}</small></div><div>${x.els.map(elIco).join("")}</div>${x.buffAtk?"<small>⚔️↑</small>":""}${x.buffDef?"<small>🛡️↑</small>":""}${x.debuff?"<small>⚔️↓</small>":""}${x.shield?`<small>🔰${x.shield}</small>`:""}${(x.fx||[]).map(e=>({burn:"🔥",hot:"💚",stun:"💫",freeze:"🧊",slow:"🐌",vuln:"💔"})[e.k]||"").join("")}</div>`;
+  const fh=(x)=>`<div class="fighter ${x.side} ${dInfo(x.id).noflip?"noflip":""} ${dInfo(x.id).big?"bigspr":""} ${x.hp<=0?"dead":""} ${x===f?"active":""} pos${x.i}" data-side="${x.side}" data-i="${x.i}"><img src="assets/${x.id}.png"><div class="hpbar"><div class="${x.hp/x.maxhp<.3?"low":""}" style="width:${x.hp/x.maxhp*100}%"></div>${x.shield?`<div class="shieldbar" style="width:${Math.min(100,x.shield/x.maxhp*100)}%"></div>`:""}</div><div class="fn">${x.name} <small>ур.${x.lvl}</small></div><div>${x.els.map(elIco).join("")}</div>${x.buffAtk?"<small>⚔️↑</small>":""}${x.buffDef?"<small>🛡️↑</small>":""}${x.debuff?"<small>⚔️↓</small>":""}${x.shield?`<small>🔰${x.shield}</small>`:""}${(x.fx||[]).map(e=>({burn:"🔥",hot:"💚",stun:"💫",freeze:"🧊",slow:"🐌",vuln:"💔"})[e.k]||"").join("")}</div>`;
   root.innerHTML=`<div class="arena">
    ${B.pvp?`<div class="pvp-head"><span>${S.profile.name} ${leagueOf(S.pvp.rating).ico}</span><span class="pvp-timer" id="pvpt">10</span><span>${B.opp.name}</span></div>`:""}<div class="turn-order">${[f,...B.queue].map(x=>`<img src="assets/${x.id}.png" class="${x===f?"now":""} ${x.side==="enemy"?"en":""}">`).join("")}</div>
    <div class="arena-field iso-arena" style="${battleBg()?`background:url(assets/bg/${battleBg()}.jpg) center/cover`:""}"><div class="arena-floor" ${battleBg()?'style="opacity:.35"':""}></div><div class="team allies">${B.allies.map(fh).join("")}</div><div class="team enemies">${B.enemies.map(fh).join("")}</div></div>
    <div class="battle-log" id="blog">${B.log.map(l=>`<div>${l}</div>`).join("")}</div>
-   <div class="skills" id="sk">${f.side==="ally"?f.skills.map(k=>{const s=SKILLS[k];const cd=f.cds[k]||0;return `<button class="skillbtn ${B.sel===k?"sel":""}" data-k="${k}" ${cd?"disabled":""} style="${s.el?`border-color:${ELEMENTS[s.el].color}`:""}"><b>${s.el?ELEMENTS[s.el].ico:"⚪"} ${s.name}</b><small>${s.desc}</small>${cd?`<span class="cd">⏳${cd}</span>`:""}</button>`}).join(""):`<div style="grid-column:1/-1;color:#ffe9b8;font-weight:900;text-align:center;padding:14px">Ход противника: ${f.name}…</div>`}
+   <div class="skills" id="sk">${f.side==="ally"?f.skills.map(k=>{const s=SKILLS[k];const cd=f.cds[k]||0;const effs=s.type==="attack"?alive(B.enemies).map(t=>elMult(s.el,f,t)):[];const eb=effs.length?Math.max(...effs):0;const ew=effs.length?Math.min(...effs):0;return `<button class="skillbtn ${B.sel===k?"sel":""}" data-k="${k}" ${cd?"disabled":""} style="${s.el?`border-color:${ELEMENTS[s.el].color}`:""}"><b>${s.el?ELEMENTS[s.el].ico:"⚪"} ${s.name}</b>${s.type==="attack"?`<span class="eff ${eb>1?"strong":ew<1&&eb<=1?"weak":"mid"}">${eb>1?"▲ сильно":ew<1&&eb<=1?"▼ слабо":"● обычно"}</span>`:""}<small>${s.desc}</small>${cd?`<span class="cd">⏳${cd}</span>`:""}</button>`}).join(""):`<div style="grid-column:1/-1;color:#ffe9b8;font-weight:900;text-align:center;padding:14px">Ход противника: ${f.name}…</div>`}
    <button class="btn red sm" style="grid-column:1/-1" id="flee">🏳️ Сдаться</button></div></div>`;
   $("#blog").scrollTop=1e9;
   $("#flee").onclick=()=>{if(confirm("Сдаться?")){if(B.pvp)pvpForfeit();else endBattle(false)}};
   if(f.side==="ally"){
     $$(".skillbtn",root).forEach(b=>b.onclick=()=>{SFX.select();B.sel=b.dataset.k;renderBattle();const s=SKILLS[B.sel];
       if(s.aoe||s.type==="buff"||s.type==="debuff"){useSkill(f,B.sel,null)}
-      else{const tgtSide=s.type==="heal"?"ally":"enemy";$$(`.fighter[data-side="${tgtSide}"]`).forEach(el=>{const t=(tgtSide==="ally"?B.allies:B.enemies)[+el.dataset.i];if(t.hp>0){el.classList.add("target");el.onclick=()=>useSkill(f,B.sel,t)}});toast(s.type==="heal"?"Выбери союзника":"Выбери цель")}});
+      else{const tgtSide=s.type==="heal"?"ally":"enemy";$$(`.fighter[data-side="${tgtSide}"]`).forEach(el=>{const t=(tgtSide==="ally"?B.allies:B.enemies)[+el.dataset.i];if(t.hp>0){el.classList.add("target");el.onclick=()=>useSkill(f,B.sel,t);if(s.type==="attack")markEff(el,elMult(s.el,f,t))}});toast(s.type==="heal"?"Выбери союзника":"Выбери цель")}});
     // автовыбор цели, если навык уже выбран - подсветить
-    if(B.sel){const s=SKILLS[B.sel];if(!(s.aoe||s.type==="buff"||s.type==="debuff")){const tgtSide=s.type==="heal"?"ally":"enemy";$$(`.fighter[data-side="${tgtSide}"]`).forEach(el=>{const t=(tgtSide==="ally"?B.allies:B.enemies)[+el.dataset.i];if(t.hp>0){el.classList.add("target");el.onclick=()=>useSkill(f,B.sel,t)}})}}
+    if(B.sel){const s=SKILLS[B.sel];if(!(s.aoe||s.type==="buff"||s.type==="debuff")){const tgtSide=s.type==="heal"?"ally":"enemy";$$(`.fighter[data-side="${tgtSide}"]`).forEach(el=>{const t=(tgtSide==="ally"?B.allies:B.enemies)[+el.dataset.i];if(t.hp>0){el.classList.add("target");el.onclick=()=>useSkill(f,B.sel,t);if(s.type==="attack")markEff(el,elMult(s.el,f,t))}})}}
   }
 }
 function vfx(el,kind){if(!el)return;const f=document.createElement("div");f.className="vfx vfx-"+(kind||"basic");
@@ -397,6 +403,7 @@ function vfx(el,kind){if(!el)return;const f=document.createElement("div");f.clas
   f.innerHTML=`<span>${ico}</span><span>${ico}</span><span>${ico}</span><i></i>`;el.append(f);setTimeout(()=>f.remove(),900)}
 function lunge(el,dir){if(!el)return;el.classList.add(dir>0?"lunge-r":"lunge-l");setTimeout(()=>el.classList.remove("lunge-r","lunge-l"),450)}
 function flash(kind){const a=$(".arena-field");if(!a)return;const f=document.createElement("div");f.className="screenflash";f.style.background=ELEMENTS[kind]?ELEMENTS[kind].color:"#fff";a.append(f);setTimeout(()=>f.remove(),400)}
+function markEff(el,m){if($(".effmark",el))return;const b=document.createElement("div");b.className="effmark "+(m>1?"strong":m<1?"weak":"mid");b.textContent=m>1?"▲ СИЛЬНО ×"+m.toFixed(2).replace(/\.?0+$/,""):m<1?"▼ СЛАБО ×"+m.toFixed(2).replace(/\.?0+$/,""):"● ОБЫЧНО";el.append(b)}
 function pop(el,txt,cls){if(!el)return;const p=document.createElement("div");p.className="dmgpop "+(cls||"");p.textContent=txt;el.append(p);setTimeout(()=>p.remove(),1000)}
 function fEl(f){return $(`.fighter[data-side="${f.side}"][data-i="${f.i}"]`)}
 function showTiming(mode,cb,timeb){timeb=timeb||0;
@@ -452,10 +459,15 @@ function applySkill(actor,k,target,atkM,blk){
     const targets=s.aoe?alive(foes):[target];
     let healed=0;
     targets.forEach(t=>{const m=elMult(s.el,actor,t);const crit=RNG()<(actor.crit||0.1);const vuln=(t.fx||[]).some(e=>e.k==="vuln")?1.4:1;
-      let dmg=atkM*(1-blk)*(actor.atk*(1+actor.buffAtk-actor.debuff)*s.power*(1+((actor.dmgB||{})[s.el]||0))*(s.aoe?0.7:1))*(100/(100+t.def*(1+t.buffDef)))*m*vuln*rnd(90,110)/100*(crit?1.7:1);
+      if(t.tb.dodge&&RNG()<t.tb.dodge){pop(fEl(t),"УКЛОНЕНИЕ","weak");log(`💨 ${t.name} уклонился!`);return}
+      const rage=actor.tb.rage&&actor.hp/actor.maxhp<0.4?1+actor.tb.rage:1;const exec=actor.tb.execute&&t.hp/t.maxhp<(actor.tb.execute)?1.5:1;const cm=crit?1.7+(actor.tb.critdmg||0):1;
+      let dmg=atkM*(1-blk)*(actor.atk*(1+actor.buffAtk-actor.debuff)*s.power*(1+((actor.dmgB||{})[s.el]||0))*(s.aoe?0.7:1)*rage*exec)*(100/(100+t.def*(1+t.buffDef)))*m*vuln*rnd(90,110)/100*cm;
       dmg=Math.max(1,Math.round(dmg));
+      if(t.tb.thorns&&actor.hp>0){const th=Math.max(1,Math.round(dmg*t.tb.thorns));actor.hp=Math.max(0,actor.hp-th);pop(fEl(actor),"-"+th,"weak");log(`🌵 ${t.name} вернул ${th} урона`)}
       if(t.shield>0){const ab=Math.min(t.shield,dmg);t.shield-=ab;dmg-=ab;if(ab)log(`🔰 щит ${t.name} поглотил ${ab}`)}
       t.hp=Math.max(0,t.hp-dmg);healed+=dmg;
+      if(t.hp<=0&&t.tb.revive&&!t.reviveUsed){t.reviveUsed=true;t.hp=Math.round(t.maxhp*t.tb.revive);pop(fEl(t),"✨ ВОСКРЕС","heal");log(`✨ ${t.name} поднимается с ${t.hp} HP!`)}
+      if(t.hp>0){t.fx=t.fx||[];if(actor.tb.burnaura&&RNG()<actor.tb.burnaura&&!t.fx.some(e=>e.k==="burn")){t.fx.push({k:"burn",t:3});log(`🔥 ${t.name} подожжён`)}if(actor.tb.stunaura&&RNG()<actor.tb.stunaura&&!t.fx.some(e=>e.k==="stun")){t.fx.push({k:"stun",t:1});log(`💫 ${t.name} оглушён`)}}
       if(s.effect&&t.hp>0){const ch=s.chance||1;if(RNG()<ch){t.fx=t.fx||[];
         if(s.effect==="burn")t.fx.push({k:"burn",t:3});
         else if(s.effect==="stun")t.fx.push({k:"stun",t:1});
@@ -468,7 +480,7 @@ function applySkill(actor,k,target,atkM,blk){
     const ls=(s.effect==="lifesteal"?0.5:0)+(actor.lifesteal||0);if(ls>0&&healed>0){const h=Math.round(healed*ls);actor.hp=Math.min(actor.maxhp,actor.hp+h);pop(fEl(actor),"+"+h,"heal");log(`🩸 ${actor.name} восстановил ${h}`)}
   }else if(s.type==="heal"){
     const targets=s.aoe?alive(friends):[target];
-    targets.forEach(t=>{const h=Math.round(t.maxhp*s.power*(1+((actor.dmgB||{})[s.el]||0)));t.hp=Math.min(t.maxhp,t.hp+h);
+    targets.forEach(t=>{const h=Math.round(t.maxhp*s.power*(1+((actor.dmgB||{})[s.el]||0))*(1+(actor.tb.healboost||0)));t.hp=Math.min(t.maxhp,t.hp+h);
       if(s.effect==="hot"){t.fx=t.fx||[];t.fx.push({k:"hot",t:2})}
       if(s.effect==="cleanse"){t.fx=(t.fx||[]).filter(e=>e.k==="hot");t.debuff=0}SFX.heal();vfx(fEl(t),"heal");pop(fEl(t),"+"+h,"heal");log(`${actor.name} лечит ${t.name} на ${h}`)});
   }else if(s.type==="buff"){
@@ -672,10 +684,10 @@ function openDungeon(){const g=dgState();if(!g.next)g.next=dgEnemies(g.floor);co
   $("#dgo",m).onclick=()=>{closeModal();pickTeamModal("🏚️ Этаж "+(g.floor+1),g.hp?"<p>⚠️ HP команды переносится.</p>":"",()=>{
     startBattle({name:"Темница, этаж "+(g.floor+1),lvl,bg:BATTLE_BG.dungeon,ids:g.next,carry:g.hp||null,onEnd:(win,hpLeft)=>{
       if(win){g.floor++;g.best=Math.max(g.best,g.floor);g.hp=hpLeft;g.next=dgEnemies(g.floor);const gold=400*g.floor+rnd(0,200),food=100*g.floor;S.gold+=gold;S.food+=food;S.scrolls=(S.scrolls||0)+1;addXP(80+30*g.floor);let chest="";if(g.floor%5===0){S.gems+=10+g.floor;S.scrolls+=5;chest=`<p><b>🎁 Сундук: +💎${10+g.floor} +📜5</b></p>`}
-        save();updateTop();modal(`<div class="result win">ЭТАЖ ${g.floor} ЗАЧИЩЕН</div><div class="center" style="font-weight:900">+🪙${gold} +🍖${food} +📜1</div>${chest}<div class="row" style="justify-content:center"><button class="btn green" id="dn">Дальше</button></div>`,{closable:false});$("#dn").onclick=()=>{closeModal();openDungeon()}}
+        save();updateTop();modal(`<div class="result win">ЭТАЖ ${g.floor} ЗАЧИЩЕН</div><div class="center" style="font-weight:900">+🪙${gold} +🍖${food} +📜1</div>${chest}<div class="row" style="justify-content:center"><button class="btn green" id="dn">Дальше</button></div>`,{closable:false});$("#dn").onclick=()=>{closeModal();show("events");openDungeon()}}
       else{g.floor=0;g.hp=null;g.next=null;save();modal(`<div class="result lose">ТЕМНИЦА ПОГЛОТИЛА ВАС</div><p class="center">Серия прервана. Рекорд: ${g.best}.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('map')">Ок</button></div>`,{closable:false})}}})})};
   const dh=$("#dheal",m);if(dh)dh.onclick=()=>{const c=3+Math.floor(g.floor/3);if(S.gems<c){toast("Не хватает 💎");return}S.gems-=c;g.hp=null;save();updateTop();openDungeon()};
-  const de=$("#dexit",m);if(de)de.onclick=()=>{g.floor=0;g.hp=null;g.next=null;save();closeModal();toast("Вы вышли из темницы")}}
+  const de=$("#dexit",m);if(de)de.onclick=()=>{g.floor=0;g.hp=null;g.next=null;save();closeModal();if(B){clearInterval(B.tick);B=null}$("#navbar").classList.remove("locked");playMusic("map");show("map");toast("Вы вышли из темницы")}}
 
 /* ================= ДОРОГА НАГРАД ================= */
 function levelRewards(l){const r=[];
@@ -845,14 +857,14 @@ function openCampNode(i){const n=CAMPAIGN_NODES[i];const replay=i<campProgress()
   const m=modal(`<h2>${n.final?"☠️":n.boss?"👹":"⚔️"} ${n.name}</h2><div class="center">${n.ids.map(id=>`<img src="assets/${id}.png" style="height:90px">`).join("")}</div><p class="center">${n.ids.map(id=>dInfo(id).name+" "+dInfo(id).els.map(elIco).join("")).join("<br>")}</p><p class="center"><small>Уровень врагов: ${n.lvl}${replay?" · повтор (награда ×0.3)":""}</small></p>
   <div class="row" style="justify-content:center"><button class="btn red" id="cgo">В бой</button></div>`);
   $("#cgo",m).onclick=()=>{closeModal();pickTeamModal(n.name,"",()=>{playDialog(n.pre,()=>{
-    startBattle({name:n.name,lvl:n.lvl,ids:n.ids,campaign:true,ch:n.ch,boss:n.boss,final:n.final,music:n.music,onEnd:(win)=>{if(win){const mult=replay?.3:1;const gold=Math.round((300*n.lvl+(n.boss?1500:0))*mult),xp=Math.round((60+80*n.lvl)*mult),gems=replay?0:(n.boss?25:8),sc=Math.round((2+Math.floor(n.lvl/3))*mult);S.gold+=gold;S.gems+=gems;S.scrolls=(S.scrolls||0)+sc;addXP(xp);
+    startBattle({name:n.name,lvl:n.lvl,ids:n.ids,campaign:true,ch:n.ch,boss:n.boss,final:n.final,music:n.music,onEnd:(win)=>{if(win){const mult=replay?.3:1;const gold=Math.round((300*n.lvl+(n.boss?1500:0))*mult*(1+lootBonus())),xp=Math.round((60+80*n.lvl)*mult),gems=replay?0:(n.boss?25:8),sc=Math.round((2+Math.floor(n.lvl/3))*mult);S.gold+=gold;S.gems+=gems;S.scrolls=(S.scrolls||0)+sc;addXP(xp);
         if(!replay){S.camp.done=i+1;if(i+1>S.wins)S.wins=i+1;S.quests.wins=(S.quests.wins||0)+1}
-        let extra="";if(n.final&&!replay){S.gems+=300;S.scrolls=(S.scrolls||0)+50;giveEgg("d107","campaign");extra="<p><b>🏆 Кампания пройдена! +💎300 +📜50 и 🥚 яйцо Алмазного Голема.</b></p>"}
+        let extra="";if(n.final&&!replay){S.gems+=300;S.scrolls=(S.scrolls||0)+50;giveEgg("d122","campaign");extra="<p><b>🏆 Кампания пройдена! +💎300 +📜50 и 🥚 яйцо Антона Гусева.</b></p>"}else if(n.name==="Г.Б.Т."&&!replay){S.gems+=150;S.scrolls=(S.scrolls||0)+30;giveEgg("d107","campaign");extra="<p><b>👑 Г.Б.Т. повержен! +💎150 +📜30 и 🥚 яйцо Алмазного Голема. Но история не закончена…</b></p>"}
         save();updateTop();playDialog(n.post,()=>{playMusic("campaign");modal(`<div class="result win">ПОБЕДА!</div><div class="center" style="font-weight:900">+🪙${gold} +💎${gems} +📜${sc} +⭐${xp}</div>${extra}<div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('campaign')">Дальше</button></div>`,{closable:false})})}
       else{addXP(10);save();playMusic("campaign");modal(`<div class="result lose">ПОРАЖЕНИЕ</div><p class="center">${n.name} оказался сильнее. Прокачай драконов в Академии и вернись.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('campaign')">Ок</button></div>`,{closable:false})}}})})})}}
 function playDialog(lines,done){if(!lines||!lines.length){done();return}let i=0;
   const root=$("#modal-root");
-  function draw(){const [img,who,text]=lines[i];const isAv=img.startsWith("av");root.innerHTML=`<div class="dlg-overlay"><div class="dlg"><img class="dlg-img" src="assets/${isAv?"av/"+img+".jpg":img+".png"}"><div class="dlg-box"><div class="dlg-who">${who}</div><div class="dlg-text" id="dtext"></div><div class="dlg-hint">нажми, чтобы продолжить ▸ &nbsp; <a id="dskip">пропустить</a></div></div></div></div>`;
+  function draw(){const [img,who,text]=lines[i];const isAv=img.startsWith("av"),far=img.startsWith("say_");root.innerHTML=`<div class="dlg-overlay"><div class="dlg"><img class="dlg-img ${far?"far":""}" src="assets/${isAv?"av/"+img+".jpg":img+".png"}"><div class="dlg-box"><div class="dlg-who">${who}</div><div class="dlg-text" id="dtext"></div><div class="dlg-hint">нажми, чтобы продолжить ▸ &nbsp; <a id="dskip">пропустить</a></div></div></div></div>`;
     const el=$("#dtext");let k=0;const tw=setInterval(()=>{el.textContent=text.slice(0,++k);if(k>=text.length)clearInterval(tw)},18);
     $(".dlg-overlay").onclick=e=>{if(e.target.id==="dskip"){clearInterval(tw);root.innerHTML="";done();return}if(k<text.length){clearInterval(tw);el.textContent=text;k=text.length;return}i++;if(i<lines.length)draw();else{root.innerHTML="";done()}}}
   draw()}
@@ -951,7 +963,7 @@ function refreshNetUI(){const chip=$("#netchip");if(chip){const st=NET.status===
 const st=$("#netdot");if(st){st.className="netdot "+NET.status;st.title=NET.status==="online"?`Онлайн: ${NET.online}`:"Нет связи с сервером"}
   if($("#scr-pvp").classList.contains("active")&&!B)renderPvp();if($("#scr-friends").classList.contains("active"))renderFriends()}
 function startPvp(m){if(!NET.oppFighters)return;NET.pendingMatch=null;
-  const ef=NET.oppFighters.filter(f=>dInfo(f.id)).map((f,i)=>({...f,side:"enemy",i,fx:[],cds:{}}));if(!ef.length){toast("У соперника нет команды");return}
+  const ef=NET.oppFighters.filter(f=>dInfo(f.id)).map((f,i)=>({...f,side:"enemy",i,fx:[],cds:{},tb:f.tb||{},reviveUsed:false}));if(!ef.length){toast("У соперника нет команды");return}
   NET.room=m.room;B=null;
   startBattle({name:m.opp.name,lvl:Math.max(...ef.map(f=>f.lvl)),ids:ef.map(f=>f.id),pvp:true,host:m.you===0,seed:m.seed,enemyFighters:ef});
 }

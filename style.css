@@ -454,3 +454,19 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 .adm-tabs{flex-wrap:wrap;gap:4px;margin-bottom:8px}.adm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;max-height:65vh;overflow:auto}.panel.sub{padding:10px;background:rgba(255,255,255,.35);border-radius:10px}.panel.sub h3{margin:0 0 6px;font-size:.95rem}.panel.sub textarea,.panel.sub input{width:100%;box-sizing:border-box;margin-bottom:6px}.panel.sub .row input{width:auto}.adm-more{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}tr.adm-ban td{background:rgba(255,0,0,.08)}
 .visit-scroll{overflow:auto;max-height:55vh;display:flex;justify-content:center;padding-bottom:10px}.visit-scroll .itile{cursor:default}.vsum{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(max-width:600px){.vsum{grid-template-columns:1fr}}.vcards{display:flex;gap:6px;flex-wrap:wrap}.vcard{background:rgba(255,255,255,.5);border-radius:8px;padding:4px;text-align:center;width:88px;font-size:.75rem}.vcard img{width:60px;height:60px;object-fit:contain;display:block;margin:0 auto}.vcard b{display:block;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hab-scene.hab-img .hab-dr img{filter:drop-shadow(0 4px 6px rgba(0,0,0,.6))}.phone-img{height:90px!important;filter:none!important;animation:ring 1.2s infinite}@keyframes ring{0%,100%{transform:rotate(0)}10%{transform:rotate(-8deg)}20%{transform:rotate(8deg)}30%{transform:rotate(-6deg)}40%{transform:rotate(6deg)}50%{transform:rotate(0)}}.itile .bico.phone{font-size:0;width:44px;height:44px;background:url(assets/phone.png) center/contain no-repeat}
+
+/* индикаторы эффективности */
+.skillbtn .eff{display:block;font-size:11px;font-weight:900;margin:1px 0}.eff.strong,.effmark.strong{color:#1fe05a}.eff.weak,.effmark.weak{color:#ff6a6a}.eff.mid,.effmark.mid{color:#ffe37a}
+.effmark{position:absolute;top:-22px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);border-radius:8px;padding:2px 6px;font-size:11px;font-weight:900;white-space:nowrap;z-index:5;pointer-events:none;animation:effpulse 1s infinite}
+@keyframes effpulse{50%{transform:translateX(-50%) scale(1.1)}}
+/* большие спрайты */
+.fighter.bigspr img{width:150px;height:130px;margin-left:-25px}
+.dlg-img.far{width:110px!important;height:110px!important;opacity:.85;filter:blur(.3px) brightness(.85);align-self:flex-start;margin-top:10px}
+/* острова */
+.isl-deco{position:absolute;font-size:34px;z-index:1;filter:drop-shadow(2px 3px 0 rgba(0,0,0,.35));pointer-events:none}
+.iso-base.isl-sand{box-shadow:0 30px 0 #c9a24a,0 46px 0 #8a6a3c,0 60px 40px rgba(0,0,60,.4),inset 0 -20px 40px rgba(120,80,0,.35)!important}
+.iso-base.isl-ice{box-shadow:0 30px 0 #7fb8d0,0 46px 0 #4a7a9a,0 60px 40px rgba(0,0,60,.5),inset 0 -20px 40px rgba(0,60,120,.3)!important}
+.iso-base.isl-lava{box-shadow:0 30px 0 #2a1a14,0 46px 0 #ff6a2a,0 60px 60px rgba(255,80,0,.5),inset 0 -20px 40px rgba(255,60,0,.35)!important}
+.iso-base.isl-cloud{box-shadow:0 30px 0 #fff,0 46px 0 #cfe4ff,0 60px 60px rgba(255,255,255,.4),inset 0 -20px 40px rgba(180,200,255,.4)!important;border-radius:45%/50%}
+.iso-base.isl-night{box-shadow:0 30px 0 #1a1030,0 46px 0 #0a0818,0 60px 60px rgba(120,60,255,.35),inset 0 -20px 40px rgba(60,0,120,.5)!important}
+.iso-base.isl-jungle{box-shadow:0 30px 0 #5a4a2a,0 46px 0 #3a2a1a,0 60px 40px rgba(0,0,60,.4),inset 0 -20px 40px rgba(0,80,0,.5)!important}
