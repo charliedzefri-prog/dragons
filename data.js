@@ -335,9 +335,9 @@ const ROOM_REQ = [8, 12, 18];
 const INCUBATOR_NESTS = l => l>=15?3:l>=7?2:1;
 const HATCH_TIME = {common:30e3, rare:90e3, epic:240e3, legendary:600e3, divine:900e3, tyrant:1200e3};
 const BREED_TIME = 120*1000;
-const LEGEND_BREED = {minLvl:10, chance:0.10, time:300*1000};
-const DIVINE_BREED = {minLvl:20, chance:0.15, time:600*1000};
-const TYRANT_BREED = {minLvl:25, chance:0.10, time:1200*1000};
+const LEGEND_BREED = {minLvl:15, chance:0.04, epicBonus:0.02, time:600*1000}; // только обычные родители ур.15+; +2% если оба эпики
+const DIVINE_BREED = {minLvl:25, chance:0.06, time:1200*1000}; // только Легенда+Легенда ур.25+
+const TYRANT_BREED = {minLvl:30, chance:0.04, time:2400*1000}; // только Бог+Бог ур.30+
 const SUDDEN_DEATH={from:8,step:0.10}; // с 8-го раунда весь урон +10% за раунд — против затяжных боёв
 const TIMING = {perfect:{atk:1.3,block:0.5,w:0.14,label:"ИДЕАЛЬНО!"}, good:{atk:1.0,block:0.25,w:0.42,label:"Хорошо"}, miss:{atk:0.8,block:0,label:"Мимо"}};
 const XP_TABLE = [0, 60, 120, 200, 320, 480, 700, 950, 1300];

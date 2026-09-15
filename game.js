@@ -618,23 +618,28 @@ setInterval(()=>{if($("#scr-academy").classList.contains("active")&&!$("#modal-r
 /* ================= РАЗВЕДЕНИЕ ================= */
 let breedSel=[];
 function breedResult(a,b){const da=dInfo(a),db=dInfo(b);const els=[...new Set([...da.els,...db.els])];
+  // Особые (легенда/бог/тиран) выпадают ТОЛЬКО по правилам legendChance; Легенда+любой никогда не даст легенду, Бог+любой — бога.
   const lc=legendChance(a,b);if(lc&&Math.random()<lc.p){const pool=DRAGONS.filter(d=>!isEvent(d.id)&&!d.boss&&(lc.kind==="tyrant"?isTyrant(d.id):lc.kind==="divine"?isDivine(d.id):isLegend(d.id)));return pick(pool).id}
-  if(isDivine(a)&&isDivine(b)){return pick(DRAGONS.filter(d=>isDivine(d.id)&&!isEvent(d.id))).id}
-  if(isLegend(a)&&isLegend(b)){return pick(DRAGONS.filter(d=>isLegend(d.id)&&!isEvent(d.id))).id}
-  let pool=DRAGONS.filter(d=>d.id!==a&&d.id!==b&&!isSpecial(d.id)&&d.els.every(e=>els.includes(e)));if(!pool.length)pool=DRAGONS.filter(d=>!isSpecial(d.id)&&d.els.every(e=>els.includes(e)));if(!pool.length)pool=DRAGONS.filter(d=>!isSpecial(d.id));
+  let pool=DRAGONS.filter(d=>d.id!==a&&d.id!==b&&!isSpecial(d.id)&&!d.boss&&d.els.every(e=>els.includes(e)));if(!pool.length)pool=DRAGONS.filter(d=>!isSpecial(d.id)&&!d.boss&&d.els.some(e=>els.includes(e)));if(!pool.length)pool=DRAGONS.filter(d=>!isSpecial(d.id)&&!d.boss);
   const rw={common:50,rare:30,epic:14,legendary:5,divine:1};
   const pr=Math.max(RARITY[da.rarity].mult,RARITY[db.rarity].mult);
-  const weighted=pool.map(d=>({d,w:rw[d.rarity]*(pr>1.4&&["epic","legendary","divine"].includes(d.rarity)?3:1)*(d.els.filter(e=>els.includes(e)).length)}));
+  const weighted=pool.map(d=>({d,w:rw[d.rarity]*(pr>1.4&&["epic","legendary","divine"].includes(d.rarity)?3:1)*Math.max(1,d.els.filter(e=>els.includes(e)).length)}));
   let tot=weighted.reduce((s,x)=>s+x.w,0),r=Math.random()*tot;for(const x of weighted){r-=x.w;if(r<=0)return x.d.id}return pool.length?pool[0].id:a}
 function isLegend(id){return dInfo(id).els.includes("legend")}function isDivine(id){return dInfo(id).els.includes("divine")}function isTyrant(id){return dInfo(id).els.includes("tyrant")}function isEvent(id){return !!dInfo(id).eventOnly}function isSpecial(id){return isLegend(id)||isDivine(id)||isTyrant(id)||isEvent(id)}
 function possibleChildren(a,b){const els=[...new Set([...dInfo(a).els,...dInfo(b).els])];return DRAGONS.filter(d=>d.id!==a&&d.id!==b&&!isSpecial(d.id)&&d.els.every(e=>els.includes(e))).map(d=>d.id)}
-function legendChance(a,b){const la=S.dragons[a].lvl,lb=S.dragons[b].lvl;if(isDivine(a)&&isDivine(b)&&la>=TYRANT_BREED.minLvl&&lb>=TYRANT_BREED.minLvl)return {kind:"tyrant",p:TYRANT_BREED.chance};if(isLegend(a)&&isLegend(b)&&la>=DIVINE_BREED.minLvl&&lb>=DIVINE_BREED.minLvl)return {kind:"divine",p:DIVINE_BREED.chance};if(la>=LEGEND_BREED.minLvl&&lb>=LEGEND_BREED.minLvl)return {kind:"legend",p:LEGEND_BREED.chance+(isLegend(a)||isLegend(b)?0.15:0)};return null}
+function legendChance(a,b){const la=S.dragons[a].lvl,lb=S.dragons[b].lvl;const ml=Math.min(la,lb);
+  const spA=isSpecial(a)||dInfo(a).boss,spB=isSpecial(b)||dInfo(b).boss;
+  if(isDivine(a)&&isDivine(b)){return ml>=TYRANT_BREED.minLvl?{kind:"tyrant",p:TYRANT_BREED.chance}:{kind:"tyrant",p:0,need:TYRANT_BREED.minLvl}}
+  if(isLegend(a)&&isLegend(b)){return ml>=DIVINE_BREED.minLvl?{kind:"divine",p:DIVINE_BREED.chance}:{kind:"divine",p:0,need:DIVINE_BREED.minLvl}}
+  if(spA||spB)return null; // легенда/бог/тиран + любой другой — никогда особого потомка
+  if(ml>=LEGEND_BREED.minLvl){const ep=dInfo(a).rarity==="epic"&&dInfo(b).rarity==="epic";return {kind:"legend",p:LEGEND_BREED.chance+(ep?LEGEND_BREED.epicBonus:0)}}
+  return {kind:"legend",p:0,need:LEGEND_BREED.minLvl}}
 function renderBreed(){
   const root=$("#scr-breed");const br=S.breeding;const own=housedIds();
   const eggs=[];
-  let html=`<div style="padding:14px"><div class="panel"><h2>💞 Гнездо разведения</h2><small>Потомок — <b>только</b> из стихий родителей. 👑 <b>Легендарных</b> нельзя купить: их можно вывести только если оба родителя ур. 10+ (шанс 10%, время 5 мин), Легенда+Легенда всегда даёт Легенду, а на ур. 20+ — шанс 🔱 Божественного. Как в оригинале!</small>`;
+  let html=`<div style="padding:14px"><div class="panel"><h2>💞 Гнездо разведения</h2><small>Потомок — <b>только</b> из стихий родителей. 👑 <b>Легендарных</b> нельзя купить: шанс ${Math.round(LEGEND_BREED.chance*100)}% (+${Math.round(LEGEND_BREED.epicBonus*100)}% если оба эпики) только у <b>обычных</b> родителей ур. ${LEGEND_BREED.minLvl}+. Легенда+Легенда ур. ${DIVINE_BREED.minLvl}+ — ${Math.round(DIVINE_BREED.chance*100)}% на 🔱 Бога, Бог+Бог ур. ${TYRANT_BREED.minLvl}+ — ${Math.round(TYRANT_BREED.chance*100)}% на 💀 Тирана. <b>Легенда/Бог + любой другой особого потомка не дают никогда.</b></small>`;
   if(br){const left=Math.max(0,br.end-Date.now());html+=`<div class="breed-box"><img src="assets/${br.a}.png"><span class="heart">💞</span><img src="assets/${br.b}.png"><div style="flex:1"><b>${dInfo(br.a).name}</b> + <b>${dInfo(br.b).name}</b><div class="bar" style="margin:6px 0"><div style="width:${100-left/(br.total||BREED_TIME)*100}%"></div></div><button class="btn ${left<=0?"green":""}" id="hatchb" ${left<=0?"":"disabled"}>${left<=0?"🥚 Получить яйцо!":"⏳ "+Math.ceil(left/1000)+" с"}</button> <button class="btn sm purple" id="speed" ${left<=0?"disabled":""}>💎${Math.ceil(left/20000)} ускорить</button></div></div>`}
-  else{html+=`<div class="breed-box">${[0,1].map(i=>breedSel[i]?`<img src="assets/${breedSel[i]}.png" data-un="${i}" title="убрать">`:`<div class="acad-slot empty" style="width:90px;height:100px">?</div>`).join('<span class="heart">💞</span>')}<div style="flex:1">${breedSel.length===2?`${(()=>{const lc=legendChance(breedSel[0],breedSel[1]);return lc?`<div class="badge gold">${lc.kind==="tyrant"?"💀 шанс Тиранского":lc.kind==="divine"?"🔱 шанс Божественного":"👑 шанс Легендарного"}: ${Math.round(lc.p*100)}%</div>`:`<small>👑 Легендарный шанс появится, если оба родителя ур. ${LEGEND_BREED.minLvl}+</small>`})()}<br><small>Возможные потомки:</small><div class="picker">${possibleChildren(breedSel[0],breedSel[1]).map(id=>`<img src="assets/${id}.png" title="${dInfo(id).name}" style="width:44px;height:48px">`).join("")||"<i>нет</i>"}</div>`:""}<button class="btn green" id="breed" ${breedSel.length===2?"":"disabled"}>Начать (🪙500)</button></div></div>`}
+  else{html+=`<div class="breed-box">${[0,1].map(i=>breedSel[i]?`<img src="assets/${breedSel[i]}.png" data-un="${i}" title="убрать">`:`<div class="acad-slot empty" style="width:90px;height:100px">?</div>`).join('<span class="heart">💞</span>')}<div style="flex:1">${breedSel.length===2?`${(()=>{const lc=legendChance(breedSel[0],breedSel[1]);return lc&&lc.p>0?`<div class="badge gold">${lc.kind==="tyrant"?"💀 шанс Тиранского":lc.kind==="divine"?"🔱 шанс Божественного":"👑 шанс Легендарного"}: ${Math.round(lc.p*100)}%</div>`:lc?`<small>${lc.kind==="tyrant"?"💀 Шанс Тиранского":lc.kind==="divine"?"🔱 Шанс Божественного":"👑 Шанс Легендарного"} появится, если оба родителя ур. ${lc.need}+</small>`:`<small>⛔ Особый + обычный: особого потомка не будет никогда</small>`})()}<br><small>Возможные потомки:</small><div class="picker">${possibleChildren(breedSel[0],breedSel[1]).map(id=>`<img src="assets/${id}.png" title="${dInfo(id).name}" style="width:44px;height:48px">`).join("")||"<i>нет</i>"}</div>`:""}<button class="btn green" id="breed" ${breedSel.length===2?"":"disabled"}>Начать (🪙500)</button></div></div>`}
   html+=`</div>${eggs.length?`<div class="panel" style="margin-top:12px"><h2>🥚 Яйца (${eggs.length})</h2><div class="picker">${eggs.map((id,i)=>`<button class="btn" data-egg="${i}">🥚 Вылупить</button>`).join("")}</div></div>`:""}
   <div class="panel" style="margin-top:12px"><h2>Родители</h2><div class="dr-grid" style="padding:0">${own.map(id=>dragonCard(id,breedSel.includes(id)?'<div class="badge">ВЫБРАН</div>':"")).join("")}</div></div></div>`;
   root.innerHTML=html;
@@ -711,7 +716,7 @@ function levelRewards(l){const r=[];
   if(ROOM_REQ.includes(l))r.push({ico:"🏫",t:"Комната Академии №"+(ROOM_REQ.indexOf(l)+1)});
   if(l===7||l===15)r.push({ico:"🥚",t:"Гнездо инкубатора №"+(l===7?2:3)});
   if(l===ZODIAC_EVENT.req)r.push({ico:"♈",t:"Испытание зодиаков",big:true});
-  if(l===LEGEND_BREED.minLvl)r.push({ico:"👑",t:"Разведение легендарных (драконы ур.10+)",big:true});
+  if(l===LEGEND_BREED.minLvl)r.push({ico:"👑",t:"Разведение легендарных (обычные драконы ур."+LEGEND_BREED.minLvl+"+)",big:true});
   if(l===DIVINE_BREED.minLvl)r.push({ico:"🔱",t:"Разведение божественных",big:true});
   if(l===TYRANT_BREED.minLvl)r.push({ico:"💀",t:"Разведение тиранских (Божество+Божество)",big:true});
   return r}
