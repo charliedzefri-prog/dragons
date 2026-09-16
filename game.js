@@ -765,7 +765,7 @@ function startJohnny(){if(S.level<JOHNNY_EVENT.req){toast("Нужен урове
   pickTeamModal("🕯️ Великий Джонни","<div class='desc'>Жархнне, усиленный порталом. Посох рассекает всех, удар оглушает. Каждая 2-я победа — 🥚 яйцо MR Lulu.</div>",()=>{
   const lvl=S.level+JOHNNY_EVENT.lvlBonus;S.johnnyLast=Date.now();save();
   playDialog([["d157_hostage","Жархнне (в плену)","Хранитель… посох… он не мой… он держит меня…"],["d157_raise","Великий Джонни","Я — ВЕЛИКИЙ ДЖОННИ. Портал дал мне посох, посох дал мне ВСЁ."],["d135","MR Lulu","Джонни, опусти палку. Это же я, Лулу!"],["d157","Великий Джонни","Палку?! ЭТО СОЛНЦЕ НА ПАЛКЕ. Смотри, как оно РАССЕКАЕТ."]],()=>{
-    startBattle({name:"Великий Джонни",lvl,ids:JOHNNY_EVENT.ids,bg:"citadel",boss:true,onEnd:(win)=>{
+    startBattle({name:"Великий Джонни",lvl,ids:JOHNNY_EVENT.ids,bg:"citadel",boss:true,music:"johnny",onEnd:(win)=>{
       if(win){S.johnnyWins=(S.johnnyWins||0)+1;const r=JOHNNY_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(500+40*lvl);let egg="";if(S.johnnyWins%JOHNNY_EVENT.eggEvery===0){giveEgg(JOHNNY_EVENT.egg,"johnny");egg="<p><b>🥚 Яйцо MR Lulu!</b></p>"}
         save();updateTop();playDialog([["d157_hostage","Жархнне","…посох упал. Я… я снова просто Жархнне? Спасибо. Наверное."]],()=>modal(`<div class="result win">ПОСОХ СЛОМАН</div><div class="center" style="font-weight:900">+🪙${fmt(r.gold)} +💎${r.gems} +📜${r.scrolls}</div>${egg}<p class="center"><small>Побед над Джонни: ${S.johnnyWins}. Следующее яйцо через ${JOHNNY_EVENT.eggEvery-(S.johnnyWins%JOHNNY_EVENT.eggEvery)} побед(ы).</small></p><div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('events')">Ок</button></div>`,{closable:false}))}
       else{save();modal(`<div class="result lose">РАССЕЧЕНО</div><p class="center">Джонни поднимает посох над головой. Попробуй снова через 6 часов.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">Ок</button></div>`,{closable:false})}}})})})}
@@ -878,7 +878,7 @@ const TRACKS={ // ноты (полутоны от A3), темп, характе�
   campaign:{bpm:80,bass:[0,0,0,0,-4,-4,-4,-4,-2,-2,-2,-2,3,3,3,3],lead:[12,14,15,19,15,14,12,10, 8,10,12,15,12,10,8,7],wave:"triangle",gain:.045},
 };
 function playMusic(name){if(MUSIC.cur===name)return;stopMusic();MUSIC.cur=name;if(!S||!S.music)return;
-  if(name==="gbt"||name==="soviet"){const a=new Audio("assets/"+name+".mp3");a.loop=true;a.volume=.6;a.play().catch(()=>{});MUSIC.mp3=a;return}
+  if(name==="gbt"||name==="soviet"||name==="johnny"){const a=new Audio("assets/"+name+".mp3");a.loop=true;a.volume=.6;a.play().catch(()=>{});MUSIC.mp3=a;return}
   const T=TRACKS[name];if(!T)return;try{MUSIC.ctx=MUSIC.ctx||new (window.AudioContext||window.webkitAudioContext)();}catch(e){return}
   const ctx=MUSIC.ctx;if(ctx.state==="suspended")ctx.resume();
   const master=ctx.createGain();master.gain.value=T.gain;master.connect(ctx.destination);MUSIC.master=master;

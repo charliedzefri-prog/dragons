@@ -153,7 +153,7 @@ const BUILDINGS = {
   academy:        {req:8, name:"Академия драконов",ico:"🏫", cost:{gold:6000}, unique:true, special:"academy"},
   incubator:      {req:1, name:"Инкубатор",        ico:"🥚", cost:{gold:0},    unique:true, special:"incubator"},
   library:        {req:5, name:"Библиотека",       ico:"📚", cost:{gold:2500}, unique:true, special:"library", scrolls:2, time:120*1000},
-  phone:          {req:4, name:"Телефонная будка", ico:"📞", cost:{gold:1000}, unique:true, special:"phone"},
+  phone:          {req:15, name:"Телефонная будка", ico:"📞", cost:{gold:1000}, unique:true, special:"phone"},
   dungeon:        {req:6, name:"Темница",          ico:"🏚️", cost:{gold:3000}, unique:true, special:"dungeon"},
   farm:           {req:1, name:"Ферма",            ico:"🌾", cost:{gold:300}, food:30, farm:true},
   bigfarm:        {req:6, name:"Большая ферма",    ico:"🚜", cost:{gold:1500}, food:150, farm:true},
@@ -386,9 +386,9 @@ DRAGONS.forEach(dr=>{
   DRAGON_REQ[dr.id]=Math.max(RARITY_REQ[dr.rarity], habReq);
 });
 // ====== СОБЫТИЯ ======
-const PHONE_EVENT={req:4, cooldown:60*60*1000, team:["d71","d93","d15"], lvlBonus:6, reward:{gold:3000,gems:15,scrolls:10}, egg:"d71"};
+const PHONE_EVENT={req:15, cooldown:60*60*1000, team:["d71","d93","d15"], lvlBonus:6, reward:{gold:3000,gems:15,scrolls:10}, egg:"d71"};
 const ZODIAC_IDS=["d101","d106","d96","d102","d100","d98","d38","d104","d105","d99","d97","d103","d39"];
-const ZODIAC_EVENT={req:10, stages:13, eggAt:[4,8,13], baseLvl:8};
+const ZODIAC_EVENT={req:15, stages:13, eggAt:[4,8,13], baseLvl:8};
 const DUNGEON={req:6};
 
 // ====== АВАТАРКИ ======
@@ -445,6 +445,6 @@ const CAMPAIGN_NODES=CAMPAIGN.flatMap(c=>c.nodes.map(n=>({...n,ch:c.ch})));
 const HAB_BG={curse:"abyss",german:"base",night:"nightmare_hall",glitch:"darknet",clock:"ice_hell",cyber:"base",digit:"room1",royal:"gallery",sheep:"snow",bird:"skyship",beast:"darkside",cat:"room1",doc:"base",money:"gallery",zodiac:"skyship"};
 const BATTLE_BG={default:"versus",pvp:"versus",phone:"ice_hell",zodiac:"skyship",dungeon:"nightmare1",campaign:{1:"snow",2:"base",3:"nightmare_hall",4:"nightmare2",5:"base",6:"abyss"},boss:"darkside",final:"nightmare0"};
 
-const SOVIET_EVENT={req:30, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold:20000,gems:60,scrolls:40}, egg:"d132", cooldown:0};
+const SOVIET_EVENT={req:15, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold:20000,gems:60,scrolls:40}, egg:"d132", cooldown:0};
 
-const JOHNNY_EVENT={req:35, ids:["d157","d135","d136"], lvlBonus:3, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
+const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
