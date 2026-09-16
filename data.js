@@ -392,7 +392,7 @@ DRAGONS.forEach(dr=>{
   DRAGON_REQ[dr.id]=Math.max(RARITY_REQ[dr.rarity], habReq);
 });
 // ====== СОБЫТИЯ ======
-const PHONE_EVENT={req:15, cooldown:60*60*1000, team:["d71","d93","d15"], lvlMult:3, lvlBonus:6, reward:{gold:3000,gems:15,scrolls:10}, egg:"d71"};
+const PHONE_EVENT={req:15, cooldown:60*60*1000, team:["d71","d93","d15"], lvlAdd:40, lvlBonus:6, reward:{gold:3000,gems:15,scrolls:10}, egg:"d71"};
 const ZODIAC_IDS=["d101","d106","d96","d102","d100","d98","d38","d104","d105","d99","d97","d103","d39"];
 const ZODIAC_EVENT={req:15, stages:13, eggAt:[4,8,13], baseLvl:8};
 const DUNGEON={req:6};
@@ -453,6 +453,6 @@ const BATTLE_BG={default:"versus",pvp:"versus",phone:"ice_hell",zodiac:"skyship"
 
 const SOVIET_EVENT={req:15, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold:20000,gems:60,scrolls:40}, egg:"d132", cooldown:0};
 
-const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
+const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, lateLvl:52, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
 
 const MOOSE_EVENT={req:15, ids:["d160"], lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};

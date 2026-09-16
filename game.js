@@ -673,11 +673,11 @@ function pickTeamModal(title,desc,onGo){const own=housedIds();let sel=[...team].
   $("#go",m).onclick=()=>{team=sel;closeModal();onGo()}}
 function openPhone(){
   const last=S.phoneLast||0;const left=Math.max(0,PHONE_EVENT.cooldown-(Date.now()-last));const wins=S.phoneWins||0;
-  const m=modal(`<h2>📞 Телефонная будка</h2><div class="phone-card"><img src="assets/phone.png" class="phone-img"><img src="assets/d71.png"><div><b>MR 333</b><br><small>«Алло? Три часа ночи. Ты знаешь, что делать. Приводи своих — я приведу своих.»</small><br><br>Его команда: ${PHONE_EVENT.team.map(id=>`<img src="assets/${id}.png" style="height:44px;vertical-align:middle" title="${dInfo(id).name}">`).join("")}<br><small>Уровень команды: <b>${Math.max(1,...Object.values(S.dragons).map(d=>d.lvl||1))*PHONE_EVENT.lvlMult}</b> (×3 от твоего сильнейшего дракона). Побед: ${wins}</small></div></div>
+  const m=modal(`<h2>📞 Телефонная будка</h2><div class="phone-card"><img src="assets/phone.png" class="phone-img"><img src="assets/d71.png"><div><b>MR 333</b><br><small>«Алло? Три часа ночи. Ты знаешь, что делать. Приводи своих — я приведу своих.»</small><br><br>Его команда: ${PHONE_EVENT.team.map(id=>`<img src="assets/${id}.png" style="height:44px;vertical-align:middle" title="${dInfo(id).name}">`).join("")}<br><small>Уровень команды: <b>${Math.max(1,...Object.values(S.dragons).map(d=>d.lvl||1))+PHONE_EVENT.lvlAdd}</b> (+40 к твоему сильнейшему дракону). Побед: ${wins}</small></div></div>
   <p>Награда за победу: ${costStr(PHONE_EVENT.reward)}. Каждая <b>3-я победа</b> — 🥚 яйцо самого <b>MR 333</b> (только так его и можно получить)!</p>
   <div class="row"><button class="btn red" id="call" ${left>0?"disabled":""}>${left>0?"📵 Занято: "+tleft(Date.now()+left):"📞 Позвонить"}</button></div>`);
   $("#call",m).onclick=()=>{closeModal();pickTeamModal("📞 MR 333 отвечает…","<div class='desc'>«3:33. Ровно. Не опаздывай.» Команда 3:00 очень сильна — бери драконов, сильных против 🕒 3:00 (🔢 Цифра и 💉 Медицина) и берегись 🌙 Ночи.</div>",()=>{
-    const alv=Math.max(1,...Object.values(S.dragons).map(d=>d.lvl||1));const lvl=alv*PHONE_EVENT.lvlMult;S.phoneLast=Date.now();save();
+    const alv=Math.max(1,...Object.values(S.dragons).map(d=>d.lvl||1));const lvl=alv+PHONE_EVENT.lvlAdd;S.phoneLast=Date.now();save();
     startBattle({name:"Команда 3:00 (MR 333)",lvl,ids:PHONE_EVENT.team,bg:BATTLE_BG.phone,onEnd:(win)=>{
       if(win){S.phoneWins=(S.phoneWins||0)+1;const r=PHONE_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(200+40*lvl);let egg="";if(S.phoneWins%3===0){giveEgg(PHONE_EVENT.egg,"event");egg="<p><b>🥚 MR 333 впечатлён — его яйцо в твоём инвентаре!</b></p>"}
         save();updateTop();modal(`<div class="result win">ПОБЕДА!</div><p class="center">«…Ладно. Перезвоню в четыре.»</p><div class="center" style="font-weight:900">+${costStr(r)} +⭐${200+40*lvl}</div>${egg}<p class="center"><small>Побед над MR 333: ${S.phoneWins} (до яйца: ${3-S.phoneWins%3===3?0:3-S.phoneWins%3})</small></p><div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('map')">Ок</button></div>`,{closable:false})}
@@ -757,7 +757,7 @@ const QUESTS=[
 ];
 function sovietUnlocked(){return !!S.sovietFound} // баннер виден только пока «найден»; после боя исчезает, пока не найдёшь снова
 function startSoviet(){if(S.level<SOVIET_EVENT.req){toast("Нужен уровень "+SOVIET_EVENT.req);return}closeModal();pickTeamModal("🖥️ Советские Компьютеры","<div class='desc'>init… init… ЦЕЛЬ НАЙДЕНА. Три машины, каждая — BANNED раз в 3 хода.</div>",()=>{
-  const lvl=S.level+SOVIET_EVENT.lvlBonus;S.sovietLast=Date.now();save();
+  const lvl=Math.max(S.level,30)+SOVIET_EVENT.lvlBonus;S.sovietLast=Date.now();save();
   playDialog([["d131","Советский Компьютер","INIT… INIT… ЗАГРУЗКА 3%…"],["d131","Советский Компьютер","ХРАНИТЕЛЬ ОБНАРУЖЕН. СТАТУС: НЕЖЕЛАТЕЛЬНЫЙ. ПОДГОТОВКА К УДАЛЕНИЮ."],["av0","Хранитель","Это… три красных ящика? Почему у них лица?"],["d131","Советский Компьютер","BANNED. BANNED. BANNED. НАЧАТЬ."]],()=>{
     startBattle({name:"Советские Компьютеры",lvl,ids:SOVIET_EVENT.ids,bg:BATTLE_BG.dungeon,music:"soviet",boss:true,onEnd:(win)=>{
       if(win){S.sovietWins=(S.sovietWins||0)+1;const r=SOVIET_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(400+40*lvl);let egg="";if(S.sovietWins===1){giveEgg(SOVIET_EVENT.egg,"soviet");egg="<p><b>🥚 Яйцо Бога — божественный юнит!</b></p>"}
@@ -766,7 +766,7 @@ function startSoviet(){if(S.level<SOVIET_EVENT.req){toast("Нужен урове
 function johnnyLeft(){return Math.max(0,JOHNNY_EVENT.cooldown-(Date.now()-(S.johnnyLast||0)))}
 function startJohnny(){if(S.level<JOHNNY_EVENT.req){toast("Нужен уровень "+JOHNNY_EVENT.req);return}if(johnnyLeft()>0){toast("Джонни отдыхает: "+tleft(new Date(Date.now()+johnnyLeft())));return}closeModal();
   pickTeamModal("🕯️ Великий Джонни","<div class='desc'>Жархнне, усиленный порталом. Посох рассекает всех, удар оглушает. Каждая 2-я победа — 🥚 яйцо MR Lulu.</div>",()=>{
-  const lvl=S.level+JOHNNY_EVENT.lvlBonus;S.johnnyLast=Date.now();save();
+  const lvl=Math.max(S.level+JOHNNY_EVENT.lvlBonus,JOHNNY_EVENT.lateLvl);S.johnnyLast=Date.now();save();
   playDialog([["d157_hostage","Жархнне (в плену)","Хранитель… посох… он не мой… он держит меня…"],["d157_raise","Великий Джонни","Я — ВЕЛИКИЙ ДЖОННИ. Портал дал мне посох, посох дал мне ВСЁ."],["d135","MR Lulu","Джонни, опусти палку. Это же я, Лулу!"],["d157","Великий Джонни","Палку?! ЭТО СОЛНЦЕ НА ПАЛКЕ. Смотри, как оно РАССЕКАЕТ."]],()=>{
     startBattle({name:"Великий Джонни",lvl,ids:JOHNNY_EVENT.ids,bg:"citadel",boss:true,music:"johnny",onEnd:(win)=>{
       if(win){S.johnnyWins=(S.johnnyWins||0)+1;const r=JOHNNY_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(500+40*lvl);let egg="";if(S.johnnyWins%JOHNNY_EVENT.eggEvery===0){giveEgg(JOHNNY_EVENT.egg,"johnny");egg="<p><b>🥚 Яйцо MR Lulu!</b></p>"}
