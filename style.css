@@ -521,13 +521,37 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 .moose-card{background:#000;border:3px solid #f00;box-shadow:0 0 30px #f00 inset,0 0 20px #f00;animation:hellpulse 2s infinite}
 
 /* Лось: полёт восьмёркой, падение */
-.arena.falling .fighter.moose img{animation:mooseFig8 5s ease-in-out infinite !important;transform:none}
+.arena.falling .fighter.moose img{animation:mooseFig8 4s linear infinite !important;transform:none}
 @keyframes mooseFig8{0%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(40px,-30px) rotate(6deg)}25%{transform:translate(0,-60px) rotate(0)}37.5%{transform:translate(-40px,-30px) rotate(-6deg)}50%{transform:translate(0,0) rotate(0)}62.5%{transform:translate(-40px,30px) rotate(-6deg)}75%{transform:translate(0,60px) rotate(0)}87.5%{transform:translate(40px,30px) rotate(6deg)}100%{transform:translate(0,0) rotate(0)}}
-.arena.falling .fighter.ally img{animation:allyFall 1.6s ease-in infinite;transform-origin:50% 90%}
-@keyframes allyFall{0%{transform:translateY(-70px) rotate(-8deg);opacity:.2}15%{opacity:1}60%{transform:translateY(0) rotate(4deg)}80%{transform:translateY(6px) rotate(0)}100%{transform:translateY(-70px) rotate(-8deg);opacity:.2}}
-.arena.falling .arena-field{background-size:auto 220% !important;animation:bgFall 1.6s linear infinite,hellpulse 3s ease-in-out infinite}
-@keyframes bgFall{0%{background-position:center 0%}100%{background-position:center 100%}}
+.arena.falling .fighter.ally img{animation:allyFall 1.1s linear infinite;transform-origin:50% 90%}
+@keyframes allyFall{0%{transform:translateY(-60px) rotate(-6deg);opacity:0}20%{opacity:1}80%{opacity:1}100%{transform:translateY(40px) rotate(5deg);opacity:0}}
+.arena.falling .arena-field{background-size:auto 900px !important;background-repeat:repeat !important;animation:bgFall 1.4s linear infinite,hellpulse 3s ease-in-out infinite}
+@keyframes bgFall{0%{background-position:center 0px}100%{background-position:center 900px}}
+.arena.falling .arena-field::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:repeating-linear-gradient(90deg,transparent 0 37px,rgba(255,255,255,.07) 37px 39px,transparent 39px 83px,rgba(255,255,255,.12) 83px 84px,transparent 84px 140px);background-size:100% 100%;mask-image:repeating-linear-gradient(180deg,transparent 0 40px,#000 60px 160px,transparent 180px 260px);-webkit-mask-image:repeating-linear-gradient(180deg,transparent 0 40px,#000 60px 160px,transparent 180px 260px);animation:windFall .5s linear infinite}
+@keyframes windFall{0%{-webkit-mask-position:0 0;mask-position:0 0}100%{-webkit-mask-position:0 260px;mask-position:0 260px}}
 .hell-say{position:absolute;left:50%;top:8px;transform:translateX(-50%);max-width:90%;background:#000;color:#f00;border:1px solid #f00;padding:6px 12px;font-family:monospace;letter-spacing:1px;font-size:14px;opacity:0;z-index:5;pointer-events:none}
 .hell-say.on{animation:hellsay 3.2s forwards}
 @keyframes hellsay{0%{opacity:0;transform:translateX(-50%) translateY(-6px)}10%,80%{opacity:1;transform:translateX(-50%)}100%{opacity:0}}
 #volslider{width:70px;accent-color:#ffb700;vertical-align:middle}
+
+/* эффекты спецатак Лося */
+.hfx{position:absolute;pointer-events:none;z-index:9}
+.hfx-penta{inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(255,0,0,.35),transparent 60%);animation:pentaIn 1.6s ease-out forwards}
+.hfx-penta b{font-size:220px;color:#f00;text-shadow:0 0 30px #f00,0 0 80px #800;animation:pentaSpin 1.6s linear}
+@keyframes pentaIn{0%{opacity:0}15%{opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes pentaSpin{from{transform:rotate(0) scale(.4)}to{transform:rotate(360deg) scale(1.2)}}
+.hfx-flame{left:0;right:0;bottom:0;height:140%;background:linear-gradient(0deg,#f30 0%,#f90 25%,transparent 70%);filter:blur(4px);mix-blend-mode:screen;animation:flameUp 1s ease-out forwards}
+@keyframes flameUp{0%{transform:scaleY(0);opacity:0;transform-origin:bottom}30%{opacity:1}100%{transform:scaleY(1.3);opacity:0;transform-origin:bottom}}
+.hfx-kara{inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75);animation:karaBg 1.3s forwards}
+.hfx-kara span{font-family:monospace;font-size:96px;font-weight:900;color:#f00;letter-spacing:14px;text-shadow:0 0 20px #f00,4px 0 #0ff,-4px 0 #f0f;animation:karaTxt 1.3s cubic-bezier(.2,.9,.2,1) forwards}
+@keyframes karaBg{0%{opacity:0}10%{opacity:1}70%{opacity:1}100%{opacity:0}}@keyframes karaTxt{0%{transform:scale(6);opacity:0}30%{transform:scale(1);opacity:1}45%{transform:scale(1.1) skewX(-10deg)}60%{transform:scale(1)}100%{transform:scale(1);opacity:0}}
+.hfx-hand{inset:-20px;background:radial-gradient(circle,#f00 0%,transparent 55%);mix-blend-mode:screen;animation:handSlam .9s ease-out forwards}
+.hfx-hand::after{content:"✖";position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-size:110px;color:#f00;text-shadow:0 0 30px #f00}
+@keyframes handSlam{0%{transform:scale(2.5);opacity:0}25%{transform:scale(1);opacity:1}100%{transform:scale(1);opacity:0}}
+.hfx-orb{width:14px;height:14px;border-radius:50%;background:#9f5fff;box-shadow:0 0 12px #c9f,0 0 30px #63f;animation:orbFly .9s cubic-bezier(.4,0,.8,1) forwards}
+@keyframes orbFly{0%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(.3);opacity:0}}
+.hfx-eye{inset:0;display:flex;align-items:flex-start;justify-content:center;animation:eyeIn 1.1s forwards}
+.hfx-eye i{width:260px;height:110px;margin-top:20px;border-radius:50%/60%;background:radial-gradient(circle at 50% 50%,#000 0 22px,#f00 23px 40px,#fff 41px 100%);box-shadow:0 0 40px #f00;animation:eyeBlink 1.1s ease-in-out}
+@keyframes eyeIn{0%{opacity:0}20%,75%{opacity:1}100%{opacity:0}}@keyframes eyeBlink{0%{transform:scaleY(0)}25%{transform:scaleY(1)}70%{transform:scaleY(1)}100%{transform:scaleY(.05)}}
+.hfx-gazehit{inset:0;background:repeating-linear-gradient(0deg,rgba(255,0,0,.25) 0 2px,transparent 2px 6px);mix-blend-mode:screen;animation:gazeHit .7s steps(6) forwards;filter:contrast(2)}
+@keyframes gazeHit{0%{opacity:1;transform:translateX(-6px)}50%{transform:translateX(6px)}100%{opacity:0;transform:none}}
+.fighter{position:relative}
