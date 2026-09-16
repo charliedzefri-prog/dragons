@@ -61,6 +61,8 @@ const SKILLS = {
   hellheal: {name:"ОТКАТ",           type:"heal", power:0.10, el:"glitch", desc:"Откатывает себя на 10 ходов назад. +10% HP."},
   helldrain:{name:"СОХРАНЕНИЕ",      type:"attack", power:1.2, el:"glitch", effect:"lifesteal", desc:"Он забирает твой прогресс себе. Крадёт HP."},
   staffslam:{name:"Удар посохом",    type:"attack", power:1.35,el:"curse", effect:"stun", chance:0.35, desc:"Великий Джонни бьёт посохом: оглушение 35%"},
+  sunburst: {name:"СОЛНЦЕ",          type:"attack", power:1.6, el:"curse", aoe:true, effect:"burn", chance:1, desc:"Посох взрывается светом: огромный урон всем и горение"},
+  sunrise:  {name:"Восход",          type:"heal",   power:0.12, el:"curse", cd:3, desc:"Свет посоха затягивает раны: +12% HP"},
   staffcut: {name:"Рассечение",      type:"attack", power:0.95,el:"curse", aoe:true, effect:"burn", chance:0.5, desc:"Посох рассекает всех: горение 50%"},
   sovhit:   {name:"Перфокарта",      type:"attack", power:0.9, el:"soviet", desc:"Тяжёлый удар корпусом"},
   sovhit_s: {name:"Ошибка 404",      type:"attack", power:0.55,el:"soviet", aoe:true, desc:"Помехи по всем"},
@@ -329,10 +331,10 @@ const DRAGONS = [
   {id:"d154", name:"Четвёрка Позеленела", els:["digit", "glitch", "beast"], rarity:"rare", base:{"hp": 110, "atk": 28, "def": 13, "spd": 17}, desc:"Зелёная четвёрка с большим кулаком. Побочный эффект первого прыжка в портал."},
   {id:"d155", name:"Четвёрка-Рокер", els:["digit", "beast", "night"], rarity:"rare", base:{"hp": 115, "atk": 29, "def": 14, "spd": 15}, desc:"Длинные волосы, полосатый свитер. Портал открыл на концерте."},
   {id:"d156", name:"Хакер ТВ", els:["cyber", "glitch", "digit"], rarity:"epic", noflip:true, base:{"hp": 115, "atk": 36, "def": 12, "spd": 18}, desc:"Логотип пиратского канала Четвёрки-Хакера. Вещает на все частоты."},
-  {id:"d157", name:"Великий Джонни", els:["curse", "sheep", "night"], rarity:"legendary", boss:true, big:true, base:{"hp": 165, "atk": 44, "def": 20, "spd": 14}, desc:"Жархнне с проклятым посохом-солнцем и белыми глазами. Усиленный порталом до предела. Босс события."},
+  {id:"d157", name:"Великий Джонни", els:["curse", "sheep", "night"], rarity:"legendary", boss:true, big:true, base:{"hp": 150, "atk": 44, "def": 20, "spd": 14}, desc:"Жархнне с проклятым посохом-солнцем и белыми глазами. Усиленный порталом до предела. Босс события."},
   {id:"d158", name:"Пабло", els:["cat", "zodiac", "night"], rarity:"epic", base:{"hp": 120, "atk": 34, "def": 15, "spd": 17}, desc:"Розовый кот с седой чёлкой, клыками и звёздами на лапах. Смотрит из-под волос так, будто уже всё про тебя знает."},
   {id:"d159", name:"Доисторический Бисквит", els:["royal", "beast", "sheep"], rarity:"epic", base:{"hp": 140, "atk": 30, "def": 22, "spd": 9}, desc:"Бисквит, поросший мхом и колючками, с обломанными клыками. Древнейший из Бисквитов: коробка ещё каменная."},
-  {id:"d160", name:"Лось 4 Сатана", els:["tyrant", "curse", "legend", "divine", "night", "digit", "clock", "beast", "glitch", "doc", "cat", "bird", "cyber", "sheep", "royal", "money", "zodiac", "german"], rarity:"tyrant", boss:true, big:true, base:{"hp": 190, "atk": 48, "def": 23, "spd": 20}, desc:"666. Пентаграмма на груди, кровь из глаз, рога лося. Четвёрка, которая ушла дальше, чем Сотона. ОН ВИДИТ ТЕБЯ ЧЕРЕЗ ЭКРАН."},
+  {id:"d160", name:"Лось 4 Сатана", els:["tyrant", "curse", "legend", "divine", "night", "digit", "clock", "beast", "glitch", "doc", "cat", "bird", "cyber", "sheep", "royal", "money", "zodiac", "german"], rarity:"tyrant", boss:true, big:true, base:{"hp": 520, "atk": 48, "def": 23, "spd": 20}, desc:"666. Пентаграмма на груди, кровь из глаз, рога лося. Четвёрка, которая ушла дальше, чем Сотона. ОН ВИДИТ ТЕБЯ ЧЕРЕЗ ЭКРАН."},
   {id:"d161", name:"MR Нарвал", els:["clock", "royal", "legend"], rarity:"legendary", noflip:true, base:{"hp": 132, "atk": 43, "def": 16, "spd": 15}, desc:"Оранжевый джентльмен-нарвал с золотым бивнем-рогом и сапфирами на голове и манжете. Единственный из Мистеров, кто носит время не на шляпе, а на роге."},
   {id:"d131", name:"Советский Компьютер", els:["soviet", "cyber", "glitch"], rarity:"tyrant", eventOnly:true, boss:true, flipAlly:true, base:{"hp": 150, "atk": 26, "def": 22, "spd": 8}, desc:"Красный ящик с лицом. Загружается очень долго, зато когда найдёт цель — удаляет её из команды навсегда. BANNED."},
   {id:"d132", name:"Бог", els:["divine", "zodiac", "royal"], rarity:"divine", eventOnly:true, base:{"hp": 150, "atk": 46, "def": 20, "spd": 16}, desc:"Пятиконечная звезда пяти цветов с одним глазом посередине. Смотрит на всё сразу. Появляется только перед тем, кто отключил Советские Компьютеры."},
@@ -459,4 +461,4 @@ const SOVIET_EVENT={req:15, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold
 
 const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, lateLvl:52, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
 
-const MOOSE_EVENT={req:15, code:"лось.exe", ids:["d160"], lvl:145, effLvl:18, lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};
+const MOOSE_EVENT={req:15, code:"лось.exe", ids:["d160"], lvl:145, effLvl:9, lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};
