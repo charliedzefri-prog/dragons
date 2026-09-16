@@ -461,4 +461,4 @@ const SOVIET_EVENT={req:15, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold
 
 const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, lateLvl:52, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
 
-const MOOSE_EVENT={req:15, code:"лось.exe", ids:["d160"], lvl:145, hp:90666, effLvl:10, lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};
+const MOOSE_EVENT={req:15, code:"лось.exe", ids:["d160"], lvl:145, hp:90666, defMult:4, effLvl:10, lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};
