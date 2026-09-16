@@ -18,9 +18,9 @@ const ELEMENTS = {
   tyrant:{name:"Тиран",ico:"💀",color:"#8b0000",strong:["divine", "legend"],weak:[]},
   german:{name:"Немец",ico:"🪖",color:"#6b6b5a",strong:["doc", "money"],weak:["digit", "cyber"]},
   soviet:{name:"Совет",ico:"🖥️",color:"#b0201a",strong:["german", "cyber"],weak:[]},
-  portal:{name:"Портал",ico:"🌀",color:"#8a2be2",strong:["night", "zodiac", "sheep"],weak:["clock", "royal"]}
+  curse:{name:"Проклятие",ico:"🕯️",color:"#7a1fa8",strong:["divine", "zodiac", "sheep"],weak:["doc", "royal"]}
 };
-const BASE_ELEMENTS=["digit","clock","night","cat","doc","bird","cyber","glitch","sheep","royal","beast","money","zodiac","german","portal"];
+const BASE_ELEMENTS=["digit","clock","night","cat","doc","bird","cyber","glitch","sheep","royal","beast","money","zodiac","german","curse"];
 const ELEMENT_KEYS = Object.keys(ELEMENTS);
 
 const RARITY = {
@@ -51,11 +51,11 @@ const SKILLS = {
   march:    {name:"Марш",            type:"attack", power:1.05,el:"german", desc:"Чеканный удар строем"},
   march_s:  {name:"Артобстрел",      type:"attack", power:0.62,el:"german", aoe:true, desc:"Залп по всем врагам"},
   ordnung:  {name:"Орднунг",         type:"attack", power:0.85,el:"german", aoe:true, effect:"weaken", chance:0.5, desc:"Порядок! Все враги слабеют (50%)"},
-  rift:     {name:"Разлом",          type:"attack", power:1.05,el:"portal", desc:"Удар из-за грани"},
-  rift_s:   {name:"Вихрь порталов",  type:"attack", power:0.62,el:"portal", aoe:true, desc:"Порталы открываются под всеми врагами"},
-  warp:     {name:"Искажение",       type:"attack", power:0.9, el:"portal", aoe:true, effect:"slow", chance:0.6, desc:"Замедляет всех врагов (60%)"},
-  staffslam:{name:"Удар посохом",    type:"attack", power:1.35,el:"portal", effect:"stun", chance:0.35, desc:"Великий Джонни бьёт посохом: оглушение 35%"},
-  staffcut: {name:"Рассечение",      type:"attack", power:0.95,el:"portal", aoe:true, effect:"burn", chance:0.5, desc:"Посох рассекает всех: горение 50%"},
+  hex:      {name:"Сглаз",           type:"attack", power:1.05,el:"curse", desc:"Проклятый взгляд — удар из-за грани"},
+  hex_s:    {name:"Порча",           type:"attack", power:0.62,el:"curse", aoe:true, desc:"Порча расходится по всем врагам"},
+  doom:     {name:"Проклятие",       type:"attack", power:0.9, el:"curse", aoe:true, effect:"weaken", chance:0.6, desc:"Все враги прокляты: −30% атаки (60%)"},
+  staffslam:{name:"Удар посохом",    type:"attack", power:1.35,el:"curse", effect:"stun", chance:0.35, desc:"Великий Джонни бьёт посохом: оглушение 35%"},
+  staffcut: {name:"Рассечение",      type:"attack", power:0.95,el:"curse", aoe:true, effect:"burn", chance:0.5, desc:"Посох рассекает всех: горение 50%"},
   sovhit:   {name:"Перфокарта",      type:"attack", power:0.9, el:"soviet", desc:"Тяжёлый удар корпусом"},
   sovhit_s: {name:"Ошибка 404",      type:"attack", power:0.55,el:"soviet", aoe:true, desc:"Помехи по всем"},
   sovban:   {name:"BANNED",          type:"attack", power:0.1, el:"soviet", oneshot:true, cd:2, desc:"Уничтожает одного бойца"},
@@ -97,16 +97,16 @@ const SKILLS = {
   divinegrace:{name:"Благодать",     type:"heal", cd:2,   power:0.25,el:"divine", aoe:true, desc:"Лечит всех на 25%"},
   tyrantfear:{name:"Страх",          type:"debuff", power:0.45,el:"tyrant", effect:"vuln", desc:"Враги: +45% получаемого урона"},
 };
-const ELEMENT_ATTACK={portal:"rift",german:"march",soviet:"sovhit",digit:"count",clock:"threeam",night:"nightfall",cat:"scratch",doc:"inject",bird:"peck",cyber:"laser",glitch:"corrupt",sheep:"ram",royal:"decree",beast:"maul",money:"bribe",zodiac:"starfall",legend:"legendary",divine:"divine",tyrant:"tyrant"};
+const ELEMENT_ATTACK={curse:"hex",german:"march",soviet:"sovhit",digit:"count",clock:"threeam",night:"nightfall",cat:"scratch",doc:"inject",bird:"peck",cyber:"laser",glitch:"corrupt",sheep:"ram",royal:"decree",beast:"maul",money:"bribe",zodiac:"starfall",legend:"legendary",divine:"divine",tyrant:"tyrant"};
 const ELEMENT_SPREAD=Object.fromEntries(Object.entries(ELEMENT_ATTACK).map(([e,k])=>[e,k+"_s"]));
-const ELEMENT_ABILITY={portal:"warp",german:"ordnung",soviet:"sovban",digit:"multiply",clock:"midnight",night:"lullaby",cat:"ninelives",doc:"surgery",bird:"flock",cyber:"overclock",glitch:"crash",sheep:"woolshield",royal:"royaldecree",beast:"frenzy",money:"bailout",zodiac:"horoscope",legend:"legendrage",divine:"divinegrace",tyrant:"tyrantfear"};
+const ELEMENT_ABILITY={curse:"doom",german:"ordnung",soviet:"sovban",digit:"multiply",clock:"midnight",night:"lullaby",cat:"ninelives",doc:"surgery",bird:"flock",cyber:"overclock",glitch:"crash",sheep:"woolshield",royal:"royaldecree",beast:"frenzy",money:"bailout",zodiac:"horoscope",legend:"legendrage",divine:"divinegrace",tyrant:"tyrantfear"};
 const SLOT_LEVEL=[1,4,10];
 
 // ====== АКАДЕМИЯ: древо стихии (6 уровней, как в оригинале) ======
 // 1: +10% урона атак стихии · 2: пассив стихии · 3: разброс стихии (атака по всем) · 4: способность стихии · 5: пассив x2 · 6: выбор одного из двух бонусов
 const TREE_COST=[3,5,8,12,16,20];
 const TREE_MAX=6;
-const TREE_PASSIVE={portal:"spd",german:"def",soviet:"hp",digit:"crit",clock:"atk",night:"spd",cat:"spd",doc:"hp",bird:"spd",cyber:"crit",glitch:"atk",sheep:"def",royal:"hp",beast:"atk",money:"def",zodiac:"crit",legend:"atk",divine:"hp",tyrant:"atk"};
+const TREE_PASSIVE={curse:"atk",german:"def",soviet:"hp",digit:"crit",clock:"atk",night:"spd",cat:"spd",doc:"hp",bird:"spd",cyber:"crit",glitch:"atk",sheep:"def",royal:"hp",beast:"atk",money:"def",zodiac:"crit",legend:"atk",divine:"hp",tyrant:"atk"};
 const PASSIVE_INFO={hp:{n:"Здоровье",ico:"❤️",v:0.06},atk:{n:"Атака",ico:"⚔️",v:0.06},def:{n:"Защита",ico:"🛡️",v:0.06},spd:{n:"Скорость",ico:"💨",v:0.05},crit:{n:"Шанс крита",ico:"🎯",v:0.04}};
 const FINAL_OPTIONS={
   digit:[{k:"crit",v:0.1,n:"Точный расчёт: +10% крита"},{k:"execute",v:0.25,n:"Округление: удары по врагу с HP<25% наносят ×1.5"},{k:"firststrike",v:1,n:"Единица: в 1-м раунде ходит первым"}],
@@ -124,7 +124,7 @@ const FINAL_OPTIONS={
   zodiac:[{k:"crit",v:0.12,n:"Судьба: +12% крита"},{k:"revive",v:0.35,n:"Перерождение: 1 раз воскресает с 35% HP"},{k:"firststrike",v:1,n:"Предсказание: первый ход в 1-м раунде"}],
   legend:[{k:"atk",v:0.2,n:"Легендарная мощь: +20% атаки"},{k:"hp",v:0.2,n:"Легендарная стойкость: +20% HP"},{k:"teamatk",v:0.1,n:"Вдохновение: вся команда +10% атаки"}],
   divine:[{k:"hp",v:0.25,n:"Бессмертие: +25% HP"},{k:"regen",v:0.06,n:"Благодать: +6% HP каждый ход"},{k:"revive",v:0.5,n:"Воскрешение: 1 раз встаёт с 50% HP"}],
-  portal:[{k:"dodge",v:0.15,n:"Шаг сквозь: 15% уклонение"},{k:"spd",v:0.15,n:"Червоточина: +15% скорости"},{k:"execute",v:0.3,n:"Затягивание: ×1.5 урона по целям <30% HP"}],
+  curse:[{k:"thorns",v:0.2,n:"Обратка: возврат 20% урона"},{k:"lifesteal",v:0.15,n:"Высасывание: 15% вампиризм"},{k:"execute",v:0.3,n:"Приговор: ×1.5 урона по целям <30% HP"}],
   german:[{k:"def",v:0.2,n:"Дисциплина: +20% защиты"},{k:"teamdef",v:0.1,n:"Строй: вся команда +10% защиты"},{k:"firststrike",v:1,n:"Блицкриг: первый ход в 1-м раунде"}],
   soviet:[{k:"hp",v:0.3,n:"Железо: +30% HP"},{k:"thorns",v:0.2,n:"Короткое замыкание: возврат 20% урона"},{k:"stunaura",v:0.2,n:"Зависание: оглушение 20%"}],
   tyrant:[{k:"atk",v:0.25,n:"Гнёт: +25% атаки"},{k:"startshield",v:0.3,n:"Трон: щит 30% HP"},{k:"stunaura",v:0.25,n:"Страх: атаки оглушают (25%)"}],
@@ -143,7 +143,7 @@ const BUILDINGS = {
   habitat_money:  {req:13,name:"Банк",             ico:"🏦", el:"money",  cost:{gold:2500}, cap:2, income:16},
   habitat_glitch: {req:15,name:"Сбойная зона",     ico:"🧩", el:"glitch", cost:{gold:3000}, cap:2, income:18},
   habitat_sheep:  {req:17,name:"Овчарня",          ico:"🐏", el:"sheep",  cost:{gold:3500}, cap:2, income:19},
-  habitat_portal: {req:16,name:"Портальная арка",  ico:"🌀", el:"portal", cost:{gold:5200}, cap:3, income:24},
+  habitat_curse:  {req:16,name:"Проклятый склеп",  ico:"🕯️", el:"curse", cost:{gold:5200}, cap:3, income:24},
   habitat_german: {req:14,name:"Казарма",           ico:"🪖", el:"german", cost:{gold:4500}, cap:3, income:22},
   habitat_zodiac: {req:18,name:"Обсерватория",     ico:"🔭", el:"zodiac", cost:{gold:6000}, cap:2, income:30},
   habitat_royal:  {req:19,name:"Дворец",           ico:"🏰", el:"royal",  cost:{gold:5000}, cap:2, income:22},
@@ -299,31 +299,31 @@ const DRAGONS = [
   {id:"d128", name:"Бисквит Анархокоммунист", els:["german", "cat", "money"], rarity:"epic", base:{"hp": 120, "atk": 32, "def": 16, "spd": 15}, desc:"Красная фуражка с серпом, гимнастёрка, усики. Требует поделить всю еду в жилищах поровну. Себе — чуть больше."},
   {id:"d129", name:"Анти-Бисквит", els:["glitch", "cat", "night"], rarity:"epic", big:false, base:{"hp": 125, "atk": 34, "def": 15, "spd": 16}, desc:"Чёрная корона с зелёными кристаллами, зелёные полоски. Противоположность Бисквит: где та мурлычет, эта шипит."},
   {id:"d130", name:"Бисквит Антистраус", els:["clock", "cat", "glitch"], rarity:"epic", base:{"hp": 120, "atk": 36, "def": 14, "spd": 17}, desc:"Повязка на глазу, «666» на щеке и надпись Teh. Объявила войну всем страусам. Страусы не в курсе."},
-  {id:"d133", name:"Сталин", els:["divine", "legend", "portal"], rarity:"divine", base:{"hp": 160, "atk": 48, "def": 22, "spd": 14}, desc:"Первый, у кого и Легенда, и Божество. Из портала вышел с трубкой и планом на пять лет вперёд.", eventOnly:true},
-  {id:"d134", name:"Миша Проклятый", els:["portal", "night", "glitch"], rarity:"legendary", boss:true, base:{"hp": 170, "atk": 46, "def": 20, "spd": 15}, desc:"Пришёл из-за грани и развернул чужой портал в злодейское русло. Всегда улыбается — это плохой знак."},
-  {id:"d135", name:"MR Lulu", els:["portal", "sheep", "royal"], rarity:"epic", base:{"hp": 125, "atk": 34, "def": 16, "spd": 15}, desc:"Мистер в цилиндре с розовыми усами. Баран, который научился открывать двери, которых нет."},
-  {id:"d136", name:"MR Jarkhnne", els:["portal", "clock", "night"], rarity:"epic", base:{"hp": 130, "atk": 36, "def": 15, "spd": 14}, desc:"Жархнне с морковкой вместо носа и короной из веток. Часы у него всегда показывают «потом»."},
-  {id:"d137", name:"Флейн", els:["sheep", "portal"], rarity:"rare", base:{"hp": 115, "atk": 26, "def": 15, "spd": 13}, desc:"Баран с рыжей чёлкой и сердечком на свитере. Напарник Четвёрки по открытию портала."},
-  {id:"d138", name:"Флейн Альт", els:["sheep", "portal", "night"], rarity:"epic", base:{"hp": 120, "atk": 33, "def": 14, "spd": 16}, desc:"Флейн в красном плаще и тёмных очках. Тот же баран, другая вселенная."},
-  {id:"d139", name:"Флейн Итальянец", els:["sheep", "portal", "german"], rarity:"rare", base:{"hp": 125, "atk": 25, "def": 19, "spd": 11}, desc:"Фуражка, шинель, орёл на кокарде. Говорит «мамма миа» строевым шагом."},
-  {id:"d140", name:"Флейн Ахегао", els:["sheep", "portal", "cat"], rarity:"epic", base:{"hp": 115, "atk": 35, "def": 12, "spd": 18}, desc:"Не спрашивай. Он тоже не знает, что случилось в портале."},
-  {id:"d141", name:"Финмарт", els:["portal", "money", "cyber"], rarity:"rare", base:{"hp": 115, "atk": 27, "def": 15, "spd": 14}, desc:"Зелёный, в цепочке с рублём и клетчатых штанах. Продаёт порталы в рассрочку."},
-  {id:"d142", name:"Финмарт Мафиози", els:["portal", "money", "beast"], rarity:"epic", base:{"hp": 125, "atk": 34, "def": 16, "spd": 13}, desc:"Седой, с флагом на пиджаке и подписью JEE. Портал — это тоже бизнес."},
-  {id:"d143", name:"Червяк", els:["portal", "beast"], rarity:"common", flipAlly:true, base:{"hp": 100, "atk": 20, "def": 12, "spd": 14}, desc:"Розовый червяк. Первым прополз в портал — просто потому что мог."},
-  {id:"d144", name:"Червь Мафиози", els:["portal", "beast", "money"], rarity:"rare", flipAlly:true, base:{"hp": 110, "atk": 26, "def": 14, "spd": 14}, desc:"Червяк в шляпе и жилетке. Держит подпольную нору."},
-  {id:"d145", name:"Червяк Кристалл", els:["portal", "beast", "royal"], rarity:"rare", flipAlly:true, base:{"hp": 105, "atk": 30, "def": 13, "spd": 15}, desc:"Красный, с гранёной головой. Заточен об край портала."},
-  {id:"d146", name:"Червяк Танос", els:["portal", "beast", "glitch"], rarity:"epic", flipAlly:true, base:{"hp": 120, "atk": 36, "def": 14, "spd": 15}, desc:"Фиолетовый. Считает, что половина порталов лишняя."},
-  {id:"d147", name:"Джеффри", els:["portal", "bird", "night"], rarity:"rare", base:{"hp": 110, "atk": 28, "def": 13, "spd": 16}, desc:"Тёмно-бирюзовая птица без ног. Летает между мирами по билету."},
-  {id:"d148", name:"Джеффри в Шляпе", els:["portal", "bird", "money"], rarity:"epic", base:{"hp": 115, "atk": 33, "def": 14, "spd": 17}, desc:"Та же птица, шляпа и штаны. Остров у него свой."},
-  {id:"d149", name:"ТимКой Бог", els:["portal", "zodiac", "bird"], rarity:"epic", base:{"hp": 125, "atk": 32, "def": 18, "spd": 15}, desc:"Красный квадрат с нимбом и крыльями. Улыбка ровная, как линия."},
-  {id:"d150", name:"ТимКой Сатана", els:["portal", "night", "digit"], rarity:"epic", base:{"hp": 120, "atk": 37, "def": 14, "spd": 15}, desc:"Тот же квадрат, рога и 666 на лбу. Глаза светятся, настроение — нет."},
-  {id:"d151", name:"Биш", els:["portal", "cyber", "doc"], rarity:"rare", base:{"hp": 110, "atk": 27, "def": 16, "spd": 14}, desc:"Голубая ящерица в оранжевой футболке. Врач по порталам, самоучка."},
-  {id:"d152", name:"АлмазМен", els:["portal", "cyber", "money"], rarity:"epic", flipAlly:true, base:{"hp": 130, "atk": 33, "def": 22, "spd": 10}, desc:"Банка SPAM с глазом и роборуками. Состоит из консервов и амбиций."},
-  {id:"d153", name:"Четвёрка-Мафиози", els:["digit", "portal", "money"], rarity:"epic", base:{"hp": 120, "atk": 34, "def": 15, "spd": 16}, desc:"Шляпа, подтяжки, галстук. Открыл портал, чтобы возить контрабанду."},
-  {id:"d154", name:"Четвёрка Позеленела", els:["digit", "portal", "glitch"], rarity:"rare", base:{"hp": 110, "atk": 28, "def": 13, "spd": 17}, desc:"Зелёная четвёрка с большим кулаком. Побочный эффект первого прыжка в портал."},
-  {id:"d155", name:"Четвёрка-Рокер", els:["digit", "portal", "beast"], rarity:"rare", base:{"hp": 115, "atk": 29, "def": 14, "spd": 15}, desc:"Длинные волосы, полосатый свитер. Портал открыл на концерте."},
-  {id:"d156", name:"Хакер ТВ", els:["portal", "cyber", "glitch"], rarity:"epic", noflip:true, base:{"hp": 115, "atk": 36, "def": 12, "spd": 18}, desc:"Логотип пиратского канала. Вещает из портала на все частоты."},
-  {id:"d157", name:"Великий Джонни", els:["portal", "sheep", "night"], rarity:"legendary", boss:true, big:true, base:{"hp": 210, "atk": 50, "def": 24, "spd": 14}, desc:"Жархнне с посохом-солнцем и белыми глазами. Усиленный порталом до предела. Босс события."},
+  {id:"d133", name:"Сталин", els:["divine", "legend", "german"], rarity:"divine", eventOnly:true, base:{"hp": 160, "atk": 48, "def": 22, "spd": 14}, desc:"Первый, у кого и Легенда, и Божество. Вышел из портала с трубкой и планом на пять лет вперёд."},
+  {id:"d134", name:"Миша Проклятый", els:["curse", "night", "glitch"], rarity:"legendary", boss:true, base:{"hp": 170, "atk": 46, "def": 20, "spd": 15}, desc:"Пришёл из-за грани и развернул чужой портал в злодейское русло. Проклятие — его стихия. Всегда улыбается — плохой знак."},
+  {id:"d135", name:"MR Lulu", els:["sheep", "royal", "clock"], rarity:"epic", base:{"hp": 125, "atk": 34, "def": 16, "spd": 15}, desc:"Мистер-баран в цилиндре с розовыми усами. Джентльмен из семьи Мистеров, у которых всё по часам."},
+  {id:"d136", name:"MR Jarkhnne", els:["curse", "clock", "night"], rarity:"epic", base:{"hp": 130, "atk": 36, "def": 15, "spd": 14}, desc:"Жархнне с морковкой вместо носа и короной из веток — искажённая копия из проклятого портала. Часы у него всегда показывают «потом»."},
+  {id:"d137", name:"Флейн", els:["sheep", "cat"], rarity:"rare", base:{"hp": 115, "atk": 26, "def": 15, "spd": 13}, desc:"Баран с рыжей чёлкой и сердечком на свитере. Напарник Четвёрки по открытию портала."},
+  {id:"d138", name:"Флейн Альт", els:["sheep", "night", "royal"], rarity:"epic", base:{"hp": 120, "atk": 33, "def": 14, "spd": 16}, desc:"Флейн в красном плаще и тёмных очках, с логотипом ютуба на футболке. Тот же баран, другая вселенная."},
+  {id:"d139", name:"Флейн Итальянец", els:["sheep", "german", "doc"], rarity:"rare", base:{"hp": 125, "atk": 25, "def": 19, "spd": 11}, desc:"Фуражка, шинель, орёл на кокарде. Говорит «мамма миа» строевым шагом."},
+  {id:"d140", name:"Флейн Ахегао", els:["curse", "sheep", "cat"], rarity:"epic", base:{"hp": 115, "atk": 35, "def": 12, "spd": 18}, desc:"Флейн после того, как заглянул в проклятый портал. Не спрашивай."},
+  {id:"d141", name:"Финмарт", els:["money", "glitch", "digit"], rarity:"rare", base:{"hp": 115, "atk": 27, "def": 15, "spd": 14}, desc:"Зелёный, в цепочке с рублём и клетчатых штанах. Продаёт что угодно в рассрочку."},
+  {id:"d142", name:"Финмарт Мафиози", els:["money", "beast", "german"], rarity:"epic", base:{"hp": 125, "atk": 34, "def": 16, "spd": 13}, desc:"Седой Финмарт с усами, флагом на пиджаке и подписью JEE. Бизнес — это семья."},
+  {id:"d143", name:"Червяк", els:["beast"], rarity:"common", flipAlly:true, base:{"hp": 100, "atk": 20, "def": 12, "spd": 14}, desc:"Розовый червяк. Первым прополз в портал — просто потому что мог."},
+  {id:"d144", name:"Червь Мафиози", els:["beast", "money"], rarity:"rare", flipAlly:true, base:{"hp": 110, "atk": 26, "def": 14, "spd": 14}, desc:"Червяк в шляпе и жилетке. Держит подпольную нору."},
+  {id:"d145", name:"Червяк Кристалл", els:["beast", "royal"], rarity:"rare", flipAlly:true, base:{"hp": 105, "atk": 30, "def": 13, "spd": 15}, desc:"Красный, с гранёной головой. Заточен о край портала."},
+  {id:"d146", name:"Червяк Танос", els:["curse", "beast", "glitch"], rarity:"epic", flipAlly:true, base:{"hp": 120, "atk": 36, "def": 14, "spd": 15}, desc:"Фиолетовый червяк, проклятый порталом. Считает, что половина всего лишняя."},
+  {id:"d147", name:"Джеффри", els:["bird", "night"], rarity:"rare", base:{"hp": 110, "atk": 28, "def": 13, "spd": 16}, desc:"Тёмно-бирюзовая птица на тонких ножках с жёлтым клювом. Смотрит с укором."},
+  {id:"d148", name:"Джеффри в Шляпе", els:["bird", "money", "royal"], rarity:"epic", base:{"hp": 115, "atk": 33, "def": 14, "spd": 17}, desc:"Тот же Джеффри, но в чёрной шляпе с оранжевой лентой и серых штанах. Остров у него свой."},
+  {id:"d149", name:"ТимКой Бог", els:["divine", "zodiac", "bird"], rarity:"divine", eventOnly:true, base:{"hp": 145, "atk": 42, "def": 20, "spd": 15}, desc:"Красный квадрат с нимбом и крыльями. Улыбка ровная, как линия. Божество из Geometry Dash."},
+  {id:"d150", name:"ТимКой Сатана", els:["curse", "night", "digit"], rarity:"epic", base:{"hp": 120, "atk": 37, "def": 14, "spd": 15}, desc:"Тот же квадрат, но с рогами и 666 на лбу. Проклят по собственному желанию."},
+  {id:"d151", name:"Биш", els:["cyber", "doc", "beast"], rarity:"rare", base:{"hp": 110, "atk": 27, "def": 16, "spd": 14}, desc:"Голубая ящерица в оранжевой футболке. Врач-самоучка с пиксельным прошлым."},
+  {id:"d152", name:"АлмазМен", els:["cyber", "money", "royal"], rarity:"epic", flipAlly:true, base:{"hp": 130, "atk": 33, "def": 22, "spd": 10}, desc:"Банка SPAM с глазом и роборуками. Состоит из консервов, алмазов и амбиций."},
+  {id:"d153", name:"Четвёрка-Мафиози", els:["digit", "money", "night"], rarity:"epic", base:{"hp": 120, "atk": 34, "def": 15, "spd": 16}, desc:"Шляпа, подтяжки, галстук. Открыл портал, чтобы возить контрабанду."},
+  {id:"d154", name:"Четвёрка Позеленела", els:["digit", "glitch", "beast"], rarity:"rare", base:{"hp": 110, "atk": 28, "def": 13, "spd": 17}, desc:"Зелёная четвёрка с большим кулаком. Побочный эффект первого прыжка в портал."},
+  {id:"d155", name:"Четвёрка-Рокер", els:["digit", "beast", "night"], rarity:"rare", base:{"hp": 115, "atk": 29, "def": 14, "spd": 15}, desc:"Длинные волосы, полосатый свитер. Портал открыл на концерте."},
+  {id:"d156", name:"Хакер ТВ", els:["cyber", "glitch", "digit"], rarity:"epic", noflip:true, base:{"hp": 115, "atk": 36, "def": 12, "spd": 18}, desc:"Логотип пиратского канала Четвёрки-Хакера. Вещает на все частоты."},
+  {id:"d157", name:"Великий Джонни", els:["curse", "sheep", "night"], rarity:"legendary", boss:true, big:true, base:{"hp": 165, "atk": 44, "def": 20, "spd": 14}, desc:"Жархнне с проклятым посохом-солнцем и белыми глазами. Усиленный порталом до предела. Босс события."},
   {id:"d131", name:"Советский Компьютер", els:["soviet", "cyber", "glitch"], rarity:"tyrant", eventOnly:true, boss:true, flipAlly:true, base:{"hp": 150, "atk": 26, "def": 22, "spd": 8}, desc:"Красный ящик с лицом. Загружается очень долго, зато когда найдёт цель — удаляет её из команды навсегда. BANNED."},
   {id:"d132", name:"Бог", els:["divine", "zodiac", "royal"], rarity:"divine", eventOnly:true, base:{"hp": 150, "atk": 46, "def": 20, "spd": 16}, desc:"Пятиконечная звезда пяти цветов с одним глазом посередине. Смотрит на всё сразу. Появляется только перед тем, кто отключил Советские Компьютеры."},
   {id:"d106", name:"Телец", els:["legend", "zodiac", "beast"], rarity:"legendary", base:{"hp": 140, "atk": 40, "def": 18, "spd": 13}, eventOnly:true, desc:"Голубой бык с кольцом в носу и огоньком на лбу. Не машите красным."},
@@ -430,21 +430,21 @@ const CAMPAIGN=[
   {name:"Птица Грей",lvl:44,ids:["d123","d124","d117"],pre:[["say_grey","Птица Грей (издалека)","Кр-р-р. Так вот кто разгромил половину организации. Впечатляет."],["av0","Хранитель","Ты — та, о ком говорил Давидов? Ты за всем этим стоишь?"],["say_grey","Птица Грей (издалека)","Стою? Я продаю. Гусеву — информацию о тебе. Тебе — информацию о Гусеве. Обоим — по цене."],["d123","Птица Грей","Но сначала проверю, стоишь ли ты своих денег."]]},
   {name:"Антон Гусев",lvl:47,ids:["d122","d121","d123"],boss:true,pre:[["say_madly","Майкл Давидов (издалека)","Хранитель! Гусев в главном зале. Я не буду драться ни за кого. Но… удачи."],["d122","Антон Гусев","Итак. Хранитель. Ты испортил мне расписание. Знаешь, что происходит в 3:00 по моему плану?"],["av0","Хранитель","Дай угадаю — Г.Б.Т.?"],["d122","Антон Гусев","Г.Б.Т. — инструмент. Грей продала мне ключ. Организация откроет дверь. А ты… ты просто опоздал."],["say_grey","Птица Грей (издалека)","Кр-р. Простите, герр Гусев. Хранитель заплатил больше."],["d122","Антон Гусев","ЧТО?! …Неважно. Мэдли! Стройся! Мы всё сделаем сами!"]]},
  ]},
- {ch:6,title:"Глава 6. Портал",bg:"#3a1a5a",nodes:[
-  {name:"Открытие",lvl:36,ids:["d143","d145","d144"],bgi:"abyss",pre:[["d04","Четвёрка","Смотри, Флейн! Если четыре раза повернуть баранью голову против часовой — ОТКРЫВАЕТСЯ!"],["d137","Флейн","Это моя голова. И она не крутится. …Ой. Крутится."],["av0","Хранитель","Из портала лезут… червяки?"],["d143","Червяк","Привет. Я первый. Остальные за мной."]],post:[["d137","Флейн","Червяки — это ещё ничего. Главное, чтобы никто ПЛОХОЙ не нашёл наш портал."]]},
-  {name:"Рынок порталов",lvl:38,ids:["d141","d153","d148"],bgi:"abyss",pre:[["d141","Финмарт","Портал в рассрочку! Первый прыжок бесплатно! Хранитель, тебе — со скидкой."],["d153","Четвёрка-Мафиози","Финмарт, это МОЙ портал. Четвёрка открывала, Четвёрка и продаёт."]],post:[["d148","Джеффри в Шляпе","Кр-р. Пока вы делили портал, кто-то в него ВОШЁЛ. С той стороны."]]},
-  {name:"Гость с той стороны",lvl:40,ids:["d134","d150","d146"],bgi:"abyss",pre:[["d134","Миша Проклятый","Спасибо за дверь, ребята. Я так долго стоял за ней."],["d137","Флейн","Ты… кто?"],["d134","Миша Проклятый","Миша. Проклятый. Не пугайся — проклятие не моё. Теперь оно ваше."]],post:[["d134","Миша Проклятый","Портал больше не ваш. Я развернул его. Теперь он ведёт туда, куда надо МНЕ."]]},
-  {name:"Обратная сторона",lvl:42,ids:["d135","d136","d140"],bgi:"abyss",pre:[["d135","MR Lulu","Хранитель! Миша переписал портал — теперь он выплёвывает наши искажённые копии."],["d136","MR Jarkhnne","Я — Жархнне, но с морковкой. Не спрашивай, я сам в ужасе."]],post:[["d135","MR Lulu","Я знаю, кто может закрыть портал. Тот, кто вышел из него ПЕРВЫМ — до Миши. Он ждёт в цитадели."]]},
-  {name:"Цитадель Миши",lvl:45,ids:["d134","d156","d152"],boss:true,bgi:"citadel",pre:[["d134","Миша Проклятый","Ты дошёл до цитадели. Хорошо. Портал уже настроен на твой остров. Останется только толкнуть."],["d04","Четвёрка","Мы это начали — мы и закончим! Флейн, крути голову!"],["d137","Флейн","ЧЕТЫРЕ РАЗА ПО ЧАСОВОЙ!"]],post:[["d134","Миша Проклятый","…Портал закрывается. Ладно. Дверей много. До встречи, Хранитель."],["d133","Сталин","Товарищи. Портал закрыт. Кто открыл его — тому и отвечать. Но за то, что закрыли — благодарность."],["av0","Хранитель","Это… Сталин? Из портала?"],["d133","Сталин","Первый, кто вышел. Последний, кто уйдёт. Возьми яйцо. Пригодится."]],reward:{egg:"d133"}},
+ {ch:6,title:"Глава 6. Проклятый портал",bg:"#3a1a5a",nodes:[
+  {name:"Открытие",lvl:44,ids:["d146","d145","d144"],bgi:"abyss",pre:[["d04","Четвёрка","Смотри, Флейн! Если четыре раза повернуть баранью голову против часовой — ОТКРЫВАЕТСЯ!"],["d137","Флейн","Это моя голова. И она не крутится. …Ой. Крутится."],["av0","Хранитель","Из портала лезут… червяки?"],["d143","Червяк","Привет. Я первый. Остальные за мной."]],post:[["d137","Флейн","Червяки — это ещё ничего. Главное, чтобы никто ПЛОХОЙ не нашёл наш портал."]]},
+  {name:"Рынок порталов",lvl:45,ids:["d141","d153","d148"],bgi:"abyss",pre:[["d141","Финмарт","Портал в рассрочку! Первый прыжок бесплатно! Хранитель, тебе — со скидкой."],["d153","Четвёрка-Мафиози","Финмарт, это МОЙ портал. Четвёрка открывала, Четвёрка и продаёт."]],post:[["d148","Джеффри в Шляпе","Кр-р. Пока вы делили портал, кто-то в него ВОШЁЛ. С той стороны."]]},
+  {name:"Гость с той стороны",lvl:46,ids:["d134","d150","d146"],bgi:"abyss",pre:[["d134","Миша Проклятый","Спасибо за дверь, ребята. Я так долго стоял за ней."],["d137","Флейн","Ты… кто?"],["d134","Миша Проклятый","Миша. Проклятый. Не пугайся — проклятие не моё. Теперь оно ваше."]],post:[["d134","Миша Проклятый","Портал больше не ваш. Я развернул его. Теперь он ведёт туда, куда надо МНЕ."]]},
+  {name:"Проклятые копии",lvl:47,ids:["d136","d140","d146"],bgi:"abyss",pre:[["d135","MR Lulu","Хранитель! Миша переписал портал — теперь он выплёвывает ПРОКЛЯТЫЕ копии. Вон Жархнне с морковкой, вон Флейн… лучше не смотри на Флейна."],["d136","MR Jarkhnne","Я — Жархнне, но с морковкой. Не спрашивай, я сам в ужасе."]],post:[["d135","MR Lulu","Я знаю, кто может закрыть портал. Тот, кто вышел из него ПЕРВЫМ — до Миши. Он ждёт в цитадели."]]},
+  {name:"Цитадель Миши",lvl:48,ids:["d134","d157","d150"],boss:true,music:"gbt",bgi:"citadel",pre:[["d134","Миша Проклятый","Ты дошёл до цитадели. Хорошо. Портал уже настроен на твой остров. Останется только толкнуть. Джонни, подними посох."],["d157","Великий Джонни","ПОСОХ ПОДНЯТ."],["d04","Четвёрка","Мы это начали — мы и закончим! Флейн, крути голову!"],["d137","Флейн","ЧЕТЫРЕ РАЗА ПО ЧАСОВОЙ!"]],post:[["d134","Миша Проклятый","…Портал закрывается. Ладно. Дверей много. До встречи, Хранитель."],["d133","Сталин","Товарищи. Портал закрыт. Кто открыл его — тому и отвечать. Но за то, что закрыли — благодарность."],["av0","Хранитель","Это… Сталин? Из портала?"],["d133","Сталин","Первый, кто вышел. Последний, кто уйдёт. Возьми яйцо. Пригодится."]],reward:{egg:"d133"}},
  ]},
 ];
 CAMPAIGN[5].nodes[CAMPAIGN[5].nodes.length-1].final=true;
 const CAMPAIGN_NODES=CAMPAIGN.flatMap(c=>c.nodes.map(n=>({...n,ch:c.ch})));
 
 // ---- фоны (assets/bg) ----
-const HAB_BG={portal:"abyss",german:"base",night:"nightmare_hall",glitch:"darknet",clock:"ice_hell",cyber:"base",digit:"room1",royal:"gallery",sheep:"snow",bird:"skyship",beast:"darkside",cat:"room1",doc:"base",money:"gallery",zodiac:"skyship"};
+const HAB_BG={curse:"abyss",german:"base",night:"nightmare_hall",glitch:"darknet",clock:"ice_hell",cyber:"base",digit:"room1",royal:"gallery",sheep:"snow",bird:"skyship",beast:"darkside",cat:"room1",doc:"base",money:"gallery",zodiac:"skyship"};
 const BATTLE_BG={default:"versus",pvp:"versus",phone:"ice_hell",zodiac:"skyship",dungeon:"nightmare1",campaign:{1:"snow",2:"base",3:"nightmare_hall",4:"nightmare2",5:"base",6:"abyss"},boss:"darkside",final:"nightmare0"};
 
 const SOVIET_EVENT={req:30, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold:20000,gems:60,scrolls:40}, egg:"d132", cooldown:0};
 
-const JOHNNY_EVENT={req:32, ids:["d157","d135","d136"], lvlBonus:3, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
+const JOHNNY_EVENT={req:35, ids:["d157","d135","d136"], lvlBonus:3, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
