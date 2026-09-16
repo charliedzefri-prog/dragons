@@ -375,12 +375,12 @@ function nextTurn(first){
   f0.fx=(f0.fx||[]).filter(e=>{e.t--;
     if(e.k==="burn"){const dm=Math.max(1,Math.round(f0.maxhp*0.06));f0.hp=Math.max(0,f0.hp-dm);log(`🔥 ${f0.name} горит: -${dm}`)}
     if(e.k==="bleed"){const dm=Math.max(1,Math.round(f0.maxhp*0.05));f0.hp=Math.max(0,f0.hp-dm);pop(fEl(f0),"🩸-"+dm,"crit");log(`🩸 ${f0.name} истекает кровью: -${dm}`)}
-    if(e.k==="hot"){const h=Math.round(f0.maxhp*0.1);f0.hp=Math.min(f0.maxhp,f0.hp+h);log(`💚 ${f0.name} восстанавливает ${h}`)}
+    if(e.k==="hot"&&!(f0.fx||[]).some(x=>x.k==="noheal")){const h=Math.round(f0.maxhp*0.1);f0.hp=Math.min(f0.maxhp,f0.hp+h);log(`💚 ${f0.name} восстанавливает ${h}`)}
     if(e.k==="stun"||e.k==="freeze"){skip=true;log(`${e.k==="stun"?"💫":"🧊"} ${f0.name} пропускает ход!`)}
     return e.t>0});
   if(f0.soviet&&f0.hp>0&&skip){log(`🖥️ ${f0.name}: загрузка прервана (${Math.max(0,f0.charge||0)}/3)`)}
   if(f0.soviet&&f0.hp>0&&!skip){f0.charge=(f0.charge||0)+1;if(f0.charge>=3){log(`🖥️ ${f0.name}: ЦЕЛЬ НАЙДЕНА`)}else{sndPlay("init",.7);log(`🖥️ ${f0.name} загружается… (${Math.max(0,f0.charge)}/3)`)}}
-  if(f0.tb.regen&&f0.hp>0){const h=Math.round(f0.maxhp*f0.tb.regen);f0.hp=Math.min(f0.maxhp,f0.hp+h);log(`💚 ${f0.name} регенерирует ${h}`)}
+  if(f0.tb.regen&&f0.hp>0&&!(f0.fx||[]).some(x=>x.k==="noheal")){const h=Math.round(f0.maxhp*f0.tb.regen);f0.hp=Math.min(f0.maxhp,f0.hp+h);log(`💚 ${f0.name} регенерирует ${h}`)}
   if(f0.hp<=0){renderBattle();setTimeout(nextTurn,500);return}
   if(skip){renderBattle();setTimeout(nextTurn,900);return}
   B.sel=null;B.turnNo++;$("#navbar").classList.add("locked");renderBattle();
@@ -409,8 +409,37 @@ function renderBattle(){
     // автовыбор цели, если навык уже выбран - подсветить
     if(B.sel){const s=SKILLS[B.sel];if(!(s.aoe||s.type==="buff"||s.type==="debuff")){const tgtSide=s.type==="heal"?"ally":"enemy";$$(`.fighter[data-side="${tgtSide}"]`).forEach(el=>{const t=(tgtSide==="ally"?B.allies:B.enemies)[+el.dataset.i];if(t.hp>0){el.classList.add("target");el.onclick=()=>useSkill(f,B.sel,t);if(s.type==="attack")markEff(el,elMult(s.el,f,t))}})}}
   }
-  syncHellAnim();
+  syncHellAnim();bindInspect(root);
 }
+
+/* ===== долгое нажатие: инфо о бойце ===== */
+const FX_NAME={burn:["🔥","Горение","−6% HP каждый ход"],bleed:["🩸","Кровотечение","−5% HP каждый ход"],stun:["💫","Оглушение","пропуск хода"],freeze:["🧊","Заморозка","пропуск хода"],slow:["🐌","Замедление","скорость −30%"],hot:["💚","Регенерация","+10% HP каждый ход"],vuln:["🎯","Уязвимость","получаемый урон +40%"],noheal:["🚫","ПРИГОВОР","лечение и регенерация запрещены"]};
+function inspectFighter(f){if(!f)return;const d=dInfo(f.id);const rows=[];
+  rows.push(["❤️ HP",`${f.hp} / ${f.maxhp}${f.shield?` (+🔰${f.shield})`:""}`]);
+  rows.push(["⚔️ Атака",`${f.atk}${f.buffAtk?` <span class="up">+${Math.round(f.buffAtk*100)}%</span>`:""}${f.debuff?` <span class="down">−${Math.round(f.debuff*100)}%</span>`:""}`]);
+  rows.push(["🛡️ Защита",`${f.def}${f.buffDef?` <span class="up">+${Math.round(f.buffDef*100)}%</span>`:""}`]);
+  rows.push(["💨 Скорость",`${f.spd}${f.spdT>0?" <span class=\"up\">разгон</span>":""}`]);
+  rows.push(["🎯 Крит",Math.round((f.crit||.1)*100)+"%"]);
+  if(f.lifesteal)rows.push(["🩸 Вампиризм",Math.round(f.lifesteal*100)+"%"]);
+  const fx=(f.fx||[]).map(e=>{const n=FX_NAME[e.k]||["✴️",e.k,""];return `<div class="insp-fx">${n[0]} <b>${n[1]}</b> <small>${n[2]}</small> <span class="badge">${e.t} х.</span></div>`});
+  if(f.buffAtk>0)fx.push(`<div class="insp-fx">🔺 <b>Усиление атаки</b> <small>+${Math.round(f.buffAtk*100)}%</small> <span class="badge">${f.buffAtkT} х.</span></div>`);
+  if(f.buffDef>0)fx.push(`<div class="insp-fx">🔺 <b>Усиление защиты</b> <small>+${Math.round(f.buffDef*100)}%</small> <span class="badge">${f.buffDefT} х.</span></div>`);
+  if(f.debuff>0)fx.push(`<div class="insp-fx">🔻 <b>Ослабление</b> <small>атака −${Math.round(f.debuff*100)}%</small> <span class="badge">${f.debuffT} х.</span></div>`);
+  if(f.banned)fx.push(`<div class="insp-fx">🚫 <b>BANNED</b> <small>удалён из боя</small></div>`);
+  const extra=[];if(f.soviet)extra.push(`🖥️ Зарядка BANNED: <b>${Math.max(0,f.charge||0)}/3</b>${f.charge>=3?" — ЦЕЛЬ НАЙДЕНА":""}`);
+  if(f.id==="d160"){extra.push(`👁️ Ходов сделано: <b>${f._mv||0}</b>`);extra.push(`⛧ Все стихии. Эффективные удары по нему ×0.75, его удары ×1.8`);extra.push(`⏳ ОТКАТ: <b>${Math.min(10,f.hcharge||0)}/10</b>`)}
+  const tb=f.tb||{};const pas=Object.keys(tb).filter(k=>!["hp","atk","def","spd","dmg"].includes(k)&&tb[k]).map(k=>`${k}: ${typeof tb[k]==="number"?(tb[k]<1?Math.round(tb[k]*100)+"%":tb[k]):"✓"}`);if(pas.length)extra.push("📘 Пассивы: "+pas.join(", "));
+  const sk=f.skills.map(k=>{const s=SKILLS[k];if(!s)return "";const cd=f.cds[k]||0;return `<div class="skill insp-sk"><span>${s.el&&ELEMENTS[s.el]?ELEMENTS[s.el].ico:"⚪"} <b>${s.name}</b> <small>${s.type==="attack"?"атака ×"+s.power:s.type==="heal"?"лечение "+Math.round(s.power*100)+"%":s.type}${s.aoe?", по всем":""}${s.effect?", эффект: "+((FX_NAME[s.effect]||[])[1]||s.effect):""}${s.chance&&s.chance<1?" ("+Math.round(s.chance*100)+"%)":""}${s.cd?", кд "+s.cd:""}</small><br><small>${s.desc||""}</small></span>${cd?`<span class="badge">кд ${cd}</span>`:""}</div>`}).join("");
+  modal(`<h2>${f.side==="enemy"?"👹":"🐲"} ${f.name} <span class="badge" style="background:${RARITY[d.rarity].color||"#555"}">ур.${f.lvl}</span></h2>
+  <div class="feature"><img src="assets/${f.id}.png" style="width:110px;height:130px;object-fit:contain"><div style="flex:1"><div class="hpbar" style="height:10px"><div style="width:${f.hp/f.maxhp*100}%"></div></div><small>Стихии: ${f.els.map(e=>ELEMENTS[e]?ELEMENTS[e].ico+" "+ELEMENTS[e].name:e).join(", ")}</small></div></div>
+  <div class="panel" style="margin:8px 0">${rows.map(r=>`<div class="stat"><span>${r[0]}</span><span>${r[1]}</span></div>`).join("")}</div>
+  <div class="panel" style="margin:8px 0"><h3>Эффекты</h3>${fx.length?fx.join(""):"<small>нет</small>"}</div>
+  ${extra.length?`<div class="panel" style="margin:8px 0"><h3>Доп. инфо</h3>${extra.map(x=>`<div><small>${x}</small></div>`).join("")}</div>`:""}
+  <div class="panel" style="margin:8px 0"><h3>Навыки</h3>${sk}</div>`)}
+function bindInspect(root){$$(".fighter",root).forEach(el=>{let t=null,moved=false;const f=(el.dataset.side==="ally"?B.allies:B.enemies)[+el.dataset.i];
+  const start=e=>{moved=false;clearTimeout(t);t=setTimeout(()=>{t=null;el.classList.add("insp");setTimeout(()=>el.classList.remove("insp"),300);inspectFighter(f)},550)};
+  const cancel=()=>{clearTimeout(t);t=null};
+  el.addEventListener("pointerdown",start);el.addEventListener("pointerup",cancel);el.addEventListener("pointerleave",cancel);el.addEventListener("pointercancel",cancel);el.addEventListener("pointermove",e=>{if(e.movementX>3||e.movementY>3)cancel()});el.addEventListener("contextmenu",e=>e.preventDefault())})}
 function vfx(el,kind){if(!el)return;const f=document.createElement("div");f.className="vfx vfx-"+(kind||"basic");
   const ico={tyrant:"💀",digit:"🔢",clock:"🕒",night:"🌙",cat:"🐱",doc:"💉",bird:"🐦",cyber:"💾",glitch:"🧩",sheep:"🐏",royal:"💎",beast:"🐾",money:"💰",zodiac:"♈",fire:"🔥",water:"💧",plant:"🌿",earth:"🪨",wind:"🌪️",energy:"⚡",metal:"⚙️",ice:"❄️",shadow:"🌑",light:"✨",legend:"👑",basic:"💥",heal:"💚",buff:"🔺",debuff:"🔻"}[kind]||"💥";
   f.innerHTML=`<span>${ico}</span><span>${ico}</span><span>${ico}</span><i></i>`;el.append(f);setTimeout(()=>f.remove(),900)}
@@ -494,14 +523,14 @@ function applySkill(actor,k,target,atkM,blk){
         else if(s.effect==="freeze")t.fx.push({k:"freeze",t:1});
         else if(s.effect==="slow"){t.spd=Math.round(t.spd*0.7);t.fx.push({k:"slow",t:2})}
         else if(s.effect==="weaken"){t.debuff=0.3;t.debuffT=3}
-        else if(s.effect==="bleed"){const ex=t.fx.find(e=>e.k==="bleed");if(ex)ex.t=4;else t.fx.push({k:"bleed",t:4})}
+        else if(s.effect==="bleed"){const ex=t.fx.find(e=>e.k==="bleed");if(ex)ex.t=4;else t.fx.push({k:"bleed",t:4});if(s.execute){alive(foes).forEach(x=>{x.fx=x.fx||[];const nh=x.fx.find(e=>e.k==="noheal");if(nh)nh.t=3;else x.fx.push({k:"noheal",t:3})});log(`🚫 ПРИГОВОР: лечение всей команды отключено на 3 хода`);hellToast()}}
         log(`✴️ ${t.name}: ${({burn:"горение",stun:"оглушение",freeze:"заморозка",slow:"замедление",weaken:"ослабление",lifesteal:"кража прогресса",bleed:"кровотечение",execute:"КАРА"})[s.effect]||s.effect}`)}}
       SFX.el(s.el||actor.els[0]);const el=fEl(t);if(el){el.classList.add("hit");vfx(el,s.el||actor.els[0]);pop(el,(m>1?"💥":m<1?"🛡":"")+"-"+dmg,crit?"crit":m<1?"weak":"")}
       log(`${actor.name} → ${s.name} → ${t.name}: <b>${dmg}</b>${atkM>1?" ИДЕАЛЬНО":""}${blk?" блок "+Math.round(blk*100)+"%":""}${m>1?" (эффективно!)":m<1?" (слабо)":""}${crit?" КРИТ!":""}${t.hp<=0?" ☠️":""}`)});
-    const ls=(s.effect==="lifesteal"?0.5:0)+(actor.lifesteal||0);if(ls>0&&healed>0){const h=Math.round(healed*ls);actor.hp=Math.min(actor.maxhp,actor.hp+h);pop(fEl(actor),"+"+h,"heal");log(`🩸 ${actor.name} восстановил ${h}`)}
+    const ls=(s.effect==="lifesteal"?0.5:0)+(actor.lifesteal||0);if(ls>0&&healed>0&&!(actor.fx||[]).some(x=>x.k==="noheal")){const h=Math.round(healed*ls);actor.hp=Math.min(actor.maxhp,actor.hp+h);pop(fEl(actor),"+"+h,"heal");log(`🩸 ${actor.name} восстановил ${h}`)}
   }else if(s.type==="heal"){
     const targets=s.aoe?alive(friends):[target];
-    targets.forEach(t=>{const h=Math.round(t.maxhp*s.power*(1+((actor.dmgB||{})[s.el]||0))*(1+(actor.tb.healboost||0)));t.hp=Math.min(t.maxhp,t.hp+h);
+    targets.forEach(t=>{if((t.fx||[]).some(e=>e.k==="noheal")){pop(fEl(t),"ЛЕЧЕНИЕ ЗАПРЕЩЕНО","weak");log(`🚫 ${t.name}: лечение заблокировано (ПРИГОВОР)`);return}const h=Math.round(t.maxhp*s.power*(1+((actor.dmgB||{})[s.el]||0))*(1+(actor.tb.healboost||0)));t.hp=Math.min(t.maxhp,t.hp+h);
       if(s.effect==="hot"){t.fx=t.fx||[];t.fx.push({k:"hot",t:2})}
       if(s.effect==="cleanse"){t.fx=(t.fx||[]).filter(e=>e.k==="hot");t.debuff=0}SFX.heal();vfx(fEl(t),"heal");pop(fEl(t),"+"+h,"heal");log(`${actor.name} лечит ${t.name} на ${h}`)});
   }else if(s.type==="buff"){
