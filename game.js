@@ -335,7 +335,7 @@ function matchmake(diff){const best=bestOwn(3);if(!best.length)return {name:"С�
   const names={easy:["Разминка","Лёгкий спарринг","Новички арены"],normal:["Достойный соперник","Равный бой","Ветераны арены"],hard:["Контр-отряд","Элита арены","Кошмар для твоей тройки"]}[diff];
   return {name:names[Math.floor(rng()*names.length)],lvl,ids,random:true,diff}}
 function enemySkills(id,lvl){const d=dInfo(id);if(d.els.includes("soviet"))return ["sovhit","sovhit_s","sovban"];if(id==="d157")return ["staffslam","staffcut","doom","sunburst","sunrise"];if(id==="d160")return ["hellgaze","hellfire","hellswap","helldrain","hellheal","hellkara"];const b=baseSkills(id).filter((k,i)=>lvl>=SLOT_LEVEL[i]);if(lvl>=8)b.push(ELEMENT_SPREAD[d.els[0]]);if(lvl>=12)b.push(ELEMENT_ABILITY[d.els[0]]);return b}
-function mkFighter(id,ov,side,i){const st=dragonStats(id,ov);const d=dInfo(id);if(d.els.includes("soviet")){st.hp=Math.round(st.hp*0.55)}return {id,side,i,name:d.name,els:d.els,skills:ov?enemySkills(id,ov.lvl):dSkills(id),hp:st.hp,maxhp:st.hp,atk:st.atk,def:st.def,spd:st.spd,cds:{},buffAtk:0,buffDef:0,debuff:0,crit:st.crit,timeb:st.timeb,lifesteal:st.lifesteal||0,dmgB:st.dmg||{},shield:Math.round(st.hp*(st.startshield||0)),fx:[],tb:st.tb||{},reviveUsed:false,soviet:d.els.includes("soviet"),charge:d.els.includes("soviet")?(side==="enemy"?-i:0):0,lvl:ov?ov.lvl:S.dragons[id].lvl}}
+function mkFighter(id,ov,side,i){const st=dragonStats(id,ov);const d=dInfo(id);if(d.els.includes("soviet")){st.hp=Math.round(st.hp*0.55)}let hpScale=1;if(id==="d160"&&ov&&ov.enemy){hpScale=MOOSE_EVENT.hp/st.hp;st.hp=MOOSE_EVENT.hp}return {hpScale,id,side,i,name:d.name,els:d.els,skills:ov?enemySkills(id,ov.lvl):dSkills(id),hp:st.hp,maxhp:st.hp,atk:st.atk,def:st.def,spd:st.spd,cds:{},buffAtk:0,buffDef:0,debuff:0,crit:st.crit,timeb:st.timeb,lifesteal:st.lifesteal||0,dmgB:st.dmg||{},shield:Math.round(st.hp*(st.startshield||0)),fx:[],tb:st.tb||{},reviveUsed:false,soviet:d.els.includes("soviet"),charge:d.els.includes("soviet")?(side==="enemy"?-i:0):0,lvl:ov?ov.lvl:S.dragons[id].lvl}}
 function startBattle(opp){
   if(team.length===0){toast("Выбери хотя бы одного дракона!");return}
   const ov={lvl:opp.lvl,stars:Math.min(5,1+Math.floor(opp.lvl/10)),enemy:true};
@@ -415,7 +415,7 @@ function renderBattle(){
 }
 
 /* ===== долгое нажатие: инфо о бойце ===== */
-const FX_NAME={burn:["🔥","Горение","−6% HP каждый ход"],bleed:["🩸","Кровотечение","−5% HP каждый ход"],stun:["💫","Оглушение","пропуск хода"],freeze:["🧊","Заморозка","пропуск хода"],slow:["🐌","Замедление","скорость −30%"],hot:["💚","Регенерация","+10% HP каждый ход"],vuln:["🎯","Уязвимость","получаемый урон +40%"],noheal:["🚫","ПРИГОВОР","лечение и регенерация запрещены"]};
+const FX_NAME={burn:["🔥","Горение","−6% HP каждый ход"],bleed:["🩸","Кровотечение","−5% HP каждый ход"],stun:["💫","Оглушение","пропуск хода"],freeze:["🧊","Заморозка","пропуск хода"],slow:["🐌","Замедление","скорость −30%"],hot:["💚","Регенерация","+10% HP каждый ход"],vuln:["🎯","Уязвимость","получаемый урон +40%"],noheal:["🚫","ПРИГОВОР","лечение запрещено; всё лечение уходит Лосю"]};
 function inspectFighter(f){if(!f)return;const d=dInfo(f.id);const rows=[];
   rows.push(["❤️ HP",`${f.hp} / ${f.maxhp}${f.shield?` (+🔰${f.shield})`:""}`]);
   rows.push(["⚔️ Атака",`${f.atk}${f.buffAtk?` <span class="up">+${Math.round(f.buffAtk*100)}%</span>`:""}${f.debuff?` <span class="down">−${Math.round(f.debuff*100)}%</span>`:""}`]);
@@ -513,7 +513,7 @@ function applySkill(actor,k,target,atkM,blk){
       if(t.tb.dodge&&RNG()<t.tb.dodge){pop(fEl(t),"УКЛОНЕНИЕ","weak");log(`💨 ${t.name} уклонился!`);return}
       const rage=actor.tb.rage&&actor.hp/actor.maxhp<0.4?1+actor.tb.rage:1;const exec=actor.tb.execute&&t.hp/t.maxhp<(actor.tb.execute)?1.5:1;const cm=crit?1.7+(actor.tb.critdmg||0):1;
       const ramp=B.round>SUDDEN_DEATH.from?1+(B.round-SUDDEN_DEATH.from)*SUDDEN_DEATH.step:1;let dmg=ramp*atkM*(1-blk)*(actor.atk*(1+actor.buffAtk-actor.debuff)*s.power*(1+((actor.dmgB||{})[s.el]||0))*(s.aoe?0.7:1)*rage*exec)*(100/(100+t.def*(1+t.buffDef)))*m*vuln*rnd(90,110)/100*cm;
-      dmg=Math.max(1,Math.round(dmg));if(s.execute)dmg=Math.max(dmg,Math.round(t.maxhp*s.execute));
+      dmg=Math.max(1,Math.round(dmg));if(s.execute)dmg=Math.max(dmg,Math.round(t.maxhp*s.execute));if(t.hpScale&&t.hpScale!==1)dmg=Math.round(dmg*t.hpScale);
       if(t.tb.thorns&&actor.hp>0){const th=Math.max(1,Math.round(dmg*t.tb.thorns));actor.hp=Math.max(0,actor.hp-th);pop(fEl(actor),"-"+th,"weak");log(`🌵 ${t.name} вернул ${th} урона`)}
       if(t.shield>0){const ab=Math.min(t.shield,dmg);t.shield-=ab;dmg-=ab;if(ab)log(`🔰 щит ${t.name} поглотил ${ab}`)}
       t.hp=Math.max(0,t.hp-dmg);healed+=dmg;
@@ -525,7 +525,7 @@ function applySkill(actor,k,target,atkM,blk){
         else if(s.effect==="freeze")t.fx.push({k:"freeze",t:1});
         else if(s.effect==="slow"){t.spd=Math.round(t.spd*0.7);t.fx.push({k:"slow",t:2})}
         else if(s.effect==="weaken"){t.debuff=0.3;t.debuffT=3}
-        else if(s.effect==="bleed"){const ex=t.fx.find(e=>e.k==="bleed");if(ex)ex.t=4;else t.fx.push({k:"bleed",t:4});if(s.execute){alive(foes).forEach(x=>{x.fx=x.fx||[];const nh=x.fx.find(e=>e.k==="noheal");if(nh)nh.t=3;else x.fx.push({k:"noheal",t:3})});log(`🚫 ПРИГОВОР: лечение всей команды отключено на 3 хода`);hellToast()}}
+        else if(s.effect==="bleed"){const ex=t.fx.find(e=>e.k==="bleed");if(ex)ex.t=4;else t.fx.push({k:"bleed",t:4});if(s.execute){alive(foes).forEach(x=>{x.fx=x.fx||[];const nh=x.fx.find(e=>e.k==="noheal");if(nh)nh.t=2;else x.fx.push({k:"noheal",t:2})});log(`🚫 ПРИГОВОР: следующий ход команда не может лечиться`);hellToast()}}
         log(`✴️ ${t.name}: ${({burn:"горение",stun:"оглушение",freeze:"заморозка",slow:"замедление",weaken:"ослабление",lifesteal:"кража прогресса",bleed:"кровотечение",execute:"КАРА"})[s.effect]||s.effect}`)}}
       SFX.el(s.el||actor.els[0]);const el=fEl(t);if(el){el.classList.add("hit");vfx(el,s.el||actor.els[0]);pop(el,(m>1?"💥":m<1?"🛡":"")+"-"+dmg,crit?"crit":m<1?"weak":"")}
       log(`${actor.name} → ${s.name} → ${t.name}: <b>${dmg}</b>${atkM>1?" ИДЕАЛЬНО":""}${blk?" блок "+Math.round(blk*100)+"%":""}${m>1?" (эффективно!)":m<1?" (слабо)":""}${crit?" КРИТ!":""}${t.hp<=0?" ☠️":""}`)});
@@ -552,7 +552,7 @@ function aiTurn(){
   // приоритеты: лечить если кто-то <35%, иначе самый сильный навык, цель — по стихии
   const hurt=friends.find(x=>x.hp/x.maxhp<.35);
   let k=null,t=null;
-  if(f.id==="d160"){f._mv=(f._mv||0)+1;f.hcharge=(f.hcharge||0)+1;let k;if(B.round%3===0&&f._karaR!==B.round){f._karaR=B.round;k="hellkara"}else if(f.hcharge>=10&&f.hp<f.maxhp*.9){k="hellheal";f.hcharge=0}else{const ex=["hellfire","helldrain","hellgaze"].filter(x=>!(f.cds[x]>0));const pool=ex.length?ex.concat(RNG()<.25?["hellswap"]:[]):["hellswap"];k=pool[Math.floor(RNG()*pool.length)]}const t=(k==="hellfire"||k==="hellkara")?null:k==="hellheal"?f:foes.slice().sort((a,b)=>b.hp-a.hp)[0];if(k==="hellfire"){jumpscare(600)}hellFx(k,t);if(f._mv%3===0)hellSay();useSkill(f,k,t);return}
+  if(f.id==="d160"){f._mv=(f._mv||0)+1;f.hcharge=(f.hcharge||0)+1;let k;if(B.round%4===0&&f._karaR!==B.round){f._karaR=B.round;k="hellkara"}else if(f.hcharge>=10&&f.hp<f.maxhp*.9){k="hellheal";f.hcharge=0}else{const ex=["hellfire","helldrain","hellgaze"].filter(x=>!(f.cds[x]>0));const pool=ex.length?ex.concat(RNG()<.25?["hellswap"]:[]):["hellswap"];k=pool[Math.floor(RNG()*pool.length)]}const t=(k==="hellfire"||k==="hellkara")?null:k==="hellheal"?f:foes.slice().sort((a,b)=>b.hp-a.hp)[0];if(k==="hellfire"){jumpscare(600)}hellFx(k,t);if(f._mv%3===0)hellSay();useSkill(f,k,t);return}
   if(f.id==="d157"){f._mv=(f._mv||0)+1;let k;if(f._phase2){f._sunT=(f._sunT||0)+1;if(f._sunT>=3){f._sunT=0;k="sunburst"}else{const pool=["staffslam","staffcut","sunrise"].filter(x=>!(f.cds[x]>0));k=pool[Math.floor(RNG()*pool.length)]||"staffslam"}}else{const pool=["staffslam","staffcut","doom"].filter(x=>!(f.cds[x]>0));k=pool[Math.floor(RNG()*pool.length)]||"staffslam"}const sk=SKILLS[k];const t=sk.aoe?null:sk.type==="heal"?f:foes.slice().sort((a,b)=>b.hp-a.hp)[0];if(f._mv%2===0)johnnySay(f._phase2);if(k==="sunburst")johnnySunFx();useSkill(f,k,t);return}
   if(f.soviet&&f.charge>=3){f.charge=0;const tg=foes.slice().sort((a,b)=>b.hp-a.hp)[0];useSkill(f,"sovban",tg);return}
   if(f.soviet){const r2=ready.filter(k=>k!=="sovban");useSkill(f,r2[Math.floor(RNG()*r2.length)]||"sovhit",foes[Math.floor(RNG()*foes.length)]);return}
