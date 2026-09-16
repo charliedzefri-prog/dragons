@@ -523,8 +523,9 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 /* Лось: полёт восьмёркой, падение */
 .arena.falling .fighter.moose img{animation:mooseFig8 4s linear infinite !important;transform:none}
 @keyframes mooseFig8{0%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(40px,-30px) rotate(6deg)}25%{transform:translate(0,-60px) rotate(0)}37.5%{transform:translate(-40px,-30px) rotate(-6deg)}50%{transform:translate(0,0) rotate(0)}62.5%{transform:translate(-40px,30px) rotate(-6deg)}75%{transform:translate(0,60px) rotate(0)}87.5%{transform:translate(40px,30px) rotate(6deg)}100%{transform:translate(0,0) rotate(0)}}
-.arena.falling .fighter.ally img{animation:allyFall 1.1s linear infinite;transform-origin:50% 90%}
-@keyframes allyFall{0%{transform:translateY(-60px) rotate(-6deg);opacity:0}20%{opacity:1}80%{opacity:1}100%{transform:translateY(40px) rotate(5deg);opacity:0}}
+.arena.falling .fighter.ally img{animation:allyFall 2.6s ease-in-out infinite;transform-origin:50% 60%}
+.arena.falling .fighter.ally:nth-child(2) img{animation-delay:-.9s}.arena.falling .fighter.ally:nth-child(3) img{animation-delay:-1.7s}
+@keyframes allyFall{0%{transform:translateY(-14px) rotate(-14deg) scaleY(1.06)}25%{transform:translateY(4px) rotate(-4deg) scaleY(.98)}50%{transform:translateY(-10px) rotate(12deg) scaleY(1.05)}75%{transform:translateY(6px) rotate(3deg) scaleY(.97)}100%{transform:translateY(-14px) rotate(-14deg) scaleY(1.06)}}
 .arena.falling .arena-field{background-size:auto 900px !important;background-repeat:repeat !important;animation:bgFall 1.4s linear infinite,hellpulse 3s ease-in-out infinite}
 @keyframes bgFall{0%{background-position:center 0px}100%{background-position:center 900px}}
 .arena.falling .arena-field::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:repeating-linear-gradient(90deg,transparent 0 37px,rgba(255,255,255,.07) 37px 39px,transparent 39px 83px,rgba(255,255,255,.12) 83px 84px,transparent 84px 140px);background-size:100% 100%;mask-image:repeating-linear-gradient(180deg,transparent 0 40px,#000 60px 160px,transparent 180px 260px);-webkit-mask-image:repeating-linear-gradient(180deg,transparent 0 40px,#000 60px 160px,transparent 180px 260px);animation:windFall .5s linear infinite}

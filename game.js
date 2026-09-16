@@ -99,7 +99,7 @@ function show(scr){
   $$("#navbar button").forEach(b=>b.classList.toggle("active",b.dataset.scr===scr));
   $$(".screen").forEach(s=>s.classList.toggle("active",s.id==="scr-"+scr));
   ({map:renderMap,dragons:renderDragons,battle:renderBattleMenu,events:renderEvents,shop:renderShop,academy:renderAcademy,breed:renderBreed,campaign:renderCampaign,pvp:renderPvp,friends:renderFriends})[scr]();
-  if(S.mooseFound&&scr!=="events"){show("events");return}
+  if(S.mooseFound&&scr!=="events"&&scr!=="battle"&&!B){show("events");return}
   if(!B)playMusic(S.mooseFound?"drone":scr==="battle"?"select":scr==="pvp"?"select":scr==="campaign"?"campaign":"map");
 }
 $$("#navbar button").forEach(b=>b.onclick=()=>{if(B){toast("⚔️ Сначала закончи бой (или сдайся)");SFX.debuff();return}show(b.dataset.scr)});
@@ -375,6 +375,7 @@ function nextTurn(first){
   f0.fx=(f0.fx||[]).filter(e=>{e.t--;
     if(e.k==="burn"){const dm=Math.max(1,Math.round(f0.maxhp*0.06));f0.hp=Math.max(0,f0.hp-dm);log(`🔥 ${f0.name} горит: -${dm}`)}
     if(e.k==="bleed"){const dm=Math.max(1,Math.round(f0.maxhp*0.05));f0.hp=Math.max(0,f0.hp-dm);pop(fEl(f0),"🩸-"+dm,"crit");log(`🩸 ${f0.name} истекает кровью: -${dm}`)}
+    if(e.k==="hot"&&(f0.fx||[]).some(x=>x.k==="noheal")){const h=Math.round(f0.maxhp*0.1);const boss=alive(f0.side==="ally"?B.enemies:B.allies).find(x=>x.id==="d160");if(boss){boss.hp=Math.min(boss.maxhp,boss.hp+h);log(`🚫 ПРИГОВОР: регенерация ${f0.name} ушла Лосю (+${h})`)}}
     if(e.k==="hot"&&!(f0.fx||[]).some(x=>x.k==="noheal")){const h=Math.round(f0.maxhp*0.1);f0.hp=Math.min(f0.maxhp,f0.hp+h);log(`💚 ${f0.name} восстанавливает ${h}`)}
     if(e.k==="stun"||e.k==="freeze"){skip=true;log(`${e.k==="stun"?"💫":"🧊"} ${f0.name} пропускает ход!`)}
     return e.t>0});
@@ -390,7 +391,7 @@ function nextTurn(first){
 function log(s){B.log.push(s);if(B.log.length>40)B.log.shift()}
 function lootBonus(){return team.reduce((a,id)=>a+((treeBonuses(id).loot)||0),0)}
 function battleBg(){const o=B&&B.opp;if(!o)return null;if(o.bg)return o.bg;if(o.final)return BATTLE_BG.final;if(o.boss)return BATTLE_BG.boss;if(o.campaign)return BATTLE_BG.campaign[o.ch]||BATTLE_BG.default;if(o.pvp)return BATTLE_BG.pvp;return BATTLE_BG.default}
-function syncHellAnim(){if(!B||!B.opp.horror)return;const t=performance.now();const set=(el,durs)=>{if(el)el.style.animationDelay=durs.map(d=>(-(t%d))+"ms").join(",")};set($(".arena-field"),[1400,3000]);set($(".fighter.moose img"),[4000]);$$(".fighter.ally img").forEach(e=>set(e,[1100]))}
+function syncHellAnim(){if(!B||!B.opp.horror)return;const t=performance.now();const set=(el,durs)=>{if(el)el.style.animationDelay=durs.map(d=>(-(t%d))+"ms").join(",")};set($(".arena-field"),[1400,3000]);set($(".fighter.moose img"),[4000]);$$(".fighter.ally img").forEach((e,i)=>{e.style.animationDelay=(-(t%2600)-i*900)+"ms"})}
 function renderBattle(){
   const root=$("#scr-battle");const f=B.cur;
   const fh=(x)=>`<div class="fighter ${x.side} ${dInfo(x.id).noflip?"noflip":""} ${dInfo(x.id).flipAlly?"flipally":""} ${dInfo(x.id).big?"bigspr":""} ${x.lvl>=50?"maxaura":""} ${x.id==="d160"?"moose":""} ${x.banned?"banned":""} ${x.hp<=0?"dead":""} ${x===f?"active":""} pos${x.i}" data-side="${x.side}" data-i="${x.i}"><img src="assets/${x.id}.png"><div class="hpbar"><div class="${x.hp/x.maxhp<.3?"low":""}" style="width:${x.hp/x.maxhp*100}%"></div>${x.shield?`<div class="shieldbar" style="width:${Math.min(100,x.shield/x.maxhp*100)}%"></div>`:""}</div>${x.soviet&&x.hp>0?`<div class="charge ${x.charge>=2?"hot":""}"><span style="width:${Math.min(100,(x.charge||0)/3*100)}%"></span><b>${x.charge>=3?"⚠ BANNED!":"⏳ "+Math.max(0,x.charge||0)+"/3"}</b></div>`:""}${x.banned?`<div class="banmark">BANNED</div>`:""}<div class="fn">${x.name} <small>ур.${x.lvl}</small></div><div>${x.els.map(elIco).join("")}</div>${x.buffAtk?"<small>⚔️↑</small>":""}${x.buffDef?"<small>🛡️↑</small>":""}${x.debuff?"<small>⚔️↓</small>":""}${x.shield?`<small>🔰${x.shield}</small>`:""}${(x.fx||[]).map(e=>({burn:"🔥",hot:"💚",stun:"💫",freeze:"🧊",slow:"🐌",vuln:"💔"})[e.k]||"").join("")}</div>`;
@@ -530,7 +531,7 @@ function applySkill(actor,k,target,atkM,blk){
     const ls=(s.effect==="lifesteal"?0.5:0)+(actor.lifesteal||0);if(ls>0&&healed>0&&!(actor.fx||[]).some(x=>x.k==="noheal")){const h=Math.round(healed*ls);actor.hp=Math.min(actor.maxhp,actor.hp+h);pop(fEl(actor),"+"+h,"heal");log(`🩸 ${actor.name} восстановил ${h}`)}
   }else if(s.type==="heal"){
     const targets=s.aoe?alive(friends):[target];
-    targets.forEach(t=>{if((t.fx||[]).some(e=>e.k==="noheal")){pop(fEl(t),"ЛЕЧЕНИЕ ЗАПРЕЩЕНО","weak");log(`🚫 ${t.name}: лечение заблокировано (ПРИГОВОР)`);return}const h=Math.round(t.maxhp*s.power*(1+((actor.dmgB||{})[s.el]||0))*(1+(actor.tb.healboost||0)));t.hp=Math.min(t.maxhp,t.hp+h);
+    targets.forEach(t=>{const h=Math.round(t.maxhp*s.power*(1+((actor.dmgB||{})[s.el]||0))*(1+(actor.tb.healboost||0)));if((t.fx||[]).some(e=>e.k==="noheal")){pop(fEl(t),"ЛЕЧЕНИЕ ЗАПРЕЩЕНО","weak");const boss=alive(actor.side==="ally"?B.enemies:B.allies).find(x=>x.id==="d160");if(boss){boss.hp=Math.min(boss.maxhp,boss.hp+h);pop(fEl(boss),"+"+h,"heal");hellFx("helldrain",t);log(`🚫 ПРИГОВОР: лечение ${t.name} (${h}) ушло Лосю`)}else log(`🚫 ${t.name}: лечение заблокировано (ПРИГОВОР)`);return}t.hp=Math.min(t.maxhp,t.hp+h);
       if(s.effect==="hot"){t.fx=t.fx||[];t.fx.push({k:"hot",t:2})}
       if(s.effect==="cleanse"){t.fx=(t.fx||[]).filter(e=>e.k==="hot");t.debuff=0}SFX.heal();vfx(fEl(t),"heal");pop(fEl(t),"+"+h,"heal");log(`${actor.name} лечит ${t.name} на ${h}`)});
   }else if(s.type==="buff"){
@@ -550,7 +551,7 @@ function aiTurn(){
   // приоритеты: лечить если кто-то <35%, иначе самый сильный навык, цель — по стихии
   const hurt=friends.find(x=>x.hp/x.maxhp<.35);
   let k=null,t=null;
-  if(f.id==="d160"){f._mv=(f._mv||0)+1;f.hcharge=(f.hcharge||0)+1;let k;if(f._mv%3===0){k="hellkara"}else if(f.hcharge>=10&&f.hp<f.maxhp*.9){k="hellheal";f.hcharge=0}else{const ex=["hellfire","helldrain","hellgaze"].filter(x=>!(f.cds[x]>0));const pool=ex.length?ex.concat(RNG()<.25?["hellswap"]:[]):["hellswap"];k=pool[Math.floor(RNG()*pool.length)]}const t=k==="hellfire"?null:k==="hellheal"?f:foes.slice().sort((a,b)=>b.hp-a.hp)[0];if(k==="hellfire"){jumpscare(600)}hellFx(k,t);if(f._mv%3===0)hellSay();useSkill(f,k,t);return}
+  if(f.id==="d160"){f._mv=(f._mv||0)+1;f.hcharge=(f.hcharge||0)+1;let k;if(B.round%3===0&&f._karaR!==B.round){f._karaR=B.round;k="hellkara"}else if(f.hcharge>=10&&f.hp<f.maxhp*.9){k="hellheal";f.hcharge=0}else{const ex=["hellfire","helldrain","hellgaze"].filter(x=>!(f.cds[x]>0));const pool=ex.length?ex.concat(RNG()<.25?["hellswap"]:[]):["hellswap"];k=pool[Math.floor(RNG()*pool.length)]}const t=(k==="hellfire"||k==="hellkara")?null:k==="hellheal"?f:foes.slice().sort((a,b)=>b.hp-a.hp)[0];if(k==="hellfire"){jumpscare(600)}hellFx(k,t);if(f._mv%3===0)hellSay();useSkill(f,k,t);return}
   if(f.soviet&&f.charge>=3){f.charge=0;const tg=foes.slice().sort((a,b)=>b.hp-a.hp)[0];useSkill(f,"sovban",tg);return}
   if(f.soviet){const r2=ready.filter(k=>k!=="sovban");useSkill(f,r2[Math.floor(RNG()*r2.length)]||"sovhit",foes[Math.floor(RNG()*foes.length)]);return}
   const heals=ready.filter(k=>SKILLS[k].type==="heal");
@@ -814,7 +815,7 @@ function jumpscare(ms){const j=document.createElement("div");j.className="jumpsc
 function hellToast(){const lines=["Я ВИЖУ ТЕБЯ","НЕ ВЫКЛЮЧАЙ","ЭТО НЕ ТВОЙ ХОД","ТВОЁ СОХРАНЕНИЕ У МЕНЯ","666","ОНИ УМРУТ ВСЕ РАВНО","ЗАЧЕМ ТЫ ИСКАЛ МЕНЯ","4 4 4 4 4 4","ТЫ ВСЁ ЕЩЁ ЗДЕСЬ?","ЗАКРОЙ ГЛАЗА"];toast(`<b style="color:#f00;font-family:monospace;letter-spacing:2px">${lines[Math.floor(Math.random()*lines.length)]}</b>`)}
 function hellFx(k,t){const a=$(".arena-field");if(!a)return;const mk=(cls,ms,par)=>{const d=document.createElement("div");d.className="hfx "+cls;(par||a).append(d);setTimeout(()=>d.remove(),ms);return d};
   if(k==="hellfire"){const d=mk("hfx-penta",1600);d.innerHTML="<b>⛧</b>";$$(".fighter.ally").forEach((e,i)=>setTimeout(()=>mk("hfx-flame",1000,e),200+i*120))}
-  else if(k==="hellkara"){const d=mk("hfx-kara",1300);d.innerHTML="<span>КАРА</span>";const e=t&&fEl(t);if(e){setTimeout(()=>{mk("hfx-hand",900,e);const a2=$(".arena");if(a2){a2.classList.add("hell-shake");setTimeout(()=>a2.classList.remove("hell-shake"),700)}},450)}}
+  else if(k==="hellkara"){const d=mk("hfx-kara",1300);d.innerHTML="<span>КАРА</span>";const es=$$(".fighter.ally");if(es.length){setTimeout(()=>{es.forEach((e,i)=>setTimeout(()=>mk("hfx-hand",900,e),i*120));const a2=$(".arena");if(a2){a2.classList.add("hell-shake");setTimeout(()=>a2.classList.remove("hell-shake"),700)}},450)}}
   else if(k==="helldrain"){const e=t&&fEl(t);const m=$(".fighter.moose");if(e&&m){const r1=e.getBoundingClientRect(),r2=m.getBoundingClientRect(),ra=a.getBoundingClientRect();for(let i=0;i<7;i++){const o=mk("hfx-orb",900+i*80);o.style.left=(r1.left+r1.width/2-ra.left)+"px";o.style.top=(r1.top+r1.height/2-ra.top)+"px";o.style.setProperty("--tx",(r2.left+r2.width/2-r1.left-r1.width/2)+"px");o.style.setProperty("--ty",(r2.top+r2.height/2-r1.top-r1.height/2)+"px");o.style.animationDelay=(i*.08)+"s"}}}
   else if(k==="hellgaze"){const d=mk("hfx-eye",1100);d.innerHTML="<i></i>";const e=t&&fEl(t);if(e)setTimeout(()=>mk("hfx-gazehit",700,e),350)}}
 function hellSay(){if(!B)return;const L=["ты думаешь, это ты нажимаешь кнопки?","я читал твоё сохранение. там скучно.","твои драконы кричат. ты не слышишь.","ещё ход. ещё один. и ещё.","я был здесь до того, как ты открыл игру.","не закрывай вкладку. я всё равно останусь.","они падают. ты тоже падаешь.","4. 4. 4. 4.","ты не выиграешь. но продолжай — мне нравится.","кто создал тьму? я просто зашёл в неё."];const t=L[Math.floor(Math.random()*L.length)];const a=$(".arena-field");if(!a)return;let d=$(".hell-say",a);if(!d){d=document.createElement("div");d.className="hell-say";a.append(d)}d.textContent="ЛОСЬ 4 САТАНА: "+t;d.classList.remove("on");void d.offsetWidth;d.classList.add("on")}
