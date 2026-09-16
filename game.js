@@ -145,7 +145,7 @@ function renderMap(){
   fitIsland();
   $("#collectall",root).onclick=()=>{let g=0;allTiles().forEach(t=>{const v=habStored(t);if(v>0){g+=v;t.last=Date.now()}});if(!g){toast("Пока нечего собирать");return}S.gold+=g;addXP(Math.min(120,10+Math.ceil(g/20)));save();updateTop();renderMap();toast(`+🪙${fmt(g)}`)};
   $$("[data-isl]",root).forEach(b=>b.onclick=()=>{const df=ISLANDS[+b.dataset.isl];const ci=S.islands.findIndex(x=>x.id===df.id);
-    if(ci>=0){const was=S.cur;S.cur=ci;moveFrom=null;if(was===ci){const g=Math.max(5,Math.round((10+S.level*3)*(1+Math.random())));S.gold+=g;save();updateTop();coinBurst(b,g);return}save();renderMap();return}
+    if(ci>=0){S.cur=ci;moveFrom=null;save();renderMap();return}
     if(S.level<df.req){toast(`Остров откроется на уровне ${df.req}`);return}
     modal(`<h2>🏝️ ${df.name}</h2><p>Купить новый остров за <b>${costStr(df.cost)}</b>? Размер ${df.w}×${df.h}.${df.bonusText?`<br><b>Бонус острова:</b> ${df.bonusText}`:""}</p><div class="row"><button class="btn green" id="ok" ${canPay(df.cost)?"":"disabled"}>Купить</button></div>`);
     $("#ok").onclick=()=>{pay(df.cost);S.islands.push(makeIsland(df));S.cur=S.islands.length-1;addXP(500);save();closeModal();renderMap();toast("🏝️ Новый остров открыт!")}});
@@ -971,7 +971,7 @@ function netHandle(m){
   if(m.t==="broadcast"){modal(`<h2>📢 Сообщение администратора${m.from?" ("+m.from+")":""}</h2><p>${m.msg}</p><div class="row"><button class="btn green" onclick="closeModal()">Ок</button></div>`);return}
   if(m.t==="banned"){modal(`<h2>🚫 Аккаунт заблокирован</h2><p>${m.msg||""}</p>`,{closable:false});return}
   if(m.t==="kicked"){toast("⚠️ В аккаунт вошли с другого устройства");return}
-  if(m.t==="me"){NET.me=m.me;S.pvp.rating=m.me.rating;save();refreshNetUI();return}
+  if(m.t==="me"){NET.me=m.me;S.pvp.rating=m.me.rating;if(NET.top)NET.top.forEach(p=>{if(p.id===m.me.id){p.avatar=m.me.avatar;p.name=m.me.name}});save();refreshNetUI();return}
   if(m.t==="friends"){NET.friends=m.list;NET.requests=m.requests;refreshNetUI();if(m.requests.length&&!$("#scr-friends").classList.contains("active"))toast(`👥 Заявки в друзья: ${m.requests.length}`);return}
   if(m.t==="top"){NET.top=m.top;NET.online=m.online;refreshNetUI();return}
   if(m.t==="err"){toast("⚠️ "+m.msg);return}
@@ -1012,7 +1012,7 @@ function renderFriends(){const root=$("#scr-friends");const on=NET.status==="onl
   <div class="panel"><h2>👥 Друзья (${NET.friends.length})</h2>${NET.friends.map(p=>`<div class="frow"><img src="assets/av/${p.avatar}.jpg" class="av"><span class="dot ${p.online?"on":""}"></span><b>${p.name}</b><small>${leagueOf(p.rating).ico} ${p.rating} · ⚡${p.power}</small><button class="btn sm blue" data-visit="${p.id}" title="Посетить остров и сравнить драконов">🏝️ В гости</button><button class="btn sm red" data-ch="${p.id}" ${p.online&&team.length?"":"disabled"}>⚔️ Вызвать</button><button class="btn sm" data-rm="${p.id}">🗑</button></div>`).join("")||`<small>${on?"Добавь друзей по коду — и вызывай их на PvP-бой.":"Нет связи с сервером."}</small>`}<p><small>Друг показан «не в сети», пока он не <b>вошёл в аккаунт</b> в игре (индикатор в шапке должен быть 🟢).</small></p>${``}</div></div>`;
   const lo=$("#alogout",root);if(lo)lo.onclick=()=>{if(confirm("Выйти из аккаунта?"))logout()};const li=$("#alogin",root);if(li)li.onclick=()=>{NET.wantAuth=true;sessionStorage.removeItem("dml_offline");showAuth("login")};
   $("#pname",root).onchange=e=>{S.profile.name=e.target.value.trim()||"Хранитель";save();updateTop();netSend({t:"profile",name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team})};
-  $$("[data-av]",root).forEach(a=>a.onclick=()=>{S.profile.avatar=a.dataset.av;save();updateTop();netSend({t:"profile",name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team});renderFriends()});
+  $$("[data-av]",root).forEach(a=>a.onclick=()=>{S.profile.avatar=a.dataset.av;save();updateTop();if(NET.me)NET.me.avatar=S.profile.avatar;netSend({t:"profile",name:S.profile.name,avatar:S.profile.avatar,power:team.reduce((a,id)=>a+power(id),0),team});$$("[data-av]",root).forEach(x=>x.classList.toggle("sel",x.dataset.av===S.profile.avatar));if($("#scr-pvp").classList.contains("active"))renderPvp();else renderFriends()});
   $("#fadd",root).onclick=()=>{const c=$("#fcode",root).value.trim();if(c.length<4)return;netSend({t:"friend_add",code:c});$("#fcode",root).value=""};
   $$("[data-acc]",root).forEach(b=>b.onclick=()=>netSend({t:"friend_accept",id:b.dataset.acc}));$$("[data-dec]",root).forEach(b=>b.onclick=()=>netSend({t:"friend_decline",id:b.dataset.dec}));
   $$("[data-rm]",root).forEach(b=>b.onclick=()=>{if(confirm("Удалить из друзей?"))netSend({t:"friend_remove",id:b.dataset.rm})});
@@ -1089,7 +1089,7 @@ function renderAdminMore(p){const box=modal(`<h2>⋯ ${p.name} <small style="opa
     if(x==="note"){const note=prompt("Заметка (видна только админам):",p.note||"");if(note!==null)netSend({t:"admin_note",id,note});return}
     if(x==="delete"&&!confirm("Удалить аккаунт безвозвратно?"))return;if(x==="reset"&&!confirm("Сбросить прогресс игрока?"))return;
     netSend({t:"admin_"+x,id})})}
-function renderAdminDragon(p){const opts=DRAGONS.filter(d=>!d.boss).map(d=>`<option value="${d.id}">${d.id} — ${d.name} (${d.rarity})</option>`).join("");
+function renderAdminDragon(p){const opts=DRAGONS.map(d=>`<option value="${d.id}">${d.id} — ${d.name} (${d.rarity})${d.boss?" 👹 БОСС":d.eventOnly?" 🎪 событие":""}</option>`).join("");
   const box=modal(`<h2>🐲 Драконы игрока ${p.name}</h2><p>У игрока драконов: ${p.dragons||0}</p>
   <div class="row"><select id="ad_id" style="flex:1">${opts}</select><input id="ad_lvl" type="number" min="1" max="50" value="1" style="width:70px" title="уровень"></div>
   <div class="row"><button class="btn sm green" id="ad_give">Выдать / установить уровень</button><button class="btn sm red" id="ad_rm">Забрать</button><button class="btn sm" id="ad_back">← Назад</button></div><small>Г.Б.Т. (d109) — только босс, выдать нельзя.</small>`);

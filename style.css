@@ -480,3 +480,8 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 .coinfx{position:fixed;z-index:9999;pointer-events:none;font-size:22px;transform:translate(-50%,-50%);animation:coinfly 1.2s ease-out forwards}
 .coinfx.big{font-size:18px;font-weight:900;color:var(--gold,#ffd54a);text-shadow:1px 1px 0 #000,-1px -1px 0 #000}
 @keyframes coinfly{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}20%{opacity:1;transform:translate(calc(-50% + var(--dx,0px)*.3),-90px) scale(1.2)}100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),-160px) scale(.8)}}
+
+/* Академия: тексты в древе — белым */
+.tnode,.tnode .tt,.tnode .tt b,.tnode .tt small{color:#fff}
+#acbody .skill{background:#1b1633;border-color:#3a3160;color:#fff}#acbody .skill small,#acbody .skill b{color:#fff}
+#acbody p,#acbody p b{color:#fff}
