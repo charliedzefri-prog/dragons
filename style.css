@@ -485,3 +485,20 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 .tnode,.tnode .tt,.tnode .tt b,.tnode .tt small{color:#fff}
 #acbody .skill{background:#1b1633;border-color:#3a3160;color:#fff}#acbody .skill small,#acbody .skill b{color:#fff}
 #acbody p,#acbody p b{color:#fff}
+
+/* Макс. уровень: эпичная аура */
+.fighter.maxaura img{filter:drop-shadow(0 0 10px #ffd54a) drop-shadow(0 0 22px #ff7a00);animation:auraPulse 1.6s ease-in-out infinite}
+.fighter.maxaura::before{content:"";position:absolute;left:50%;bottom:6px;width:120%;height:36px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(255,213,74,.75),rgba(255,120,0,.25) 55%,transparent 70%);animation:auraRing 2.2s linear infinite;z-index:0;pointer-events:none}
+.fighter.maxaura::after{content:"✦ MAX ✦";position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:900;color:#ffe680;text-shadow:0 0 6px #ff7a00,1px 1px 0 #000;letter-spacing:1px;z-index:6;animation:auraPulse 1.6s ease-in-out infinite}
+.dr-card.maxaura{box-shadow:0 0 0 3px #ffd54a,0 0 18px #ff7a00,0 5px 0 #3a2008;background:linear-gradient(#fff3c4,#f0c060)}
+.dr-card.maxaura img{filter:drop-shadow(0 0 8px #ffd54a) drop-shadow(2px 3px 0 rgba(0,0,0,.35));animation:auraPulse 1.6s ease-in-out infinite}
+@keyframes auraPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes auraRing{0%{opacity:.6;transform:translateX(-50%) scaleX(.9)}50%{opacity:1;transform:translateX(-50%) scaleX(1.1)}100%{opacity:.6;transform:translateX(-50%) scaleX(.9)}}
+.fighter.ally.maxaura.flipally img,.fighter.enemy.maxaura img{animation:auraPulseFlip 1.6s ease-in-out infinite}
+@keyframes auraPulseFlip{0%,100%{transform:scaleX(-1) scale(1)}50%{transform:scaleX(-1) scale(1.04)}}
+.fighter.enemy.maxaura.noflip img,.fighter.enemy.maxaura.flipally img{animation:auraPulse 1.6s ease-in-out infinite}
+/* Джонни */
+.slashfx{position:absolute;left:50%;top:40%;width:150%;transform:translate(-50%,-50%) rotate(-15deg);z-index:7;pointer-events:none;animation:slashAnim .65s ease-out forwards}
+@keyframes slashAnim{0%{opacity:0;transform:translate(-50%,-50%) rotate(-40deg) scale(.4)}25%{opacity:1;transform:translate(-50%,-50%) rotate(-10deg) scale(1.2)}100%{opacity:0;transform:translate(-50%,-50%) rotate(5deg) scale(1.4)}}
+.johnny-card{background:linear-gradient(135deg,#1b0a2e,#4a1a6a);border-color:#8a2be2;color:#fff}.johnny-card .desc,.johnny-card h2{color:#fff}.johnny-img{height:150px;animation:float 1.4s infinite alternate}
+.pkw{position:relative;display:inline-block}.pkw .copies{position:absolute;right:2px;bottom:2px;background:#000c;color:#ffd54a;font-size:10px;padding:0 4px;border-radius:6px;pointer-events:none}
