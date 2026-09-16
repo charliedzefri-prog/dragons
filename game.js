@@ -248,7 +248,7 @@ function renderDragons(){
       .sort((a,b)=>(S.dragons[b.id]?1:0)-(S.dragons[a.id]?1:0));
     grid.innerHTML=list.map(d=>dragonCard(d.id)).join("")||`<p class="center" style="grid-column:1/-1">Ничего не найдено</p>`;
     $$(".dr-card",grid).forEach(c=>c.onclick=()=>{const id=c.dataset.id;if(S.dragons[id]&&!isHoused(id)){placeDragon(id);return}dragonDetail(id)})}
-  $("#dsearch",root).oninput=e=>{S._q=e.target.value;draw()};$$(".chip",root).forEach(b=>b.onclick=()=>{S._f=b.dataset.f;$$(".chip",root).forEach(x=>x.classList.toggle("on",x===b));draw()});draw();
+  $("#dsearch",root).oninput=e=>{S._q=e.target.value;if(e.target.value.trim()==="666"&&!S.mooseFound&&S.level>=MOOSE_EVENT.req){S.mooseFound=true;save();mooseGlitch(1200);setTimeout(()=>{toast("<b style=\"color:#f00\">он проснулся</b>");renderEvents&&0},600)}draw()};$$(".chip",root).forEach(b=>b.onclick=()=>{S._f=b.dataset.f;$$(".chip",root).forEach(x=>x.classList.toggle("on",x===b));draw()});draw();
 }
 function dragonDetail(id){
   const d=dInfo(id),o=S.dragons[id],r=RARITY[d.rarity];
@@ -333,7 +333,7 @@ function matchmake(diff){const best=bestOwn(3);if(!best.length)return {name:"С�
     const cand=pool.filter(d=>d.els.includes(el)&&!ids.includes(d.id));const d=cand.length?cand[Math.floor(rng()*cand.length)]:pool[Math.floor(rng()*pool.length)];if(!ids.includes(d.id))ids.push(d.id)}
   const names={easy:["Разминка","Лёгкий спарринг","Новички арены"],normal:["Достойный соперник","Равный бой","Ветераны арены"],hard:["Контр-отряд","Элита арены","Кошмар для твоей тройки"]}[diff];
   return {name:names[Math.floor(rng()*names.length)],lvl,ids,random:true,diff}}
-function enemySkills(id,lvl){const d=dInfo(id);if(d.els.includes("soviet"))return ["sovhit","sovhit_s","sovban"];if(id==="d157")return ["staffslam","staffcut","warp"];const b=baseSkills(id).filter((k,i)=>lvl>=SLOT_LEVEL[i]);if(lvl>=8)b.push(ELEMENT_SPREAD[d.els[0]]);if(lvl>=12)b.push(ELEMENT_ABILITY[d.els[0]]);return b}
+function enemySkills(id,lvl){const d=dInfo(id);if(d.els.includes("soviet"))return ["sovhit","sovhit_s","sovban"];if(id==="d157")return ["staffslam","staffcut","doom"];if(id==="d160")return ["hellgaze","hellfire","hellswap","sovban"];const b=baseSkills(id).filter((k,i)=>lvl>=SLOT_LEVEL[i]);if(lvl>=8)b.push(ELEMENT_SPREAD[d.els[0]]);if(lvl>=12)b.push(ELEMENT_ABILITY[d.els[0]]);return b}
 function mkFighter(id,ov,side,i){const st=dragonStats(id,ov);const d=dInfo(id);if(d.els.includes("soviet")){st.hp=Math.round(st.hp*0.55)}return {id,side,i,name:d.name,els:d.els,skills:ov?enemySkills(id,ov.lvl):dSkills(id),hp:st.hp,maxhp:st.hp,atk:st.atk,def:st.def,spd:st.spd,cds:{},buffAtk:0,buffDef:0,debuff:0,crit:st.crit,timeb:st.timeb,lifesteal:st.lifesteal||0,dmgB:st.dmg||{},shield:Math.round(st.hp*(st.startshield||0)),fx:[],tb:st.tb||{},reviveUsed:false,soviet:d.els.includes("soviet"),charge:d.els.includes("soviet")?(side==="enemy"?-i:0):0,lvl:ov?ov.lvl:S.dragons[id].lvl}}
 function startBattle(opp){
   if(team.length===0){toast("Выбери хотя бы одного дракона!");return}
@@ -349,6 +349,8 @@ function startBattle(opp){
 function alive(arr){return arr.filter(f=>f.hp>0)}
 function elMult(skillEl,attacker,target){
   const e=skillEl||attacker.els[0];let m=1;
+  if(target.id==="d160")return 0.75; // Лось: все стихии — ничто не «эффективно», всё чуть слабее
+  if(attacker.id==="d160")return 1.5; // его удары эффективны по всем
   target.els.forEach(t=>{
     if(ELEMENTS[e].strong.includes(t))m*=1.5;
     else if(ELEMENTS[e].weak.includes(t))m*=0.5;
@@ -387,8 +389,8 @@ function lootBonus(){return team.reduce((a,id)=>a+((treeBonuses(id).loot)||0),0)
 function battleBg(){const o=B&&B.opp;if(!o)return null;if(o.bg)return o.bg;if(o.final)return BATTLE_BG.final;if(o.boss)return BATTLE_BG.boss;if(o.campaign)return BATTLE_BG.campaign[o.ch]||BATTLE_BG.default;if(o.pvp)return BATTLE_BG.pvp;return BATTLE_BG.default}
 function renderBattle(){
   const root=$("#scr-battle");const f=B.cur;
-  const fh=(x)=>`<div class="fighter ${x.side} ${dInfo(x.id).noflip?"noflip":""} ${dInfo(x.id).flipAlly?"flipally":""} ${dInfo(x.id).big?"bigspr":""} ${x.lvl>=50?"maxaura":""} ${x.banned?"banned":""} ${x.hp<=0?"dead":""} ${x===f?"active":""} pos${x.i}" data-side="${x.side}" data-i="${x.i}"><img src="assets/${x.id}.png"><div class="hpbar"><div class="${x.hp/x.maxhp<.3?"low":""}" style="width:${x.hp/x.maxhp*100}%"></div>${x.shield?`<div class="shieldbar" style="width:${Math.min(100,x.shield/x.maxhp*100)}%"></div>`:""}</div>${x.soviet&&x.hp>0?`<div class="charge ${x.charge>=2?"hot":""}"><span style="width:${Math.min(100,(x.charge||0)/3*100)}%"></span><b>${x.charge>=3?"⚠ BANNED!":"⏳ "+Math.max(0,x.charge||0)+"/3"}</b></div>`:""}${x.banned?`<div class="banmark">BANNED</div>`:""}<div class="fn">${x.name} <small>ур.${x.lvl}</small></div><div>${x.els.map(elIco).join("")}</div>${x.buffAtk?"<small>⚔️↑</small>":""}${x.buffDef?"<small>🛡️↑</small>":""}${x.debuff?"<small>⚔️↓</small>":""}${x.shield?`<small>🔰${x.shield}</small>`:""}${(x.fx||[]).map(e=>({burn:"🔥",hot:"💚",stun:"💫",freeze:"🧊",slow:"🐌",vuln:"💔"})[e.k]||"").join("")}</div>`;
-  root.innerHTML=`<div class="arena">
+  const fh=(x)=>`<div class="fighter ${x.side} ${dInfo(x.id).noflip?"noflip":""} ${dInfo(x.id).flipAlly?"flipally":""} ${dInfo(x.id).big?"bigspr":""} ${x.lvl>=50?"maxaura":""} ${x.id==="d160"?"moose":""} ${x.banned?"banned":""} ${x.hp<=0?"dead":""} ${x===f?"active":""} pos${x.i}" data-side="${x.side}" data-i="${x.i}"><img src="assets/${x.id}.png"><div class="hpbar"><div class="${x.hp/x.maxhp<.3?"low":""}" style="width:${x.hp/x.maxhp*100}%"></div>${x.shield?`<div class="shieldbar" style="width:${Math.min(100,x.shield/x.maxhp*100)}%"></div>`:""}</div>${x.soviet&&x.hp>0?`<div class="charge ${x.charge>=2?"hot":""}"><span style="width:${Math.min(100,(x.charge||0)/3*100)}%"></span><b>${x.charge>=3?"⚠ BANNED!":"⏳ "+Math.max(0,x.charge||0)+"/3"}</b></div>`:""}${x.banned?`<div class="banmark">BANNED</div>`:""}<div class="fn">${x.name} <small>ур.${x.lvl}</small></div><div>${x.els.map(elIco).join("")}</div>${x.buffAtk?"<small>⚔️↑</small>":""}${x.buffDef?"<small>🛡️↑</small>":""}${x.debuff?"<small>⚔️↓</small>":""}${x.shield?`<small>🔰${x.shield}</small>`:""}${(x.fx||[]).map(e=>({burn:"🔥",hot:"💚",stun:"💫",freeze:"🧊",slow:"🐌",vuln:"💔"})[e.k]||"").join("")}</div>`;
+  root.innerHTML=`<div class="arena ${B.opp.horror?"horror":""}">
    ${B.pvp?`<div class="pvp-head"><span>${S.profile.name} ${leagueOf(S.pvp.rating).ico}</span><span class="pvp-timer" id="pvpt">10</span><span>${B.opp.name}</span></div>`:""}<div class="turn-order">${[f,...B.queue].map(x=>`<img src="assets/${x.id}.png" class="${x===f?"now":""} ${x.side==="enemy"?"en":""}">`).join("")}</div>
    <div class="arena-field iso-arena" style="${battleBg()?`background:url(assets/bg/${battleBg()}.jpg) center/cover`:""}"><div class="arena-floor" ${battleBg()?'style="opacity:.35"':""}></div><div class="team allies">${B.allies.map(fh).join("")}</div><div class="team enemies">${B.enemies.map(fh).join("")}</div></div>
    <div class="battle-log" id="blog">${B.log.map(l=>`<div>${l}</div>`).join("")}</div>
@@ -513,6 +515,7 @@ function aiTurn(){
   // приоритеты: лечить если кто-то <35%, иначе самый сильный навык, цель — по стихии
   const hurt=friends.find(x=>x.hp/x.maxhp<.35);
   let k=null,t=null;
+  if(f.id==="d160"){const ks=B.round%4===0&&B.round>0?["sovban"]:["hellgaze","hellfire","hellswap"];const k=ks[Math.floor(RNG()*ks.length)];const t=k==="hellfire"?null:foes.slice().sort((a,b)=>b.hp-a.hp)[0];if(k==="sovban"){hellToast();f.charge=3}useSkill(f,k,t);return}
   if(f.soviet&&f.charge>=3){f.charge=0;const tg=foes.slice().sort((a,b)=>b.hp-a.hp)[0];useSkill(f,"sovban",tg);return}
   if(f.soviet){const r2=ready.filter(k=>k!=="sovban");useSkill(f,r2[Math.floor(RNG()*r2.length)]||"sovhit",foes[Math.floor(RNG()*foes.length)]);return}
   const heals=ready.filter(k=>SKILLS[k].type==="heal");
@@ -674,7 +677,7 @@ function openPhone(){
   <p>Награда за победу: ${costStr(PHONE_EVENT.reward)}. Каждая <b>3-я победа</b> — 🥚 яйцо самого <b>MR 333</b> (только так его и можно получить)!</p>
   <div class="row"><button class="btn red" id="call" ${left>0?"disabled":""}>${left>0?"📵 Занято: "+tleft(Date.now()+left):"📞 Позвонить"}</button></div>`);
   $("#call",m).onclick=()=>{closeModal();pickTeamModal("📞 MR 333 отвечает…","<div class='desc'>«3:33. Ровно. Не опаздывай.» Команда 3:00 очень сильна — бери драконов, сильных против 🕒 3:00 (🔢 Цифра и 💉 Медицина) и берегись 🌙 Ночи.</div>",()=>{
-    const lvl=S.level+PHONE_EVENT.lvlBonus;S.phoneLast=Date.now();save();
+    const alv=Math.max(1,...team.map(id=>S.dragons[id].lvl));const lvl=Math.max(S.level+PHONE_EVENT.lvlBonus,alv*PHONE_EVENT.lvlMult);S.phoneLast=Date.now();save();
     startBattle({name:"Команда 3:00 (MR 333)",lvl,ids:PHONE_EVENT.team,bg:BATTLE_BG.phone,onEnd:(win)=>{
       if(win){S.phoneWins=(S.phoneWins||0)+1;const r=PHONE_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(200+40*lvl);let egg="";if(S.phoneWins%3===0){giveEgg(PHONE_EVENT.egg,"event");egg="<p><b>🥚 MR 333 впечатлён — его яйцо в твоём инвентаре!</b></p>"}
         save();updateTop();modal(`<div class="result win">ПОБЕДА!</div><p class="center">«…Ладно. Перезвоню в четыре.»</p><div class="center" style="font-weight:900">+${costStr(r)} +⭐${200+40*lvl}</div>${egg}<p class="center"><small>Побед над MR 333: ${S.phoneWins} (до яйца: ${3-S.phoneWins%3===3?0:3-S.phoneWins%3})</small></p><div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('map')">Ок</button></div>`,{closable:false})}
@@ -769,6 +772,31 @@ function startJohnny(){if(S.level<JOHNNY_EVENT.req){toast("Нужен урове
       if(win){S.johnnyWins=(S.johnnyWins||0)+1;const r=JOHNNY_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(500+40*lvl);let egg="";if(S.johnnyWins%JOHNNY_EVENT.eggEvery===0){giveEgg(JOHNNY_EVENT.egg,"johnny");egg="<p><b>🥚 Яйцо MR Lulu!</b></p>"}
         save();updateTop();playDialog([["d157_hostage","Жархнне","…посох упал. Я… я снова просто Жархнне? Спасибо. Наверное."]],()=>modal(`<div class="result win">ПОСОХ СЛОМАН</div><div class="center" style="font-weight:900">+🪙${fmt(r.gold)} +💎${r.gems} +📜${r.scrolls}</div>${egg}<p class="center"><small>Побед над Джонни: ${S.johnnyWins}. Следующее яйцо через ${JOHNNY_EVENT.eggEvery-(S.johnnyWins%JOHNNY_EVENT.eggEvery)} побед(ы).</small></p><div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('events')">Ок</button></div>`,{closable:false}))}
       else{save();modal(`<div class="result lose">РАССЕЧЕНО</div><p class="center">Джонни поднимает посох над головой. Попробуй снова через 6 часов.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">Ок</button></div>`,{closable:false})}}})})})}
+/* ================= СЕКРЕТНЫЙ ХОРРОР-БОСС: ЛОСЬ 4 САТАНА ================= */
+let HORROR=null;
+function mooseGlitch(ms){document.body.classList.add("hell-glitch");setTimeout(()=>document.body.classList.remove("hell-glitch"),ms||500)}
+function jumpscare(ms){const j=document.createElement("div");j.className="jumpscare";j.innerHTML=`<img src="assets/scream666.jpg">`;document.body.append(j);sndPlay("found",1);try{const o=SFX&&SFX.el;}catch(e){}setTimeout(()=>j.remove(),ms||450)}
+function hellToast(){const lines=["Я ВИЖУ ТЕБЯ","НЕ ВЫКЛЮЧАЙ","ЭТО НЕ ТВОЙ ХОД","ТВОЁ СОХРАНЕНИЕ У МЕНЯ","666","ОНИ УМРУТ ВСЕ РАВНО","ЗАЧЕМ ТЫ ИСКАЛ МЕНЯ","4 4 4 4 4 4","ТЫ ВСЁ ЕЩЁ ЗДЕСЬ?","ЗАКРОЙ ГЛАЗА"];toast(`<b style="color:#f00;font-family:monospace;letter-spacing:2px">${lines[Math.floor(Math.random()*lines.length)]}</b>`)}
+function hellTick(){if(!B||!HORROR){return}const r=Math.random();
+  if(r<.25)hellToast();
+  if(r>.25&&r<.4)mooseGlitch(300);
+  if(r>.4&&r<.5)jumpscare(350);
+  if(r>.5&&r<.65){$$(".skillbtn b").forEach(b=>{if(Math.random()<.5)b.dataset.o=b.dataset.o||b.textContent,b.textContent=["666","ОН","БЕГИ","НЕТ","4"][Math.floor(Math.random()*5)]});setTimeout(()=>$$(".skillbtn b").forEach(b=>{if(b.dataset.o)b.textContent=b.dataset.o}),900)}
+  if(r>.65&&r<.75){const t=$("#r-gold");if(t){const o=t.textContent;t.textContent="666";setTimeout(()=>t.textContent=o,800)}}
+  if(r>.75&&r<.85){$$(".fighter.ally .hpbar div").forEach(b=>{const o=b.style.width;b.style.width="3%";setTimeout(()=>b.style.width=o,700)})}
+  if(r>.85){const a=$(".arena");if(a){a.classList.add("hell-shake");setTimeout(()=>a.classList.remove("hell-shake"),600)}}
+  HORROR.t=setTimeout(hellTick,1800+Math.random()*2600)}
+function startMoose(){if(S.level<MOOSE_EVENT.req){toast("Нужен уровень "+MOOSE_EVENT.req);return}closeModal();
+  pickTeamModal("👁️ ???","<div class='desc' style='color:#f00;font-family:monospace'>он не спрашивает разрешения</div>",()=>{
+  const lvl=S.level+MOOSE_EVENT.lvlBonus;save();mooseGlitch(900);
+  playDialog([["d160","???","…"],["d160","???","ты искал 666. ты нашёл."],["av0","Хранитель","Кто… кто ты?"],["d160","ЛОСЬ 4 САТАНА","Я — ЧЕТВЁРКА, КОТОРАЯ НЕ ВЕРНУЛАСЬ. Я В ТВОЁМ ЭКРАНЕ. Я В ТВОЁМ СОХРАНЕНИИ."],["d160","ЛОСЬ 4 САТАНА","ТЕПЕРЬ Я ИГРАЮ. А ТЫ СМОТРИШЬ."]],()=>{
+    HORROR={t:null};jumpscare(500);
+    startBattle({name:"ЛОСЬ 4 САТАНА",lvl,ids:MOOSE_EVENT.ids,bg:"nightmare0",music:"gbt",boss:true,horror:true,onEnd:(win)=>{
+      clearTimeout(HORROR&&HORROR.t);HORROR=null;document.body.classList.remove("hell-glitch");
+      if(win){S.mooseWins=(S.mooseWins||0)+1;const r=MOOSE_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(666);let egg="";if(S.mooseWins===1){giveEgg(MOOSE_EVENT.egg,"moose");egg="<p><b>🥚 Из пентаграммы выкатилось яйцо… Пабло.</b></p>"}
+        S.mooseFound=false;save();updateTop();mooseGlitch(1500);modal(`<div class="result win" style="color:#f00;font-family:monospace">…ОН УШЁЛ. ПОКА.</div><div class="center" style="font-weight:900">+🪙${fmt(r.gold)} +💎${r.gems} +📜${r.scrolls}</div>${egg}<p class="center"><small>Побед: ${S.mooseWins}</small></p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">…</button></div>`,{closable:false})}
+      else{S.mooseFound=false;save();jumpscare(900);setTimeout(()=>modal(`<div class="result lose" style="color:#f00;font-family:monospace">ОН ВЫИГРАЛ. КАК ВСЕГДА.</div><p class="center" style="font-family:monospace">твоя команда… помнит его.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">…</button></div>`,{closable:false}),900)}}});
+    HORROR.t=setTimeout(hellTick,1500)})})}
 function renderEvents(){
   const f=featured();const root=$("#scr-events");
   const feat=(d,title,badge,end,key,disc)=>{const own=S.dragons[d.id];const r=RARITY[d.rarity];const price=Math.round(r.price*disc);const claimed=S.quests["claim_"+key];
@@ -780,6 +808,7 @@ function renderEvents(){
     <small>Бонус: драконы стихии ${d.els.map(e=>ELEMENTS[e].name).join("/")} получают +25% атаки на арене в этот период.</small></div></div></div>`};
   root.innerHTML=`<div class="ev-wrap">${feat(f.dom,"🏆 Дракон месяца","gold",f.endM,f.mk,0.6)}${feat(f.dow,"📅 Дракон недели","",f.endW,f.wk,0.75)}
   ${renderZodiacCard()}
+  ${S.mooseFound?`<div class="panel moose-card"><h2 style="font-family:monospace;color:#f00">👁️ 666</h2><div class="feature"><img src="assets/d160.png" class="johnny-img" style="filter:drop-shadow(0 0 14px #f00)"><div style="flex:1"><div class="desc" style="font-family:monospace;color:#f88">ты не должен был это найти.<br>он не подчиняется стихиям. он — все стихии.<br>он играет сам.</div><div class="row"><button class="btn red" id="gomoose">▶ …</button></div></div></div></div>`:""}
   <div class="panel johnny-card"><h2>🕯️ БОСС: Великий Джонни <span class="badge" style="background:#8a2be2">ур.${JOHNNY_EVENT.req}+</span></h2><div class="feature"><img src="assets/d157.png" class="johnny-img"><div style="flex:1"><div class="desc">Жархнне схватил посох из портала и стал Великим Джонни. С ним MR Lulu и MR Jarkhnne. Награда: ${costStr(JOHNNY_EVENT.reward)}, каждая 2-я победа — 🥚 <b>MR Lulu</b> (баран из семьи Мистеров).</div>
   <div class="row"><button class="btn purple" id="gojohnny" ${S.level<JOHNNY_EVENT.req||johnnyLeft()>0?"disabled":""}>${S.level<JOHNNY_EVENT.req?"🔒 ур."+JOHNNY_EVENT.req:johnnyLeft()>0?"⏳ "+tleft(new Date(Date.now()+johnnyLeft())):"▶ В БОЙ"}${S.johnnyWins?` <small>(побед: ${S.johnnyWins})</small>`:""}</button></div></div></div></div>
   <div class="panel"><h2>🎪 Другие события</h2><div class="skill"><span>📞 <b>Звонок MR 333</b><br><small>Построй Телефонную будку (ур.${BUILDINGS.phone.req}) и брось вызов команде 3:00. Каждая 3-я победа — яйцо MR 333.</small></span><button class="btn sm" id="gophone" ${allTiles().some(t=>t.b==="phone")?"":"disabled"}>${allTiles().some(t=>t.b==="phone")?"📞":"нет будки"}</button></div>
@@ -789,7 +818,7 @@ function renderEvents(){
   <div class="row"><button class="btn red" id="gosoviet">▶ ЗАПУСТИТЬ${S.sovietWins?` <small>(побед: ${S.sovietWins})</small>`:""}</button></div></div>`:""}
   <div class="panel"><h2 id="stat-title">📊 Статистика</h2><div class="stat"><span>Драконов</span><span>${ownedIds().length}/${DRAGONS.filter(d=>!d.boss).length}</span></div><div class="stat"><span>Побед</span><span>${S.wins}</span></div><div class="stat"><span>Боёв</span><span>${S.battles}</span></div><div class="stat"><span>Островов</span><span>${S.islands.length}/${ISLANDS.length}</span></div><div class="stat"><span>Построек</span><span>${allTiles().filter(t=>t.b).length}</span></div><div class="stat"><span>Открыто клеток</span><span>${allTiles().filter(t=>t.unlocked).length}/${allTiles().length}</span></div>
   <div class="row"><button class="btn red sm" id="reset">Сбросить прогресс</button></div></div></div>`;
-  bindZodiac(root);const gp=$("#gophone",root);if(gp)gp.onclick=openPhone;const gs=$("#gosoviet",root);if(gs)gs.onclick=startSoviet;const gj=$("#gojohnny",root);if(gj)gj.onclick=startJohnny;
+  bindZodiac(root);const gp=$("#gophone",root);if(gp)gp.onclick=openPhone;const gs=$("#gosoviet",root);if(gs)gs.onclick=startSoviet;const gj=$("#gojohnny",root);if(gj)gj.onclick=startJohnny;const gm=$("#gomoose",root);if(gm)gm.onclick=startMoose;
   const stt=$("#stat-title",root);if(stt){stt.onclick=()=>{S._sovTap=(S._sovTap||0)+1;if(S._sovTap>=5&&!S.sovietFound){S.sovietFound=true;S._sovTap=0;save();sndPlay("init",.8);toast("🖥️ …init. Что-то нашлось.");renderEvents()}}}const gd=$("#godg",root);if(gd)gd.onclick=openDungeon;
   $$("[data-buy]",root).forEach(b=>b.onclick=()=>{const p=+b.dataset.price;if(S.level<DRAGON_REQ[b.dataset.buy]){toast("Нужен уровень "+DRAGON_REQ[b.dataset.buy]);return}if(S.gold<p){toast("Не хватает золота");return}S.gold-=p;giveEgg(b.dataset.buy,"event");addXP(150);save();renderEvents()});
   $$("[data-claim]",root).forEach(b=>b.onclick=()=>{S.quests["claim_"+b.dataset.claim]=1;S.gold+=1000;S.gems+=10;S.food+=300;S.scrolls=(S.scrolls||0)+5;addXP(50);save();toast("🎁 +🪙1000 +💎10 +🍖300 +📜5");renderEvents()});
