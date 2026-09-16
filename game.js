@@ -99,7 +99,8 @@ function show(scr){
   $$("#navbar button").forEach(b=>b.classList.toggle("active",b.dataset.scr===scr));
   $$(".screen").forEach(s=>s.classList.toggle("active",s.id==="scr-"+scr));
   ({map:renderMap,dragons:renderDragons,battle:renderBattleMenu,events:renderEvents,shop:renderShop,academy:renderAcademy,breed:renderBreed,campaign:renderCampaign,pvp:renderPvp,friends:renderFriends})[scr]();
-  if(!B)playMusic(scr==="battle"?"select":scr==="pvp"?"select":scr==="campaign"?"campaign":"map");
+  if(S.mooseFound&&scr!=="events"){show("events");return}
+  if(!B)playMusic(S.mooseFound?"drone":scr==="battle"?"select":scr==="pvp"?"select":scr==="campaign"?"campaign":"map");
 }
 $$("#navbar button").forEach(b=>b.onclick=()=>{if(B){toast("⚔️ Сначала закончи бой (или сдайся)");SFX.debuff();return}show(b.dataset.scr)});
 document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("button:not(.skillbtn)"))SFX.click()},true);
@@ -248,7 +249,7 @@ function renderDragons(){
       .sort((a,b)=>(S.dragons[b.id]?1:0)-(S.dragons[a.id]?1:0));
     grid.innerHTML=list.map(d=>dragonCard(d.id)).join("")||`<p class="center" style="grid-column:1/-1">Ничего не найдено</p>`;
     $$(".dr-card",grid).forEach(c=>c.onclick=()=>{const id=c.dataset.id;if(S.dragons[id]&&!isHoused(id)){placeDragon(id);return}dragonDetail(id)})}
-  $("#dsearch",root).oninput=e=>{S._q=e.target.value;if(e.target.value.trim()==="666"&&!S.mooseFound&&S.level>=MOOSE_EVENT.req){S.mooseFound=true;save();stopMusic();MUSIC.cur="__hell";mooseGlitch(1400);setTimeout(()=>{toast("<b style=\"color:#f00\">он проснулся</b>");show("events");stopMusic();MUSIC.cur="__hell"},1400)}draw()};$$(".chip",root).forEach(b=>b.onclick=()=>{S._f=b.dataset.f;$$(".chip",root).forEach(x=>x.classList.toggle("on",x===b));draw()});draw();
+  $("#dsearch",root).oninput=e=>{S._q=e.target.value;if(e.target.value.trim().toLowerCase()===MOOSE_EVENT.code&&!S.mooseFound&&S.level>=MOOSE_EVENT.req){S.mooseFound=true;save();mooseGlitch(1400);playMusic("drone");setTimeout(()=>{toast("<b style=\"color:#f00\">он проснулся</b>");show("events");playMusic("drone");$("#navbar").classList.add("locked")},1400)}draw()};$$(".chip",root).forEach(b=>b.onclick=()=>{S._f=b.dataset.f;$$(".chip",root).forEach(x=>x.classList.toggle("on",x===b));draw()});draw();
 }
 function dragonDetail(id){
   const d=dInfo(id),o=S.dragons[id],r=RARITY[d.rarity];
@@ -333,7 +334,7 @@ function matchmake(diff){const best=bestOwn(3);if(!best.length)return {name:"С�
     const cand=pool.filter(d=>d.els.includes(el)&&!ids.includes(d.id));const d=cand.length?cand[Math.floor(rng()*cand.length)]:pool[Math.floor(rng()*pool.length)];if(!ids.includes(d.id))ids.push(d.id)}
   const names={easy:["Разминка","Лёгкий спарринг","Новички арены"],normal:["Достойный соперник","Равный бой","Ветераны арены"],hard:["Контр-отряд","Элита арены","Кошмар для твоей тройки"]}[diff];
   return {name:names[Math.floor(rng()*names.length)],lvl,ids,random:true,diff}}
-function enemySkills(id,lvl){const d=dInfo(id);if(d.els.includes("soviet"))return ["sovhit","sovhit_s","sovban"];if(id==="d157")return ["staffslam","staffcut","doom"];if(id==="d160")return ["hellgaze","hellfire","hellswap","helldrain","sovban"];const b=baseSkills(id).filter((k,i)=>lvl>=SLOT_LEVEL[i]);if(lvl>=8)b.push(ELEMENT_SPREAD[d.els[0]]);if(lvl>=12)b.push(ELEMENT_ABILITY[d.els[0]]);return b}
+function enemySkills(id,lvl){const d=dInfo(id);if(d.els.includes("soviet"))return ["sovhit","sovhit_s","sovban"];if(id==="d157")return ["staffslam","staffcut","doom"];if(id==="d160")return ["hellgaze","hellfire","hellswap","helldrain","hellheal"];const b=baseSkills(id).filter((k,i)=>lvl>=SLOT_LEVEL[i]);if(lvl>=8)b.push(ELEMENT_SPREAD[d.els[0]]);if(lvl>=12)b.push(ELEMENT_ABILITY[d.els[0]]);return b}
 function mkFighter(id,ov,side,i){const st=dragonStats(id,ov);const d=dInfo(id);if(d.els.includes("soviet")){st.hp=Math.round(st.hp*0.55)}return {id,side,i,name:d.name,els:d.els,skills:ov?enemySkills(id,ov.lvl):dSkills(id),hp:st.hp,maxhp:st.hp,atk:st.atk,def:st.def,spd:st.spd,cds:{},buffAtk:0,buffDef:0,debuff:0,crit:st.crit,timeb:st.timeb,lifesteal:st.lifesteal||0,dmgB:st.dmg||{},shield:Math.round(st.hp*(st.startshield||0)),fx:[],tb:st.tb||{},reviveUsed:false,soviet:d.els.includes("soviet"),charge:d.els.includes("soviet")?(side==="enemy"?-i:0):0,lvl:ov?ov.lvl:S.dragons[id].lvl}}
 function startBattle(opp){
   if(team.length===0){toast("Выбери хотя бы одного дракона!");return}
@@ -391,7 +392,7 @@ function battleBg(){const o=B&&B.opp;if(!o)return null;if(o.bg)return o.bg;if(o.
 function renderBattle(){
   const root=$("#scr-battle");const f=B.cur;
   const fh=(x)=>`<div class="fighter ${x.side} ${dInfo(x.id).noflip?"noflip":""} ${dInfo(x.id).flipAlly?"flipally":""} ${dInfo(x.id).big?"bigspr":""} ${x.lvl>=50?"maxaura":""} ${x.id==="d160"?"moose":""} ${x.banned?"banned":""} ${x.hp<=0?"dead":""} ${x===f?"active":""} pos${x.i}" data-side="${x.side}" data-i="${x.i}"><img src="assets/${x.id}.png"><div class="hpbar"><div class="${x.hp/x.maxhp<.3?"low":""}" style="width:${x.hp/x.maxhp*100}%"></div>${x.shield?`<div class="shieldbar" style="width:${Math.min(100,x.shield/x.maxhp*100)}%"></div>`:""}</div>${x.soviet&&x.hp>0?`<div class="charge ${x.charge>=2?"hot":""}"><span style="width:${Math.min(100,(x.charge||0)/3*100)}%"></span><b>${x.charge>=3?"⚠ BANNED!":"⏳ "+Math.max(0,x.charge||0)+"/3"}</b></div>`:""}${x.banned?`<div class="banmark">BANNED</div>`:""}<div class="fn">${x.name} <small>ур.${x.lvl}</small></div><div>${x.els.map(elIco).join("")}</div>${x.buffAtk?"<small>⚔️↑</small>":""}${x.buffDef?"<small>🛡️↑</small>":""}${x.debuff?"<small>⚔️↓</small>":""}${x.shield?`<small>🔰${x.shield}</small>`:""}${(x.fx||[]).map(e=>({burn:"🔥",hot:"💚",stun:"💫",freeze:"🧊",slow:"🐌",vuln:"💔"})[e.k]||"").join("")}</div>`;
-  root.innerHTML=`<div class="arena ${B.opp.horror?"horror":""}">
+  root.innerHTML=`<div class="arena ${B.opp.horror?"horror falling":""}">
    ${B.pvp?`<div class="pvp-head"><span>${S.profile.name} ${leagueOf(S.pvp.rating).ico}</span><span class="pvp-timer" id="pvpt">10</span><span>${B.opp.name}</span></div>`:""}<div class="turn-order">${[f,...B.queue].map(x=>`<img src="assets/${x.id}.png" class="${x===f?"now":""} ${x.side==="enemy"?"en":""}">`).join("")}</div>
    <div class="arena-field iso-arena" style="${battleBg()?`background:url(assets/bg/${battleBg()}.jpg) center/cover`:""}"><div class="arena-floor" ${battleBg()?'style="opacity:.35"':""}></div><div class="team allies">${B.allies.map(fh).join("")}</div><div class="team enemies">${B.enemies.map(fh).join("")}</div></div>
    <div class="battle-log" id="blog">${B.log.map(l=>`<div>${l}</div>`).join("")}</div>
@@ -516,7 +517,7 @@ function aiTurn(){
   // приоритеты: лечить если кто-то <35%, иначе самый сильный навык, цель — по стихии
   const hurt=friends.find(x=>x.hp/x.maxhp<.35);
   let k=null,t=null;
-  if(f.id==="d160"){f._mv=(f._mv||0)+1;let ks=["hellgaze","hellswap","helldrain","hellfire"];if(B.round%4===0&&B.round>0&&f._banR!==B.round&&foes.length>1){f._banR=B.round;ks=["sovban"]}const k=ks[Math.floor(RNG()*ks.length)];const t=k==="hellfire"?null:foes.slice().sort((a,b)=>b.hp-a.hp)[0];if(k==="sovban"){hellToast();f.charge=3}if(k==="hellfire"){jumpscare(600);hellToast()}useSkill(f,k,t);return}
+  if(f.id==="d160"){f._mv=(f._mv||0)+1;f.hcharge=(f.hcharge||0)+1;let k;if(f.hcharge>=10&&f.hp<f.maxhp*.9){k="hellheal";f.hcharge=0}else{const ex=["hellfire","helldrain","hellgaze"].filter(x=>!(f.cds[x]>0));const pool=ex.length?ex.concat(RNG()<.25?["hellswap"]:[]):["hellswap"];k=pool[Math.floor(RNG()*pool.length)]}const t=k==="hellfire"?null:k==="hellheal"?f:foes.slice().sort((a,b)=>b.hp-a.hp)[0];if(k==="hellfire"){jumpscare(600)}if(f._mv%3===0)hellSay();useSkill(f,k,t);return}
   if(f.soviet&&f.charge>=3){f.charge=0;const tg=foes.slice().sort((a,b)=>b.hp-a.hp)[0];useSkill(f,"sovban",tg);return}
   if(f.soviet){const r2=ready.filter(k=>k!=="sovban");useSkill(f,r2[Math.floor(RNG()*r2.length)]||"sovhit",foes[Math.floor(RNG()*foes.length)]);return}
   const heals=ready.filter(k=>SKILLS[k].type==="heal");
@@ -778,6 +779,11 @@ let HORROR=null;
 function mooseGlitch(ms){document.body.classList.add("hell-glitch");setTimeout(()=>document.body.classList.remove("hell-glitch"),ms||500)}
 function jumpscare(ms){const j=document.createElement("div");j.className="jumpscare";j.innerHTML=`<img src="assets/scream666.jpg">`;document.body.append(j);sndPlay("scream666.wav",1);setTimeout(()=>j.remove(),ms||450)}
 function hellToast(){const lines=["Я ВИЖУ ТЕБЯ","НЕ ВЫКЛЮЧАЙ","ЭТО НЕ ТВОЙ ХОД","ТВОЁ СОХРАНЕНИЕ У МЕНЯ","666","ОНИ УМРУТ ВСЕ РАВНО","ЗАЧЕМ ТЫ ИСКАЛ МЕНЯ","4 4 4 4 4 4","ТЫ ВСЁ ЕЩЁ ЗДЕСЬ?","ЗАКРОЙ ГЛАЗА"];toast(`<b style="color:#f00;font-family:monospace;letter-spacing:2px">${lines[Math.floor(Math.random()*lines.length)]}</b>`)}
+function hellSay(){if(!B)return;const L=["ты думаешь, это ты нажимаешь кнопки?","я читал твоё сохранение. там скучно.","твои драконы кричат. ты не слышишь.","ещё ход. ещё один. и ещё.","я был здесь до того, как ты открыл игру.","не закрывай вкладку. я всё равно останусь.","они падают. ты тоже падаешь.","4. 4. 4. 4.","ты не выиграешь. но продолжай — мне нравится.","кто создал тьму? я просто зашёл в неё."];const t=L[Math.floor(Math.random()*L.length)];const a=$(".arena-field");if(!a)return;let d=$(".hell-say",a);if(!d){d=document.createElement("div");d.className="hell-say";a.append(d)}d.textContent="ЛОСЬ 4 САТАНА: "+t;d.classList.remove("on");void d.offsetWidth;d.classList.add("on")}
+function playDrone(){try{MUSIC.ctx=MUSIC.ctx||new (window.AudioContext||window.webkitAudioContext)();}catch(e){return}const ctx=MUSIC.ctx;if(ctx.state==="suspended")ctx.resume();const master=ctx.createGain();MUSIC.baseGain=.5;master.gain.value=.5*(S.vol==null?1:S.vol);master.connect(ctx.destination);MUSIC.master=master;
+  const lp=ctx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=380;lp.Q.value=6;lp.connect(master);const lfo=ctx.createOscillator();lfo.frequency.value=.07;const lg=ctx.createGain();lg.gain.value=220;lfo.connect(lg);lg.connect(lp.frequency);lfo.start();
+  [[36.7,"sawtooth",.35],[38.9,"sawtooth",.25],[55,"triangle",.2],[73.4,"sine",.25],[110.7,"sine",.06]].forEach(([f,w,v])=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type=w;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(lp);o.start();const d=ctx.createOscillator();d.type="sine";d.frequency.value=.11+Math.random()*.2;const dg=ctx.createGain();dg.gain.value=f*.012;d.connect(dg);dg.connect(o.frequency);d.start()});
+  const n=ctx.sampleRate*3,b=ctx.createBuffer(1,n,ctx.sampleRate),ch=b.getChannelData(0);for(let i=0;i<n;i++)ch[i]=(Math.random()*2-1)*.5;const src=ctx.createBufferSource();src.buffer=b;src.loop=true;const nf=ctx.createBiquadFilter();nf.type="bandpass";nf.frequency.value=900;nf.Q.value=.6;const ng=ctx.createGain();ng.gain.value=.05;src.connect(nf);nf.connect(ng);ng.connect(master);src.start()}
 function hellTick(){if(!B||!HORROR){return}const r=Math.random();
   if(r<.25)hellToast();
   if(r>.25&&r<.4)mooseGlitch(300);
@@ -793,7 +799,7 @@ function startMoose(){if(S.level<MOOSE_EVENT.req){toast("Нужен уровен
   playDialog([["d160","???","…"],["d160","???","ты искал 666. ты нашёл."],["av0","Хранитель","Кто… кто ты?"],["d160","ЛОСЬ 4 САТАНА","Я — ЧЕТВЁРКА, КОТОРАЯ НЕ ВЕРНУЛАСЬ. Я В ТВОЁМ ЭКРАНЕ. Я В ТВОЁМ СОХРАНЕНИИ."],["d160","ЛОСЬ 4 САТАНА","ТЕПЕРЬ Я ИГРАЮ. А ТЫ СМОТРИШЬ."]],()=>{
     HORROR={t:null};jumpscare(500);
     startBattle({name:"ЛОСЬ 4 САТАНА",lvl,ids:MOOSE_EVENT.ids,bg:"nightmare0",music:"moose",boss:true,horror:true,onEnd:(win)=>{
-      clearTimeout(HORROR&&HORROR.t);HORROR=null;document.body.classList.remove("hell-glitch");
+      clearTimeout(HORROR&&HORROR.t);HORROR=null;document.body.classList.remove("hell-glitch");$("#navbar").classList.remove("locked");
       if(win){S.mooseWins=(S.mooseWins||0)+1;const r=MOOSE_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(666);let egg="";if(S.mooseWins===1){giveEgg(MOOSE_EVENT.egg,"moose");egg="<p><b>🥚 Из пентаграммы выкатилось яйцо… Пабло.</b></p>"}
         S.mooseFound=false;save();updateTop();mooseGlitch(1500);modal(`<div class="result win" style="color:#f00;font-family:monospace">…ОН УШЁЛ. ПОКА.</div><div class="center" style="font-weight:900">+🪙${fmt(r.gold)} +💎${r.gems} +📜${r.scrolls}</div>${egg}<p class="center"><small>Побед: ${S.mooseWins}</small></p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">…</button></div>`,{closable:false})}
       else{S.mooseFound=false;save();jumpscare(900);setTimeout(()=>modal(`<div class="result lose" style="color:#f00;font-family:monospace">ОН ВЫИГРАЛ. КАК ВСЕГДА.</div><p class="center" style="font-family:monospace">твоя команда… помнит его.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">…</button></div>`,{closable:false}),900)}}});
@@ -808,7 +814,7 @@ function renderEvents(){
     <div class="row">${own?`<button class="btn" disabled>✅ Уже в коллекции</button>`:`<button class="btn green" data-buy="${d.id}" data-price="${price}">Купить со скидкой 🪙${fmt(price)} <s style="opacity:.6">${fmt(r.price)}</s></button>`}
     ${claimed?`<button class="btn" disabled>🎁 Награда получена</button>`:`<button class="btn purple" data-claim="${key}">🎁 Награда события</button>`}</div>
     <small>Бонус: драконы стихии ${d.els.map(e=>ELEMENTS[e].name).join("/")} получают +25% атаки на арене в этот период.</small></div></div></div>`};
-  root.innerHTML=S.mooseFound?`<div class="ev-wrap">${mooseCardHtml()}</div>`:`<div class="ev-wrap">${feat(f.dom,"🏆 Дракон месяца","gold",f.endM,f.mk,0.6)}${feat(f.dow,"📅 Дракон недели","",f.endW,f.wk,0.75)}
+  if(S.mooseFound)$("#navbar").classList.add("locked");root.innerHTML=S.mooseFound?`<div class="ev-wrap">${mooseCardHtml()}</div>`:`<div class="ev-wrap">${feat(f.dom,"🏆 Дракон месяца","gold",f.endM,f.mk,0.6)}${feat(f.dow,"📅 Дракон недели","",f.endW,f.wk,0.75)}
   ${renderZodiacCard()}
   
   <div class="panel johnny-card"><h2>🕯️ БОСС: Великий Джонни <span class="badge" style="background:#8a2be2">ур.${JOHNNY_EVENT.req}+</span></h2><div class="feature"><img src="assets/d157.png" class="johnny-img"><div style="flex:1"><div class="desc">Жархнне схватил посох из портала и стал Великим Джонни. С ним MR Lulu и MR Jarkhnne. Награда: ${costStr(JOHNNY_EVENT.reward)}, каждая 2-я победа — 🥚 <b>MR Lulu</b> (баран из семьи Мистеров).</div>
@@ -864,7 +870,7 @@ document.addEventListener("click",e=>{if(e.target.id==="collect")S.quests.collec
 function sfxCtx(){try{MUSIC.ctx=MUSIC.ctx||new (window.AudioContext||window.webkitAudioContext)();if(MUSIC.ctx.state==="suspended")MUSIC.ctx.resume();return MUSIC.ctx}catch(e){return null}}
 function tone({f=440,f2,type="sine",d=.2,v=.3,t=0,curve="exp"}){const c=sfxCtx();if(!c||!S||S.music===false)return;const o=c.createOscillator(),gn=c.createGain();o.type=type;const t0=c.currentTime+t;o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),t0+d);gn.gain.setValueAtTime(.0001,t0);gn.gain.linearRampToValueAtTime(v,t0+.008);gn.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(gn);gn.connect(c.destination);o.start(t0);o.stop(t0+d+.05)}
 function noise({d=.2,v=.3,t=0,lp=2000,hp=100}){const c=sfxCtx();if(!c||!S||S.music===false)return;const n=c.sampleRate*d,b=c.createBuffer(1,n,c.sampleRate),ch=b.getChannelData(0);for(let i=0;i<n;i++)ch[i]=(Math.random()*2-1)*(1-i/n);const s=c.createBufferSource();s.buffer=b;const l=c.createBiquadFilter();l.type="lowpass";l.frequency.value=lp;const h=c.createBiquadFilter();h.type="highpass";h.frequency.value=hp;const gn=c.createGain();gn.gain.value=v;s.connect(l);l.connect(h);h.connect(gn);gn.connect(c.destination);s.start(c.currentTime+t)}
-const SND={};function sndPlay(n,v){if(!S||S.music===false)return;try{let a=SND[n];if(!a){a=new Audio("assets/"+n+(n.includes(".")?"":".ogg"));SND[n]=a}a.volume=v||.8;a.currentTime=0;a.play().catch(()=>{})}catch(e){}}
+const SND={};function sndPlay(n,v){if(!S||S.music===false)return;try{let a=SND[n];if(!a){a=new Audio("assets/"+n+(n.includes(".")?"":".ogg"));SND[n]=a}a.volume=(v||.8)*(S.vol==null?1:S.vol);a.currentTime=0;a.play().catch(()=>{})}catch(e){}}
 const SFX={
   click(){tone({f:900,f2:1300,type:"square",d:.06,v:.12})},
   select(){tone({f:600,type:"triangle",d:.08,v:.15});tone({f:900,type:"triangle",d:.1,v:.15,t:.07})},
@@ -909,10 +915,11 @@ const TRACKS={ // ноты (полутоны от A3), темп, характе�
   campaign:{bpm:80,bass:[0,0,0,0,-4,-4,-4,-4,-2,-2,-2,-2,3,3,3,3],lead:[12,14,15,19,15,14,12,10, 8,10,12,15,12,10,8,7],wave:"triangle",gain:.045},
 };
 function playMusic(name){if(MUSIC.cur===name)return;stopMusic();MUSIC.cur=name;if(!S||!S.music)return;
-  if(name==="gbt"||name==="soviet"||name==="johnny"||name==="moose"){const a=new Audio("assets/"+name+".mp3");a.loop=true;a.volume=.6;a.play().catch(()=>{});MUSIC.mp3=a;return}
+  if(name==="gbt"||name==="soviet"||name==="johnny"||name==="moose"){const a=new Audio("assets/"+name+".mp3");a.loop=true;a.volume=.6*(S.vol==null?1:S.vol);a.play().catch(()=>{});MUSIC.mp3=a;return}
+  if(name==="drone"){playDrone();return}
   const T=TRACKS[name];if(!T)return;try{MUSIC.ctx=MUSIC.ctx||new (window.AudioContext||window.webkitAudioContext)();}catch(e){return}
   const ctx=MUSIC.ctx;if(ctx.state==="suspended")ctx.resume();
-  const master=ctx.createGain();master.gain.value=T.gain;master.connect(ctx.destination);MUSIC.master=master;
+  const master=ctx.createGain();MUSIC.baseGain=T.gain;master.gain.value=T.gain*(S.vol==null?1:S.vol);master.connect(ctx.destination);MUSIC.master=master;
   const step=60/T.bpm/2;let i=0;let next=ctx.currentTime+.05;
   const f=n=>220*Math.pow(2,n/12);
   function note(freq,t,d,wave,vol){const o=ctx.createOscillator(),gn=ctx.createGain();o.type=wave;o.frequency.value=freq;gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(vol,t+.01);gn.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(gn);gn.connect(master);o.start(t);o.stop(t+d+.02)}
@@ -922,7 +929,9 @@ function playMusic(name){if(MUSIC.cur===name)return;stopMusic();MUSIC.cur=name;i
       next+=step;i++}MUSIC.timer=setTimeout(sched,120)}
   sched()}
 function stopMusic(){clearTimeout(MUSIC.timer);MUSIC.timer=null;if(MUSIC.master){try{MUSIC.master.gain.linearRampToValueAtTime(0,MUSIC.ctx.currentTime+.3)}catch(e){}const m=MUSIC.master;setTimeout(()=>m.disconnect(),400);MUSIC.master=null}if(MUSIC.mp3){MUSIC.mp3.pause();MUSIC.mp3=null}MUSIC.cur=null}
-function toggleMusic(){S.music=!S.music;save();const c=MUSIC.cur;stopMusic();if(S.music){MUSIC.cur=null;playMusic(c||"map")}$("#musbtn").textContent=S.music?"🔊":"🔇"}
+function ctxMusic(){if(B)return B.opp.music||(B.opp.pvp?"pvp":"battle");if(S.mooseFound)return "drone";const a=$(".screen.active");const scr=a?a.id.replace("scr-",""):"map";return scr==="battle"||scr==="pvp"?"select":scr==="campaign"?"campaign":"map"}
+function toggleMusic(){S.music=!S.music;save();stopMusic();if(S.music){playMusic(ctxMusic())}$("#musbtn").textContent=S.music?"🔊":"🔇"}
+function setVolume(v){S.vol=Math.max(0,Math.min(1,v));save();if(MUSIC.mp3)MUSIC.mp3.volume=.6*S.vol;if(MUSIC.master)try{MUSIC.master.gain.value=(MUSIC.baseGain||1)*S.vol}catch(e){}}
 // музыка стартует только после первого жеста пользователя (политика браузеров)
 document.addEventListener("pointerdown",()=>{if(MUSIC.ctx&&MUSIC.ctx.state==="suspended")MUSIC.ctx.resume();if(!MUSIC.cur&&S&&S.music)playMusic(B?"battle":"map")},{once:false});
 
@@ -1208,7 +1217,7 @@ updateTop();NET.booting=true;netConnect();showBoot();
 const _chip=document.createElement("button");_chip.id="netchip";_chip.className="netchip";_chip.onclick=()=>{if(NET.status!=="online"){toast("⏳ Пробуем подключиться…");netConnect();return}if(!NET.me){NET.wantAuth=true;sessionStorage.removeItem("dml_offline");showAuth("login")}else show("friends")};$("#topbar").append(_chip);refreshNetUI();
 const _fs=document.createElement("button");_fs.id="fsbtn";_fs.className="btn sm";_fs.textContent="⛶";_fs.title="Полный экран (F11 / F)";_fs.onclick=toggleFullscreen;$("#topbar").append(_fs);
 document.addEventListener("keydown",e=>{if(e.code==="KeyF"&&!e.target.matches("input,textarea")&&!B)toggleFullscreen()});
-const _mb=document.createElement("button");_mb.id="musbtn";_mb.className="btn sm";_mb.textContent=S.music?"🔊":"🔇";_mb.title="Музыка";_mb.onclick=toggleMusic;$("#topbar").append(_mb);
+const _mb=document.createElement("button");_mb.id="musbtn";_mb.className="btn sm";_mb.textContent=S.music?"🔊":"🔇";_mb.title="Музыка";_mb.onclick=toggleMusic;const _vs=document.createElement("input");_vs.type="range";_vs.min=0;_vs.max=100;_vs.value=Math.round((S.vol==null?1:S.vol)*100);_vs.id="volslider";_vs.title="Громкость";_vs.oninput=()=>setVolume(_vs.value/100);$("#topbar").append(_vs);$("#topbar").append(_mb);
 const _av=document.createElement("img");_av.id="avatar";_av.className="av";_av.onclick=()=>show("friends");$("#topbar").prepend(_av);updateTop();
 // приветствие
 if(!S.quests.intro){S.quests.intro=1;save();modal(`<h2>🐉 Добро пожаловать, Хранитель!</h2><p>Это твой остров. Строй жилища, собирай драконов, корми их и сражайся на арене в пошаговых боях.</p><ul style="margin:8px 0 8px 18px;font-size:13px"><li>🗺️ <b>Остров</b> — постройки и доход</li><li>🐲 <b>Драконы</b> — прокачка и эволюция</li><li>⚔️ <b>Арена</b> — пошаговые бои 3×3</li><li>🏆 <b>События</b> — дракон месяца и недели</li><li>🏪 <b>Магазин</b> — яйца и драконы</li><li>⭐ Нажми на <b>уровень</b> вверху — увидишь дорогу наград</li></ul><div class="center"><img src="assets/d00.png" style="height:120px"></div><div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal()">Начать!</button></div>`)}

@@ -519,3 +519,15 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 @keyframes moosebreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06) translateY(-3px)}}
 .fighter.enemy.moose img{animation:moosebreathe 2.2s ease-in-out infinite;transform:none}
 .moose-card{background:#000;border:3px solid #f00;box-shadow:0 0 30px #f00 inset,0 0 20px #f00;animation:hellpulse 2s infinite}
+
+/* Лось: полёт восьмёркой, падение */
+.arena.falling .fighter.moose img{animation:mooseFig8 5s ease-in-out infinite !important;transform:none}
+@keyframes mooseFig8{0%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(40px,-30px) rotate(6deg)}25%{transform:translate(0,-60px) rotate(0)}37.5%{transform:translate(-40px,-30px) rotate(-6deg)}50%{transform:translate(0,0) rotate(0)}62.5%{transform:translate(-40px,30px) rotate(-6deg)}75%{transform:translate(0,60px) rotate(0)}87.5%{transform:translate(40px,30px) rotate(6deg)}100%{transform:translate(0,0) rotate(0)}}
+.arena.falling .fighter.ally img{animation:allyFall 1.6s ease-in infinite;transform-origin:50% 90%}
+@keyframes allyFall{0%{transform:translateY(-70px) rotate(-8deg);opacity:.2}15%{opacity:1}60%{transform:translateY(0) rotate(4deg)}80%{transform:translateY(6px) rotate(0)}100%{transform:translateY(-70px) rotate(-8deg);opacity:.2}}
+.arena.falling .arena-field{background-size:auto 220% !important;animation:bgFall 1.6s linear infinite,hellpulse 3s ease-in-out infinite}
+@keyframes bgFall{0%{background-position:center 0%}100%{background-position:center 100%}}
+.hell-say{position:absolute;left:50%;top:8px;transform:translateX(-50%);max-width:90%;background:#000;color:#f00;border:1px solid #f00;padding:6px 12px;font-family:monospace;letter-spacing:1px;font-size:14px;opacity:0;z-index:5;pointer-events:none}
+.hell-say.on{animation:hellsay 3.2s forwards}
+@keyframes hellsay{0%{opacity:0;transform:translateX(-50%) translateY(-6px)}10%,80%{opacity:1;transform:translateX(-50%)}100%{opacity:0}}
+#volslider{width:70px;accent-color:#ffb700;vertical-align:middle}
