@@ -921,14 +921,20 @@ function playDialog(lines,done){if(!lines||!lines.length){done();return}let i=0;
 /* ================= ЭКРАН ЗАГРУЗКИ ================= */
 function showBoot(){const b=document.createElement("div");b.id="boot";b.innerHTML=`<div class="boot-logo">🐉</div><div class="boot-title">Легенды <span>Дракономании</span></div><div class="boot-bar"><div id="bootfill"></div></div><div class="boot-txt" id="boottxt">Загрузка ресурсов…</div>`;document.body.append(b);
   const imgs=["d00","d19","d13","d14","d29","d44","d68"].map(i=>{const im=new Image();im.src="assets/"+i+".png";return im});let p=0;
-  const tick=setInterval(()=>{p=Math.min(p+rnd(4,11),NET.status==="online"||NET.status==="offline"&&p>60?100:88);$("#bootfill").style.width=p+"%";$("#boottxt").textContent=p<40?"Загрузка ресурсов…":p<88?"Подключение к серверу…":NET.status==="online"?"Готово":"Сервер просыпается… (до 60 с)";
+  const tick=setInterval(()=>{p=Math.min(p+rnd(4,11),NET.status==="online"||NET.bootTimeout||NET.status==="offline"&&p>60?100:88);
+    if(p>=88&&!NET.bootTimeout&&!$("#bootskip")){const s=document.createElement("button");s.id="bootskip";s.className="btn sm";s.textContent="Играть офлайн, не ждать";s.style.marginTop="10px";s.onclick=()=>{NET.bootTimeout=true};b.append(s)}$("#bootfill").style.width=p+"%";$("#boottxt").textContent=p<40?"Загрузка ресурсов…":p<88?"Подключение к серверу…":NET.status==="online"?"Готово":"Сервер просыпается… (до 60 с)";
     if(p>=100){clearInterval(tick);setTimeout(()=>{b.classList.add("out");setTimeout(()=>b.remove(),500);if(NET.me)return;bootChoice()},300)}},90);
   // не ждём сервер дольше 25 с
-  setTimeout(()=>{if(NET.status!=="online")NET.bootTimeout=true},25000);}
+  setTimeout(()=>{if(NET.status!=="online")NET.bootTimeout=true},25000);
+  // если WebSocket «висит» (провайдер/антивирус режет WSS), рвём его и пробуем заново
+  setTimeout(()=>{if(NET.status==="connecting"&&NET.ws){try{NET.ws.close()}catch(e){}}},12000);}
 function bootChoice(){const on=NET.status==="online";
   const m=modal(`<h2>🐉 Добро пожаловать!</h2><p><small>Выбери, как играть. Аккаунт: прогресс хранится <b>на сервере</b>, PvP и друзья. Офлайн: отдельное локальное сохранение в этом браузере.</small></p>
   <div class="boot-opts"><button class="bopt acc" id="b_login" ${on?"":"disabled"}><b>🔐 Войти в аккаунт</b><small>${on?"или зарегистрироваться":"сервер недоступен"}</small></button><button class="bopt loc" id="b_local"><b>💾 Играть офлайн</b><small>локальный профиль${localStorage.getItem(SAVE_KEY)?" · есть сохранение":""}</small></button></div>
-  ${!on?`<p><small id="bwait">⏳ Ждём сервер… кнопка входа включится автоматически.</small></p>`:""}`,{closable:false});
+  ${!on?`<p><small id="bwait">⏳ Ждём сервер… кнопка входа включится автоматически.</small> <button class="btn sm" id="bretry">🔄 Повторить</button> <button class="btn sm" id="bdiag">🩺 Проверка</button></p>`:""}`,{closable:false});
+  const br=$("#bretry",m);if(br)br.onclick=()=>{NET.retry=1000;if(NET.ws){try{NET.ws.close()}catch(e){}}NET.ws=null;netConnect();toast("Переподключение…")};
+  const bd=$("#bdiag",m);if(bd)bd.onclick=async()=>{const w=$("#bwait");w.textContent="🩺 Проверяю…";let http="❌";try{const r=await fetch(location.origin+"/health?"+Date.now(),{cache:"no-store"});http=r.ok?"✅":"❌ "+r.status}catch(e){http="❌ нет ответа"}
+    const ws=NET.status==="online"?"✅":NET.ws&&NET.ws.readyState===0?"⏳ висит":"❌";w.innerHTML=`HTTP-сервер: ${http} · WebSocket: ${ws}.<br>${http.startsWith("✅")&&ws!=="✅"?"<b>Сервер жив, но WebSocket блокируется</b> — это провайдер, антивирус, VPN или расширение браузера. Попробуй другой браузер/сеть (мобильный интернет) или отключи VPN/антивирус-фильтр HTTPS.":!http.startsWith("✅")?"Сервер не отвечает: подожди 30–60 с (Render просыпается) или проверь интернет.":"Всё в порядке — нажми «Войти»."}`};
   $("#b_login",m).onclick=()=>{closeModal();NET.wantAuth=true;showAuth("login")};
   $("#b_local",m).onclick=()=>{closeModal();sessionStorage.setItem("dml_offline","1");loadLocalProfile();applyState(S);dailyBonus();toast("💾 Офлайн-профиль")};
   NET.onOnline=()=>{const b=$("#b_login");if(b){b.disabled=false;b.querySelector("small").textContent="или зарегистрироваться";const w=$("#bwait");if(w)w.remove()}}}
