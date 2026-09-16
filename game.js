@@ -72,7 +72,7 @@ function costStr(c){return [c.gold&&`🪙${fmt(c.gold)}`,c.food&&`🍖${fmt(c.fo
 /* ================= ДРАКОНЫ: СТАТЫ ================= */
 function dragonStats(id, ov){
   const d=dInfo(id); const o=ov||S.dragons[id]||{lvl:1,stars:1};
-  const m=RARITY[d.rarity].mult*(1+(o.lvl-1)*0.12)*(1+(o.stars-1)*0.25);
+  const eL=(id==="d160"&&ov&&ov.enemy)?MOOSE_EVENT.effLvl:o.lvl;const m=RARITY[d.rarity].mult*(1+(eL-1)*0.12)*(1+(o.stars-1)*0.25);
   const hpm=ov&&ov.enemy?1.6:2.4; // у врагов запас HP меньше — бои короче; в PvP 1.8
   const tb=treeBonuses(id,o);const pk=k=>1+(tb[k]||0);
   return {hp:Math.round(d.base.hp*m*hpm*pk("hp")),atk:Math.round(d.base.atk*m*pk("atk")),def:Math.round(d.base.def*m*pk("def")),spd:Math.round(d.base.spd*(1+(o.lvl-1)*0.02)*(1+(o.stars-1)*0.1)*pk("spd")),crit:0.1+(tb.crit||0),timeb:tb.timing||0,lifesteal:tb.lifesteal||0,startshield:tb.startshield||0,dmg:tb.dmg||{},tb};
@@ -248,7 +248,7 @@ function renderDragons(){
       .sort((a,b)=>(S.dragons[b.id]?1:0)-(S.dragons[a.id]?1:0));
     grid.innerHTML=list.map(d=>dragonCard(d.id)).join("")||`<p class="center" style="grid-column:1/-1">Ничего не найдено</p>`;
     $$(".dr-card",grid).forEach(c=>c.onclick=()=>{const id=c.dataset.id;if(S.dragons[id]&&!isHoused(id)){placeDragon(id);return}dragonDetail(id)})}
-  $("#dsearch",root).oninput=e=>{S._q=e.target.value;if(e.target.value.trim()==="666"&&!S.mooseFound&&S.level>=MOOSE_EVENT.req){S.mooseFound=true;save();mooseGlitch(1200);setTimeout(()=>{toast("<b style=\"color:#f00\">он проснулся</b>");renderEvents&&0},600)}draw()};$$(".chip",root).forEach(b=>b.onclick=()=>{S._f=b.dataset.f;$$(".chip",root).forEach(x=>x.classList.toggle("on",x===b));draw()});draw();
+  $("#dsearch",root).oninput=e=>{S._q=e.target.value;if(e.target.value.trim()==="666"&&!S.mooseFound&&S.level>=MOOSE_EVENT.req){S.mooseFound=true;save();stopMusic();MUSIC.cur="__hell";mooseGlitch(1400);setTimeout(()=>{toast("<b style=\"color:#f00\">он проснулся</b>");show("events");stopMusic();MUSIC.cur="__hell"},1400)}draw()};$$(".chip",root).forEach(b=>b.onclick=()=>{S._f=b.dataset.f;$$(".chip",root).forEach(x=>x.classList.toggle("on",x===b));draw()});draw();
 }
 function dragonDetail(id){
   const d=dInfo(id),o=S.dragons[id],r=RARITY[d.rarity];
@@ -333,11 +333,11 @@ function matchmake(diff){const best=bestOwn(3);if(!best.length)return {name:"С�
     const cand=pool.filter(d=>d.els.includes(el)&&!ids.includes(d.id));const d=cand.length?cand[Math.floor(rng()*cand.length)]:pool[Math.floor(rng()*pool.length)];if(!ids.includes(d.id))ids.push(d.id)}
   const names={easy:["Разминка","Лёгкий спарринг","Новички арены"],normal:["Достойный соперник","Равный бой","Ветераны арены"],hard:["Контр-отряд","Элита арены","Кошмар для твоей тройки"]}[diff];
   return {name:names[Math.floor(rng()*names.length)],lvl,ids,random:true,diff}}
-function enemySkills(id,lvl){const d=dInfo(id);if(d.els.includes("soviet"))return ["sovhit","sovhit_s","sovban"];if(id==="d157")return ["staffslam","staffcut","doom"];if(id==="d160")return ["hellgaze","hellfire","hellswap","sovban"];const b=baseSkills(id).filter((k,i)=>lvl>=SLOT_LEVEL[i]);if(lvl>=8)b.push(ELEMENT_SPREAD[d.els[0]]);if(lvl>=12)b.push(ELEMENT_ABILITY[d.els[0]]);return b}
+function enemySkills(id,lvl){const d=dInfo(id);if(d.els.includes("soviet"))return ["sovhit","sovhit_s","sovban"];if(id==="d157")return ["staffslam","staffcut","doom"];if(id==="d160")return ["hellgaze","hellfire","hellswap","helldrain","sovban"];const b=baseSkills(id).filter((k,i)=>lvl>=SLOT_LEVEL[i]);if(lvl>=8)b.push(ELEMENT_SPREAD[d.els[0]]);if(lvl>=12)b.push(ELEMENT_ABILITY[d.els[0]]);return b}
 function mkFighter(id,ov,side,i){const st=dragonStats(id,ov);const d=dInfo(id);if(d.els.includes("soviet")){st.hp=Math.round(st.hp*0.55)}return {id,side,i,name:d.name,els:d.els,skills:ov?enemySkills(id,ov.lvl):dSkills(id),hp:st.hp,maxhp:st.hp,atk:st.atk,def:st.def,spd:st.spd,cds:{},buffAtk:0,buffDef:0,debuff:0,crit:st.crit,timeb:st.timeb,lifesteal:st.lifesteal||0,dmgB:st.dmg||{},shield:Math.round(st.hp*(st.startshield||0)),fx:[],tb:st.tb||{},reviveUsed:false,soviet:d.els.includes("soviet"),charge:d.els.includes("soviet")?(side==="enemy"?-i:0):0,lvl:ov?ov.lvl:S.dragons[id].lvl}}
 function startBattle(opp){
   if(team.length===0){toast("Выбери хотя бы одного дракона!");return}
-  const ov={lvl:opp.lvl,stars:1+Math.floor(opp.lvl/10),enemy:true};
+  const ov={lvl:opp.lvl,stars:Math.min(5,1+Math.floor(opp.lvl/10)),enemy:true};
   show("battle");
   RNG=opp.seed?seededRng(opp.seed):Math.random;
   B={opp,allies:team.map((id,i)=>{const f=mkFighter(id,null,"ally",i);if(opp.carry&&opp.carry[id]){f.hp=Math.min(f.maxhp,opp.carry[id])}return f}),enemies:opp.ids.map((id,i)=>mkFighter(id,ov,"enemy",i)),log:[],round:0,queue:[],busy:false,sel:null,pvp:!!opp.pvp,turnNo:0};
@@ -364,6 +364,7 @@ function nextTurn(first){
   if(!B.queue.length){B.round++;const src=B.pvp&&!B.opp.host?[...B.enemies,...B.allies]:[...B.allies,...B.enemies];src.forEach((f,i)=>{f._j=(RNG()-.5)*4;f._o=i});B.queue=alive(src).sort((a,b)=>(B.round===1?((b.tb.firststrike?1000:0)-(a.tb.firststrike?1000:0)):0)||(b.spd+b._j)-(a.spd+a._j)||a._o-b._o);
     // Стая: разогнанные бойцы (spdT>0) ходят дважды за раунд
     const fast=B.queue.filter(f=>f.spdT>0);if(fast.length){B.queue=B.queue.concat(fast)}
+    const mo=B.queue.find(f=>f.id==="d160");if(mo){const rest=B.queue.filter(f=>f!==mo);B.queue=[mo,rest[0],mo,rest[1],mo,rest[2],mo].filter(Boolean).concat(rest.slice(3))}
     // тик баффов/кд
     [...B.allies,...B.enemies].forEach(f=>{Object.keys(f.cds).forEach(k=>f.cds[k]=Math.max(0,f.cds[k]-1));if(f.buffAtk>0)f.buffAtkT--;if(f.buffAtkT<=0)f.buffAtk=0;if(f.buffDef>0)f.buffDefT--;if(f.buffDefT<=0)f.buffDef=0;if(f.debuff>0)f.debuffT--;if(f.debuffT<=0)f.debuff=0;if(f.spdT>0){f.spdT--;if(f.spdT<=0&&f._spd0){f.spd=f._spd0}}});
     log(`— Раунд ${B.round} —${B.round>SUDDEN_DEATH.from?` ⚡ урон +${Math.round((B.round-SUDDEN_DEATH.from)*SUDDEN_DEATH.step*100)}%`:""}`)}
@@ -484,12 +485,12 @@ function applySkill(actor,k,target,atkM,blk){
       if(t.hp<=0&&t.tb.revive&&!t.reviveUsed){t.reviveUsed=true;t.hp=Math.round(t.maxhp*t.tb.revive);pop(fEl(t),"✨ ВОСКРЕС","heal");log(`✨ ${t.name} поднимается с ${t.hp} HP!`)}
       if(t.hp>0){t.fx=t.fx||[];if(actor.tb.burnaura&&RNG()<actor.tb.burnaura&&!t.fx.some(e=>e.k==="burn")){t.fx.push({k:"burn",t:3});log(`🔥 ${t.name} подожжён`)}if(actor.tb.stunaura&&RNG()<actor.tb.stunaura&&!t.fx.some(e=>e.k==="stun")){t.fx.push({k:"stun",t:1});log(`💫 ${t.name} оглушён`)}}
       if(s.effect&&t.hp>0){const ch=s.chance||1;if(RNG()<ch){t.fx=t.fx||[];
-        if(s.effect==="burn")t.fx.push({k:"burn",t:3});
+        if(s.effect==="burn"){const ex=t.fx.find(e=>e.k==="burn");if(ex)ex.t=3;else t.fx.push({k:"burn",t:3})}
         else if(s.effect==="stun")t.fx.push({k:"stun",t:1});
         else if(s.effect==="freeze")t.fx.push({k:"freeze",t:1});
         else if(s.effect==="slow"){t.spd=Math.round(t.spd*0.7);t.fx.push({k:"slow",t:2})}
         else if(s.effect==="weaken"){t.debuff=0.3;t.debuffT=3}
-        log(`✴️ ${t.name}: ${({burn:"горение",stun:"оглушение",freeze:"заморозка",slow:"замедление",weaken:"ослабление"})[s.effect]}`)}}
+        log(`✴️ ${t.name}: ${({burn:"горение",stun:"оглушение",freeze:"заморозка",slow:"замедление",weaken:"ослабление",lifesteal:"кража прогресса"})[s.effect]||s.effect}`)}}
       SFX.el(s.el||actor.els[0]);const el=fEl(t);if(el){el.classList.add("hit");vfx(el,s.el||actor.els[0]);pop(el,(m>1?"💥":m<1?"🛡":"")+"-"+dmg,crit?"crit":m<1?"weak":"")}
       log(`${actor.name} → ${s.name} → ${t.name}: <b>${dmg}</b>${atkM>1?" ИДЕАЛЬНО":""}${blk?" блок "+Math.round(blk*100)+"%":""}${m>1?" (эффективно!)":m<1?" (слабо)":""}${crit?" КРИТ!":""}${t.hp<=0?" ☠️":""}`)});
     const ls=(s.effect==="lifesteal"?0.5:0)+(actor.lifesteal||0);if(ls>0&&healed>0){const h=Math.round(healed*ls);actor.hp=Math.min(actor.maxhp,actor.hp+h);pop(fEl(actor),"+"+h,"heal");log(`🩸 ${actor.name} восстановил ${h}`)}
@@ -515,7 +516,7 @@ function aiTurn(){
   // приоритеты: лечить если кто-то <35%, иначе самый сильный навык, цель — по стихии
   const hurt=friends.find(x=>x.hp/x.maxhp<.35);
   let k=null,t=null;
-  if(f.id==="d160"){const ks=B.round%4===0&&B.round>0?["sovban"]:["hellgaze","hellfire","hellswap"];const k=ks[Math.floor(RNG()*ks.length)];const t=k==="hellfire"?null:foes.slice().sort((a,b)=>b.hp-a.hp)[0];if(k==="sovban"){hellToast();f.charge=3}useSkill(f,k,t);return}
+  if(f.id==="d160"){f._mv=(f._mv||0)+1;let ks=["hellgaze","hellswap","helldrain","hellfire"];if(B.round%4===0&&B.round>0&&f._banR!==B.round&&foes.length>1){f._banR=B.round;ks=["sovban"]}const k=ks[Math.floor(RNG()*ks.length)];const t=k==="hellfire"?null:foes.slice().sort((a,b)=>b.hp-a.hp)[0];if(k==="sovban"){hellToast();f.charge=3}if(k==="hellfire"){jumpscare(600);hellToast()}useSkill(f,k,t);return}
   if(f.soviet&&f.charge>=3){f.charge=0;const tg=foes.slice().sort((a,b)=>b.hp-a.hp)[0];useSkill(f,"sovban",tg);return}
   if(f.soviet){const r2=ready.filter(k=>k!=="sovban");useSkill(f,r2[Math.floor(RNG()*r2.length)]||"sovhit",foes[Math.floor(RNG()*foes.length)]);return}
   const heals=ready.filter(k=>SKILLS[k].type==="heal");
@@ -775,12 +776,12 @@ function startJohnny(){if(S.level<JOHNNY_EVENT.req){toast("Нужен урове
 /* ================= СЕКРЕТНЫЙ ХОРРОР-БОСС: ЛОСЬ 4 САТАНА ================= */
 let HORROR=null;
 function mooseGlitch(ms){document.body.classList.add("hell-glitch");setTimeout(()=>document.body.classList.remove("hell-glitch"),ms||500)}
-function jumpscare(ms){const j=document.createElement("div");j.className="jumpscare";j.innerHTML=`<img src="assets/scream666.jpg">`;document.body.append(j);sndPlay("found",1);try{const o=SFX&&SFX.el;}catch(e){}setTimeout(()=>j.remove(),ms||450)}
+function jumpscare(ms){const j=document.createElement("div");j.className="jumpscare";j.innerHTML=`<img src="assets/scream666.jpg">`;document.body.append(j);sndPlay("scream666.wav",1);setTimeout(()=>j.remove(),ms||450)}
 function hellToast(){const lines=["Я ВИЖУ ТЕБЯ","НЕ ВЫКЛЮЧАЙ","ЭТО НЕ ТВОЙ ХОД","ТВОЁ СОХРАНЕНИЕ У МЕНЯ","666","ОНИ УМРУТ ВСЕ РАВНО","ЗАЧЕМ ТЫ ИСКАЛ МЕНЯ","4 4 4 4 4 4","ТЫ ВСЁ ЕЩЁ ЗДЕСЬ?","ЗАКРОЙ ГЛАЗА"];toast(`<b style="color:#f00;font-family:monospace;letter-spacing:2px">${lines[Math.floor(Math.random()*lines.length)]}</b>`)}
 function hellTick(){if(!B||!HORROR){return}const r=Math.random();
   if(r<.25)hellToast();
   if(r>.25&&r<.4)mooseGlitch(300);
-  if(r>.4&&r<.5)jumpscare(350);
+  if(r>.4&&r<.5)mooseGlitch(500);
   if(r>.5&&r<.65){$$(".skillbtn b").forEach(b=>{if(Math.random()<.5)b.dataset.o=b.dataset.o||b.textContent,b.textContent=["666","ОН","БЕГИ","НЕТ","4"][Math.floor(Math.random()*5)]});setTimeout(()=>$$(".skillbtn b").forEach(b=>{if(b.dataset.o)b.textContent=b.dataset.o}),900)}
   if(r>.65&&r<.75){const t=$("#r-gold");if(t){const o=t.textContent;t.textContent="666";setTimeout(()=>t.textContent=o,800)}}
   if(r>.75&&r<.85){$$(".fighter.ally .hpbar div").forEach(b=>{const o=b.style.width;b.style.width="3%";setTimeout(()=>b.style.width=o,700)})}
@@ -788,15 +789,16 @@ function hellTick(){if(!B||!HORROR){return}const r=Math.random();
   HORROR.t=setTimeout(hellTick,1800+Math.random()*2600)}
 function startMoose(){if(S.level<MOOSE_EVENT.req){toast("Нужен уровень "+MOOSE_EVENT.req);return}closeModal();
   pickTeamModal("👁️ ???","<div class='desc' style='color:#f00;font-family:monospace'>он не спрашивает разрешения</div>",()=>{
-  const lvl=S.level+MOOSE_EVENT.lvlBonus;save();mooseGlitch(900);
+  const lvl=MOOSE_EVENT.lvl;save();mooseGlitch(900);
   playDialog([["d160","???","…"],["d160","???","ты искал 666. ты нашёл."],["av0","Хранитель","Кто… кто ты?"],["d160","ЛОСЬ 4 САТАНА","Я — ЧЕТВЁРКА, КОТОРАЯ НЕ ВЕРНУЛАСЬ. Я В ТВОЁМ ЭКРАНЕ. Я В ТВОЁМ СОХРАНЕНИИ."],["d160","ЛОСЬ 4 САТАНА","ТЕПЕРЬ Я ИГРАЮ. А ТЫ СМОТРИШЬ."]],()=>{
     HORROR={t:null};jumpscare(500);
-    startBattle({name:"ЛОСЬ 4 САТАНА",lvl,ids:MOOSE_EVENT.ids,bg:"nightmare0",music:"gbt",boss:true,horror:true,onEnd:(win)=>{
+    startBattle({name:"ЛОСЬ 4 САТАНА",lvl,ids:MOOSE_EVENT.ids,bg:"nightmare0",music:"moose",boss:true,horror:true,onEnd:(win)=>{
       clearTimeout(HORROR&&HORROR.t);HORROR=null;document.body.classList.remove("hell-glitch");
       if(win){S.mooseWins=(S.mooseWins||0)+1;const r=MOOSE_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(666);let egg="";if(S.mooseWins===1){giveEgg(MOOSE_EVENT.egg,"moose");egg="<p><b>🥚 Из пентаграммы выкатилось яйцо… Пабло.</b></p>"}
         S.mooseFound=false;save();updateTop();mooseGlitch(1500);modal(`<div class="result win" style="color:#f00;font-family:monospace">…ОН УШЁЛ. ПОКА.</div><div class="center" style="font-weight:900">+🪙${fmt(r.gold)} +💎${r.gems} +📜${r.scrolls}</div>${egg}<p class="center"><small>Побед: ${S.mooseWins}</small></p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">…</button></div>`,{closable:false})}
       else{S.mooseFound=false;save();jumpscare(900);setTimeout(()=>modal(`<div class="result lose" style="color:#f00;font-family:monospace">ОН ВЫИГРАЛ. КАК ВСЕГДА.</div><p class="center" style="font-family:monospace">твоя команда… помнит его.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">…</button></div>`,{closable:false}),900)}}});
     HORROR.t=setTimeout(hellTick,1500)})})}
+function mooseCardHtml(){return `<div class="panel moose-card"><h2 style="font-family:monospace;color:#f00">👁️ 666</h2><div class="feature"><img src="assets/d160.png" class="johnny-img" style="filter:drop-shadow(0 0 14px #f00)"><div style="flex:1"><div class="desc" style="font-family:monospace;color:#f88">ты не должен был это найти.<br>он не подчиняется стихиям. он — все стихии.<br>он играет сам.</div><div class="row"><button class="btn red" id="gomoose">▶ …</button></div></div></div></div>`}
 function renderEvents(){
   const f=featured();const root=$("#scr-events");
   const feat=(d,title,badge,end,key,disc)=>{const own=S.dragons[d.id];const r=RARITY[d.rarity];const price=Math.round(r.price*disc);const claimed=S.quests["claim_"+key];
@@ -806,9 +808,9 @@ function renderEvents(){
     <div class="row">${own?`<button class="btn" disabled>✅ Уже в коллекции</button>`:`<button class="btn green" data-buy="${d.id}" data-price="${price}">Купить со скидкой 🪙${fmt(price)} <s style="opacity:.6">${fmt(r.price)}</s></button>`}
     ${claimed?`<button class="btn" disabled>🎁 Награда получена</button>`:`<button class="btn purple" data-claim="${key}">🎁 Награда события</button>`}</div>
     <small>Бонус: драконы стихии ${d.els.map(e=>ELEMENTS[e].name).join("/")} получают +25% атаки на арене в этот период.</small></div></div></div>`};
-  root.innerHTML=`<div class="ev-wrap">${feat(f.dom,"🏆 Дракон месяца","gold",f.endM,f.mk,0.6)}${feat(f.dow,"📅 Дракон недели","",f.endW,f.wk,0.75)}
+  root.innerHTML=S.mooseFound?`<div class="ev-wrap">${mooseCardHtml()}</div>`:`<div class="ev-wrap">${feat(f.dom,"🏆 Дракон месяца","gold",f.endM,f.mk,0.6)}${feat(f.dow,"📅 Дракон недели","",f.endW,f.wk,0.75)}
   ${renderZodiacCard()}
-  ${S.mooseFound?`<div class="panel moose-card"><h2 style="font-family:monospace;color:#f00">👁️ 666</h2><div class="feature"><img src="assets/d160.png" class="johnny-img" style="filter:drop-shadow(0 0 14px #f00)"><div style="flex:1"><div class="desc" style="font-family:monospace;color:#f88">ты не должен был это найти.<br>он не подчиняется стихиям. он — все стихии.<br>он играет сам.</div><div class="row"><button class="btn red" id="gomoose">▶ …</button></div></div></div></div>`:""}
+  
   <div class="panel johnny-card"><h2>🕯️ БОСС: Великий Джонни <span class="badge" style="background:#8a2be2">ур.${JOHNNY_EVENT.req}+</span></h2><div class="feature"><img src="assets/d157.png" class="johnny-img"><div style="flex:1"><div class="desc">Жархнне схватил посох из портала и стал Великим Джонни. С ним MR Lulu и MR Jarkhnne. Награда: ${costStr(JOHNNY_EVENT.reward)}, каждая 2-я победа — 🥚 <b>MR Lulu</b> (баран из семьи Мистеров).</div>
   <div class="row"><button class="btn purple" id="gojohnny" ${S.level<JOHNNY_EVENT.req||johnnyLeft()>0?"disabled":""}>${S.level<JOHNNY_EVENT.req?"🔒 ур."+JOHNNY_EVENT.req:johnnyLeft()>0?"⏳ "+tleft(new Date(Date.now()+johnnyLeft())):"▶ В БОЙ"}${S.johnnyWins?` <small>(побед: ${S.johnnyWins})</small>`:""}</button></div></div></div></div>
   <div class="panel"><h2>🎪 Другие события</h2><div class="skill"><span>📞 <b>Звонок MR 333</b><br><small>Построй Телефонную будку (ур.${BUILDINGS.phone.req}) и брось вызов команде 3:00. Каждая 3-я победа — яйцо MR 333.</small></span><button class="btn sm" id="gophone" ${allTiles().some(t=>t.b==="phone")?"":"disabled"}>${allTiles().some(t=>t.b==="phone")?"📞":"нет будки"}</button></div>
@@ -823,7 +825,7 @@ function renderEvents(){
   $$("[data-buy]",root).forEach(b=>b.onclick=()=>{const p=+b.dataset.price;if(S.level<DRAGON_REQ[b.dataset.buy]){toast("Нужен уровень "+DRAGON_REQ[b.dataset.buy]);return}if(S.gold<p){toast("Не хватает золота");return}S.gold-=p;giveEgg(b.dataset.buy,"event");addXP(150);save();renderEvents()});
   $$("[data-claim]",root).forEach(b=>b.onclick=()=>{S.quests["claim_"+b.dataset.claim]=1;S.gold+=1000;S.gems+=10;S.food+=300;S.scrolls=(S.scrolls||0)+5;addXP(50);save();toast("🎁 +🪙1000 +💎10 +🍖300 +📜5");renderEvents()});
   $$("[data-q]",root).forEach(b=>b.onclick=()=>{const q=QUESTS.find(x=>x.id===b.dataset.q);S.quests["done_"+q.id]=1;S.gold+=q.reward.gold||0;S.gems+=q.reward.gems||0;S.food+=q.reward.food||0;S.scrolls=(S.scrolls||0)+(q.reward.scrolls||0);addXP(80);save();toast("✅ "+costStr(q.reward));renderEvents()});
-  $("#reset").onclick=()=>{if(confirm("Точно удалить весь прогресс?")){if(SAVE_MODE==="account"){netSend({t:"save_reset"});sessionStorage.removeItem("dml_acc_session")}else localStorage.removeItem(SAVE_KEY);location.reload()}};
+  const rst=$("#reset");if(rst)rst.onclick=()=>{if(confirm("Точно удалить весь прогресс?")){if(SAVE_MODE==="account"){netSend({t:"save_reset"});sessionStorage.removeItem("dml_acc_session")}else localStorage.removeItem(SAVE_KEY);location.reload()}};
 }
 setInterval(()=>$$(".timer").forEach(t=>t.textContent=tleft(+t.dataset.end)),1000);
 // хуки квестов
@@ -862,7 +864,7 @@ document.addEventListener("click",e=>{if(e.target.id==="collect")S.quests.collec
 function sfxCtx(){try{MUSIC.ctx=MUSIC.ctx||new (window.AudioContext||window.webkitAudioContext)();if(MUSIC.ctx.state==="suspended")MUSIC.ctx.resume();return MUSIC.ctx}catch(e){return null}}
 function tone({f=440,f2,type="sine",d=.2,v=.3,t=0,curve="exp"}){const c=sfxCtx();if(!c||!S||S.music===false)return;const o=c.createOscillator(),gn=c.createGain();o.type=type;const t0=c.currentTime+t;o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),t0+d);gn.gain.setValueAtTime(.0001,t0);gn.gain.linearRampToValueAtTime(v,t0+.008);gn.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(gn);gn.connect(c.destination);o.start(t0);o.stop(t0+d+.05)}
 function noise({d=.2,v=.3,t=0,lp=2000,hp=100}){const c=sfxCtx();if(!c||!S||S.music===false)return;const n=c.sampleRate*d,b=c.createBuffer(1,n,c.sampleRate),ch=b.getChannelData(0);for(let i=0;i<n;i++)ch[i]=(Math.random()*2-1)*(1-i/n);const s=c.createBufferSource();s.buffer=b;const l=c.createBiquadFilter();l.type="lowpass";l.frequency.value=lp;const h=c.createBiquadFilter();h.type="highpass";h.frequency.value=hp;const gn=c.createGain();gn.gain.value=v;s.connect(l);l.connect(h);h.connect(gn);gn.connect(c.destination);s.start(c.currentTime+t)}
-const SND={};function sndPlay(n,v){if(!S||S.music===false)return;try{let a=SND[n];if(!a){a=new Audio("assets/"+n+".ogg");SND[n]=a}a.volume=v||.8;a.currentTime=0;a.play().catch(()=>{})}catch(e){}}
+const SND={};function sndPlay(n,v){if(!S||S.music===false)return;try{let a=SND[n];if(!a){a=new Audio("assets/"+n+(n.includes(".")?"":".ogg"));SND[n]=a}a.volume=v||.8;a.currentTime=0;a.play().catch(()=>{})}catch(e){}}
 const SFX={
   click(){tone({f:900,f2:1300,type:"square",d:.06,v:.12})},
   select(){tone({f:600,type:"triangle",d:.08,v:.15});tone({f:900,type:"triangle",d:.1,v:.15,t:.07})},
@@ -907,7 +909,7 @@ const TRACKS={ // ноты (полутоны от A3), темп, характе�
   campaign:{bpm:80,bass:[0,0,0,0,-4,-4,-4,-4,-2,-2,-2,-2,3,3,3,3],lead:[12,14,15,19,15,14,12,10, 8,10,12,15,12,10,8,7],wave:"triangle",gain:.045},
 };
 function playMusic(name){if(MUSIC.cur===name)return;stopMusic();MUSIC.cur=name;if(!S||!S.music)return;
-  if(name==="gbt"||name==="soviet"||name==="johnny"){const a=new Audio("assets/"+name+".mp3");a.loop=true;a.volume=.6;a.play().catch(()=>{});MUSIC.mp3=a;return}
+  if(name==="gbt"||name==="soviet"||name==="johnny"||name==="moose"){const a=new Audio("assets/"+name+".mp3");a.loop=true;a.volume=.6;a.play().catch(()=>{});MUSIC.mp3=a;return}
   const T=TRACKS[name];if(!T)return;try{MUSIC.ctx=MUSIC.ctx||new (window.AudioContext||window.webkitAudioContext)();}catch(e){return}
   const ctx=MUSIC.ctx;if(ctx.state==="suspended")ctx.resume();
   const master=ctx.createGain();master.gain.value=T.gain;master.connect(ctx.destination);MUSIC.master=master;

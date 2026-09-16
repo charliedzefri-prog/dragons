@@ -57,6 +57,7 @@ const SKILLS = {
   hellgaze: {name:"ВЗГЛЯД",          type:"attack", power:1.3, el:"tyrant", effect:"stun", chance:0.4, desc:"Он смотрит. Ты не двигаешься."},
   hellfire: {name:"666",             type:"attack", power:0.9, el:"curse", aoe:true, effect:"burn", chance:0.7, desc:"Пентаграмма вспыхивает под всеми"},
   hellswap: {name:"ТВОЙ ХОД",        type:"attack", power:1.1, el:"night", effect:"weaken", chance:1, desc:"Он играет за тебя. −30% атаки."},
+  helldrain:{name:"СОХРАНЕНИЕ",      type:"attack", power:1.0, el:"glitch", effect:"lifesteal", desc:"Он забирает твой прогресс себе. Крадёт HP."},
   staffslam:{name:"Удар посохом",    type:"attack", power:1.35,el:"curse", effect:"stun", chance:0.35, desc:"Великий Джонни бьёт посохом: оглушение 35%"},
   staffcut: {name:"Рассечение",      type:"attack", power:0.95,el:"curse", aoe:true, effect:"burn", chance:0.5, desc:"Посох рассекает всех: горение 50%"},
   sovhit:   {name:"Перфокарта",      type:"attack", power:0.9, el:"soviet", desc:"Тяжёлый удар корпусом"},
@@ -456,4 +457,4 @@ const SOVIET_EVENT={req:15, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold
 
 const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, lateLvl:52, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
 
-const MOOSE_EVENT={req:15, ids:["d160"], lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};
+const MOOSE_EVENT={req:15, ids:["d160"], lvl:145, effLvl:21, lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};

@@ -517,6 +517,5 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 .fighter.moose img{filter:drop-shadow(0 0 18px #f00) drop-shadow(0 0 40px #300);animation:moosebreathe 2.2s ease-in-out infinite}
 .fighter.moose .fn{color:#f00;font-family:monospace;letter-spacing:2px;text-shadow:0 0 8px #f00}
 @keyframes moosebreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06) translateY(-3px)}}
-.fighter.enemy.moose img{animation:moosebreatheF 2.2s ease-in-out infinite}
-@keyframes moosebreatheF{0%,100%{transform:scaleX(-1) scale(1)}50%{transform:scaleX(-1) scale(1.06) translateY(-3px)}}
+.fighter.enemy.moose img{animation:moosebreathe 2.2s ease-in-out infinite;transform:none}
 .moose-card{background:#000;border:3px solid #f00;box-shadow:0 0 30px #f00 inset,0 0 20px #f00;animation:hellpulse 2s infinite}
