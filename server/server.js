@@ -42,8 +42,8 @@ function validateSave(st,prev,p){
     if(Object.values(o.tree||{}).some(t=>t.lvl>6))return "неверное древо академии"}}
   if(prev){const dt=Math.max(1,(Date.now()-(p.saveAt||Date.now()))/1000)+30; // +30 с запас
     // допустимый прирост: базовый лимит в секунду + разовые крупные награды (сундуки/кампания) 
-    if(st.gold-prev.gold>MAX_GOLD_PER_SEC*(DB.settings.goldMult||1)*dt+50000)return "слишком быстрый прирост золота";
-    if(st.gems-prev.gems>MAX_GEMS_PER_SEC*(DB.settings.gemsMult||1)*dt+400)return "слишком быстрый прирост алмазов";
+    {const lvlK=1+Math.min(60,st.level||1)/4;if(st.gold-prev.gold>MAX_GOLD_PER_SEC*lvlK*(DB.settings.goldMult||1)*dt+600000)return "слишком быстрый прирост золота"}
+    if(st.gems-prev.gems>MAX_GEMS_PER_SEC*(DB.settings.gemsMult||1)*dt+600)return "слишком быстрый прирост алмазов";
     if((st.scrolls||0)-(prev.scrolls||0)>MAX_SCROLLS_PER_SEC*dt+100)return "слишком быстрый прирост свитков";
     if(st.level-prev.level>Math.ceil(dt/60)+2)return "слишком быстрый рост уровня";
     const nd=Object.keys(st.dragons||{}).length-Object.keys(prev.dragons||{}).length;if(nd>Math.ceil(dt/30)+3)return "слишком много новых драконов";

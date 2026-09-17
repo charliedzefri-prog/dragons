@@ -58,6 +58,11 @@ const SKILLS = {
   hellfire: {name:"666",             type:"attack", power:1.0, el:"curse", aoe:true, effect:"burn", chance:0.7, cd:3, desc:"Пентаграмма вспыхивает под всеми"},
   hellswap: {name:"ТВОЙ ХОД",        type:"attack", power:1.2, el:"night", effect:"weaken", chance:1, desc:"Он играет за тебя. −30% атаки."},
   hellkara: {name:"КАРА",            type:"attack", power:0.5, el:"curse", aoe:true, execute:0.35, effect:"bleed", desc:"Приговор всем. −35% HP каждому, кровотечение, ход без лечения — а всё их лечение достаётся ему."},
+  immortal: {name:"Бессмертие",      type:"buff", power:0, el:"beast", desc:"Не может умереть от одного удара: остаётся с 1 HP (раз в 2 раунда)"},
+  bullrush: {name:"Таран",           type:"attack", power:1.4, el:"beast", effect:"stun", chance:0.3, desc:"Бычок Рори несётся из темноты"},
+  knife:    {name:"Нож",             type:"attack", power:1.5, el:"curse", effect:"bleed", chance:0.6, desc:"Настоящий нож. 9999?"},
+  determin: {name:"Решимость",       type:"heal",   power:0.25, el:"legend", cd:3, desc:"Ты полна решимости. +25% HP"},
+  erase:    {name:"Стереть",         type:"attack", power:0.9, el:"night", aoe:true, effect:"vuln", chance:0.5, desc:"Стереть этот мир. По всем."},
   hellheal: {name:"ОТКАТ",           type:"heal", power:0.06, el:"glitch", desc:"Откатывает себя на 10 раундов назад. +6% HP."},
   helldrain:{name:"СОХРАНЕНИЕ",      type:"attack", power:1.2, el:"glitch", effect:"lifesteal", desc:"Он забирает твой прогресс себе. Крадёт HP."},
   staffslam:{name:"Удар посохом",    type:"attack", power:1.35,el:"curse", effect:"stun", chance:0.35, desc:"Великий Джонни бьёт посохом: оглушение 35%"},
@@ -336,7 +341,9 @@ const DRAGONS = [
   {id:"d159", name:"Доисторический Бисквит", els:["royal", "beast", "sheep"], rarity:"epic", base:{"hp": 140, "atk": 30, "def": 22, "spd": 9}, desc:"Бисквит, поросший мхом и колючками, с обломанными клыками. Древнейший из Бисквитов: коробка ещё каменная."},
   {id:"d160", name:"Лось 4 Сатана", els:["tyrant", "curse", "legend", "divine", "night", "digit", "clock", "beast", "glitch", "doc", "cat", "bird", "cyber", "sheep", "royal", "money", "zodiac", "german"], rarity:"tyrant", boss:true, big:true, base:{"hp": 520, "atk": 48, "def": 23, "spd": 20}, desc:"666. Пентаграмма на груди, кровь из глаз, рога лося. Четвёрка, которая ушла дальше, чем Сотона. ОН ВИДИТ ТЕБЯ ЧЕРЕЗ ЭКРАН."},
   {id:"d161", name:"MR Нарвал", els:["clock", "royal", "legend"], rarity:"legendary", noflip:true, base:{"hp": 132, "atk": 43, "def": 16, "spd": 15}, desc:"Оранжевый джентльмен-нарвал с золотым бивнем-рогом и сапфирами на голове и манжете. Единственный из Мистеров, кто носит время не на шляпе, а на роге."},
-  {id:"d131", name:"Советский Компьютер", els:["soviet", "cyber", "glitch"], rarity:"tyrant", eventOnly:true, boss:true, flipAlly:true, base:{"hp": 150, "atk": 26, "def": 22, "spd": 8}, desc:"Красный ящик с лицом. Загружается очень долго, зато когда найдёт цель — удаляет её из команды навсегда. BANNED."},
+  {id:"d162", name:"Пол Маккартни", els:["royal", "bird", "clock"], rarity:"legendary", noflip:true, base:{"hp": 130, "atk": 40, "def": 17, "spd": 16}, desc:"Сэр Пол за чаем на фоне Юнион Джека. Let it be — но сначала пять часов, милорд. Balagan Tea Party."},
+  {id:"d163", name:"Чара", els:["night", "curse", "legend"], rarity:"legendary", noflip:true, boss:true, charaOnly:true, base:{"hp": 95, "atk": 58, "def": 10, "spd": 22}, desc:"Ребёнок в зелёном свитере. Улыбается. В руке — что-то острое. Выдаётся только на секретные миссии."},
+  {id:"d131", name:"Советский Компьютер", els:["soviet", "cyber", "glitch"], rarity:"tyrant", eventOnly:true, boss:true, flipAlly:true, base:{"hp": 120, "atk": 60, "def": 22, "spd": 8}, desc:"Красный ящик с лицом. Загружается очень долго, зато когда найдёт цель — удаляет её из команды навсегда. BANNED."},
   {id:"d132", name:"Бог", els:["divine", "zodiac", "royal"], rarity:"divine", eventOnly:true, base:{"hp": 150, "atk": 46, "def": 20, "spd": 16}, desc:"Пятиконечная звезда пяти цветов с одним глазом посередине. Смотрит на всё сразу. Появляется только перед тем, кто отключил Советские Компьютеры."},
   {id:"d106", name:"Телец", els:["legend", "zodiac", "beast"], rarity:"legendary", base:{"hp": 140, "atk": 40, "def": 18, "spd": 13}, eventOnly:true, desc:"Голубой бык с кольцом в носу и огоньком на лбу. Не машите красным."},
 ];
@@ -457,8 +464,16 @@ const CAMPAIGN_NODES=CAMPAIGN.flatMap(c=>c.nodes.map(n=>({...n,ch:c.ch})));
 const HAB_BG={curse:"abyss",german:"base",night:"nightmare_hall",glitch:"darknet",clock:"ice_hell",cyber:"base",digit:"room1",royal:"gallery",sheep:"snow",bird:"skyship",beast:"darkside",cat:"room1",doc:"base",money:"gallery",zodiac:"skyship"};
 const BATTLE_BG={default:"versus",pvp:"versus",phone:"ice_hell",zodiac:"skyship",dungeon:"nightmare1",campaign:{1:"snow",2:"base",3:"nightmare_hall",4:"nightmare2",5:"base",6:"abyss"},boss:"darkside",final:"nightmare0"};
 
-const SOVIET_EVENT={req:15, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold:20000,gems:60,scrolls:40}, egg:"d132", cooldown:0};
+const SOVIET_EVENT={req:15, ids:["d131","d131","d131"], lvlBonus:4, dmgTaken:0.7, reward:{gold:20000,gems:60,scrolls:40}, egg:"d132", cooldown:0};
 
 const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, lateLvl:52, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
 
 const MOOSE_EVENT={req:15, code:"лось.exe", ids:["d160"], lvl:145, hp:90666, defMult:4, atkMult:0.22, dmgTaken:1.9, effLvl:10, lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};
+
+const RORY_EVENT={req:15, code:"рори", floors:10, baseLvl:45, step:7, immortalFrom:6, rewardGold:6000, rewardGems:8, finalEgg:"d162"};
+const CHARA_MISSIONS=[
+ {id:"c1", name:"Руины", req:15, lvl:20, ids:["d19","d47"], intro:"Ты просыпаешься на цветах. Рядом — нож. Ты уже знаешь, что делать.", win:"Пыль. Ты идёшь дальше."},
+ {id:"c2", name:"Снежный лес", req:15, lvl:30, ids:["d37","d49","d13"], intro:"Здесь холодно. Кто-то смеётся за деревьями. Смех прекращается.", win:"Снег красный. Тебе всё равно."},
+ {id:"c3", name:"Ядро", req:15, lvl:40, ids:["d31","d63"], intro:"Ты почти у цели. Они пытаются тебя остановить. Они всегда пытаются.", win:"Осталось одно. Ты знаешь, кто."},
+ {id:"c4", name:"Коридор", req:15, lvl:50, ids:["d157"], boss:true, intro:"Свет золотой. Он стоит в коридоре. «Прекрасный день, не правда ли?»", win:"…ты стёрла мир. Что дальше? Ты улыбаешься."},
+];

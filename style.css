@@ -581,3 +581,17 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 .jfx-burst i{position:absolute;left:50%;top:50%;width:4px;height:80%;background:linear-gradient(0deg,transparent,#fff,transparent);transform-origin:center;animation:rayspin 1.4s linear}
 .jfx-burst i:nth-child(1){transform:rotate(0)}.jfx-burst i:nth-child(2){transform:rotate(22deg)}.jfx-burst i:nth-child(3){transform:rotate(45deg)}.jfx-burst i:nth-child(4){transform:rotate(67deg)}.jfx-burst i:nth-child(5){transform:rotate(90deg)}.jfx-burst i:nth-child(6){transform:rotate(112deg)}.jfx-burst i:nth-child(7){transform:rotate(135deg)}.jfx-burst i:nth-child(8){transform:rotate(157deg)}
 @keyframes rayspin{from{opacity:0;scale:.2 1}30%{opacity:1}to{opacity:0;rotate:60deg;scale:1.6 1}}
+
+.rory-card{background:linear-gradient(135deg,#0d0d0d,#2a1a0a);border-color:#5a3a1a;color:#eee}.rory-card .desc,.rory-card h2{color:#eee}
+.chara-card{background:#000;border:2px solid #f00;color:#fff;font-family:monospace}.chara-card .desc,.chara-card h2{color:#fff}
+.chara-ov{position:fixed;inset:0;background:#000;z-index:80;display:flex;align-items:center;justify-content:center}
+.chara-room{position:relative;width:min(96vw,720px);height:min(70vh,480px);background:#0a0a0a;border:3px solid #222;overflow:hidden;touch-action:none;background-image:repeating-linear-gradient(0deg,#0e0e0e 0 47px,#141414 47px 48px),repeating-linear-gradient(90deg,#0e0e0e 0 47px,#141414 47px 48px)}
+.chara-txt{position:absolute;left:12px;top:10px;right:12px;color:#fff;font-family:monospace;font-size:15px;text-shadow:0 0 6px #000;z-index:2}
+.chara-goal{position:absolute;width:32px;height:32px;color:#ff0;font-size:28px;text-align:center;animation:goalPulse 1.2s ease-in-out infinite;text-shadow:0 0 12px #ff0}
+@keyframes goalPulse{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.3);opacity:1}}
+.chara-pl{position:absolute;width:96px;height:96px;background:url(assets/chara_sheet.png) no-repeat;background-size:288px 384px;image-rendering:pixelated;z-index:3}
+.chara-hint{position:absolute;left:12px;bottom:8px;color:#888;font-family:monospace;font-size:12px}.chara-hint a{color:#f66;cursor:pointer}
+.cpad{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;align-items:center;gap:4px;z-index:4;opacity:.8}
+.cpad button{width:44px;height:44px;border-radius:8px;border:1px solid #444;background:#111;color:#fff;font-size:18px;touch-action:none;user-select:none}
+.cpad div{display:flex;gap:4px}
+@media(hover:hover) and (pointer:fine){.cpad{display:none}}
