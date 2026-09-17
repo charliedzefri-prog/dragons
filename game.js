@@ -249,7 +249,9 @@ function renderDragons(){
       .sort((a,b)=>(S.dragons[b.id]?1:0)-(S.dragons[a.id]?1:0));
     grid.innerHTML=list.map(d=>dragonCard(d.id)).join("")||`<p class="center" style="grid-column:1/-1">Ничего не найдено</p>`;
     $$(".dr-card",grid).forEach(c=>c.onclick=()=>{const id=c.dataset.id;if(S.dragons[id]&&!isHoused(id)){placeDragon(id);return}dragonDetail(id)})}
-  $("#dsearch",root).oninput=e=>{S._q=e.target.value;if(e.target.value.trim().toLowerCase()===MOOSE_EVENT.code&&!S.mooseFound&&S.level>=MOOSE_EVENT.req){S.mooseFound=true;save();mooseGlitch(1400);playMusic("drone");setTimeout(()=>{toast("<b style=\"color:#f00\">он проснулся</b>");show("events");playMusic("drone");$("#navbar").classList.add("locked")},1400)}draw()};$$(".chip",root).forEach(b=>b.onclick=()=>{S._f=b.dataset.f;$$(".chip",root).forEach(x=>x.classList.toggle("on",x===b));draw()});draw();
+  const chk=v=>{const n=(v||"").toLowerCase().replace(/[\s\u200b\u00a0.,·_\-—–]/g,"").replace(/[a-z]/g,c=>({e:"е",x:"х",o:"о",c:"с",p:"р",a:"а",k:"к"})[c]||c);return n==="лосьехе"||n==="лосьexe"||n==="мооsеехе"||n==="mooseexe".replace(/[a-z]/g,c=>({e:"е",x:"х",o:"о",c:"с",p:"р",a:"а",k:"к"})[c]||c)};
+  const onq=e=>{S._q=e.target.value;if(chk(e.target.value)&&!S.mooseFound){if(S.level<MOOSE_EVENT.req){toast("<b style=\"color:#f00\">…ещё рано. ур."+MOOSE_EVENT.req+"</b>");return}S.mooseFound=true;save();e.target.blur();mooseGlitch(1400);playMusic("drone");setTimeout(()=>{toast("<b style=\"color:#f00\">он проснулся</b>");show("events");playMusic("drone");$("#navbar").classList.add("locked")},1400);return}draw()};
+  const inp=$("#dsearch",root);inp.oninput=onq;inp.onchange=onq;inp.onkeyup=onq;inp.setAttribute("autocomplete","off");inp.setAttribute("autocorrect","off");inp.setAttribute("autocapitalize","off");inp.setAttribute("spellcheck","false");$$(".chip",root).forEach(b=>b.onclick=()=>{S._f=b.dataset.f;$$(".chip",root).forEach(x=>x.classList.toggle("on",x===b));draw()});draw();
 }
 function dragonDetail(id){
   const d=dInfo(id),o=S.dragons[id],r=RARITY[d.rarity];
