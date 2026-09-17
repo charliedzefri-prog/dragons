@@ -617,3 +617,33 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 @keyframes wallIn{0%{transform:scale(0);opacity:0}30%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:0}}
 
 .hab-dr:hover,.hab-dr:active{animation-play-state:paused}.hab-dr:hover img{animation-play-state:paused}
+
+/* Чара: комнаты, предметы, эффекты */
+.chara-room{background-size:auto,auto}.chara-vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 40%,rgba(0,0,0,.75));z-index:1}
+.room-clinic .chara-vig{background:radial-gradient(ellipse at 50% 50%,transparent 30%,rgba(120,0,0,.55))}.room-hall .chara-vig{background:radial-gradient(ellipse at 80% 50%,rgba(255,230,140,.35),transparent 50%),radial-gradient(ellipse,transparent 50%,rgba(0,0,0,.6))}
+.chara-deco{position:absolute;font-size:36px;opacity:.55;pointer-events:none;filter:drop-shadow(0 0 6px #000)}
+.chara-item{position:absolute;width:32px;height:32px;font-size:26px;text-align:center;z-index:2;animation:itemBob 1.6s ease-in-out infinite;filter:drop-shadow(0 0 8px #fff8)}
+.chara-item.used{opacity:.25;animation:none;filter:grayscale(1)}
+@keyframes itemBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.chara-txt.blink{animation:txtIn .25s steps(3)}@keyframes txtIn{from{opacity:0}to{opacity:1}}
+.room-clinic .chara-txt{color:#300;text-shadow:0 0 6px #fff}
+.fighter.ally img[src*="d163_battle"]{transform:none;image-rendering:pixelated}
+.boss-say.chara{color:#fff;border-color:#f00;background:#000;font-family:monospace;top:auto;bottom:8px}
+.cfx-slash{inset:-10px;z-index:10}.cfx-slash i{position:absolute;left:-10%;top:50%;width:120%;height:4px;background:linear-gradient(90deg,transparent,#fff,#f00,transparent);transform-origin:center;animation:cslash .35s ease-out forwards;box-shadow:0 0 12px #f00}
+.cfx-slash i:nth-child(1){transform:rotate(-40deg)}.cfx-slash i:nth-child(2){transform:rotate(35deg);animation-delay:.1s}.cfx-slash i:nth-child(3){transform:rotate(-70deg);animation-delay:.2s}
+.cfx-slash.small i:nth-child(n+2){display:none}
+@keyframes cslash{0%{opacity:0;scale:0 1}30%{opacity:1;scale:1 1}100%{opacity:0;scale:1.3 1}}
+.cfx-blood{inset:0;background:radial-gradient(circle at 50% 55%,rgba(200,0,0,.85),rgba(120,0,0,.5) 35%,transparent 60%);animation:bloodOut .9s ease-out forwards;mix-blend-mode:multiply}
+@keyframes bloodOut{0%{transform:scale(.2);opacity:1}100%{transform:scale(1.8) translateY(20px);opacity:0}}
+.cfx-9999{left:50%;top:-10px;transform:translateX(-50%);font-family:monospace;font-size:34px;font-weight:900;color:#f00;text-shadow:0 0 10px #f00,2px 2px 0 #000;animation:n9999 1.1s ease-out forwards;z-index:11}
+@keyframes n9999{0%{transform:translate(-50%,0) scale(2);opacity:0}20%{opacity:1;transform:translate(-50%,-10px) scale(1)}100%{transform:translate(-50%,-60px);opacity:0}}
+.cfx-erase{inset:0;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(0deg,rgba(255,255,255,.08) 0 2px,transparent 2px 6px),#000c;animation:pentaIn 1.4s forwards;z-index:10}
+.cfx-erase b{font-family:monospace;font-size:80px;color:#fff;letter-spacing:12px;text-shadow:4px 0 #f00,-4px 0 #0ff;animation:eraseTxt 1.4s steps(6) forwards}
+@keyframes eraseTxt{0%{transform:scale(.5);opacity:0}20%{opacity:1;transform:scale(1)}60%{transform:translateX(0)}70%{transform:translateX(-30px)}80%{transform:translateX(30px)}100%{opacity:0;transform:scale(1.4)}}
+.fighter.erasing img{animation:erasing .9s steps(5) forwards}@keyframes erasing{0%{filter:none}30%{filter:contrast(3) invert(1)}60%{filter:grayscale(1) contrast(4);clip-path:inset(0 0 50% 0)}100%{filter:invert(1);clip-path:inset(0 0 0 0)}}
+.cfx-det{inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(circle,rgba(255,0,0,.25),transparent 60%);animation:pentaIn 1.5s forwards;z-index:10}
+.cfx-det span{font-size:90px;color:#f00;text-shadow:0 0 30px #f00;animation:heartBeat .5s ease-in-out 3}.cfx-det b{font-family:monospace;color:#fff;font-size:22px;text-shadow:0 0 8px #000}
+@keyframes heartBeat{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+.cfx-heart{inset:0;background:radial-gradient(circle,rgba(255,0,0,.6),transparent 60%);animation:dustUp 1.5s ease-out forwards}
+.ring666{font-size:90px;animation:heartBeat 1s infinite;filter:drop-shadow(0 0 20px #f00)}
+.ring-glow{position:absolute;right:10px;top:8px;font-family:monospace;color:#f00;font-weight:900;text-shadow:0 0 10px #f00;animation:pentaIn 2.5s forwards;z-index:5}
