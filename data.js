@@ -58,8 +58,8 @@ const SKILLS = {
   hellfire: {name:"666",             type:"attack", power:1.0, el:"curse", aoe:true, effect:"burn", chance:0.7, cd:3, desc:"Пентаграмма вспыхивает под всеми"},
   hellswap: {name:"ТВОЙ ХОД",        type:"attack", power:1.2, el:"night", effect:"weaken", chance:1, desc:"Он играет за тебя. −30% атаки."},
   hellkara: {name:"КАРА",            type:"attack", power:0.5, el:"curse", aoe:true, execute:0.35, effect:"bleed", desc:"Приговор всем. −35% HP каждому, кровотечение, ход без лечения — а всё их лечение достаётся ему."},
-  quake:    {name:"Землетрясение",   type:"attack", power:1.0, el:"beast", aoe:true, effect:"stun", chance:0.35, desc:"Копыто в землю: удар по всем, 35% оглушение"},
-  stampede: {name:"СТАМПИДА",        type:"attack", power:1.3, el:"tyrant", aoe:true, effect:"bleed", chance:0.8, desc:"Табун теней проносится по всем: огромный урон, кровотечение"},
+  quake:    {name:"Землетрясение",   type:"attack", power:1.6, el:"beast", aoe:true, effect:"stun", chance:0.5, desc:"Копыто в землю: огромный удар по всем, 50% оглушение"},
+  stampede: {name:"СТАМПИДА",        type:"attack", power:2.2, el:"tyrant", aoe:true, effect:"stun", chance:0.5, desc:"Табун теней проносится по всем: чудовищный урон, 50% оглушение"},
   roar:     {name:"Рёв",             type:"debuff", power:0.35, el:"beast", cd:3, desc:"Все враги −35% атаки"},
   hornwall: {name:"Стена рогов",     type:"buff",   power:0.4, el:"beast", effect:"shield", desc:"Щит на 40% HP (раз за бой, при половине HP)"},
   immortal: {name:"Бессмертие",      type:"buff", power:0, el:"beast", desc:"Не может умереть от одного удара: остаётся с 1 HP (раз в 2 раунда)"},
@@ -476,7 +476,7 @@ const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, lateLvl:52, 
 
 const MOOSE_EVENT={req:15, code:"лось.exe", ids:["d160"], lvl:145, hp:90666, defMult:4, atkMult:0.22, dmgTaken:1.9, effLvl:10, lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};
 
-const RORY_EVENT={req:15, floors:10, baseLvl:45, step:7, immortalFrom:6, rewardGold:6000, rewardGems:8, finalEgg:"d162"};
+const RORY_EVENT={req:15, floors:10, bossLvl:250, baseLvl:45, step:7, immortalFrom:6, rewardGold:6000, rewardGems:8, finalEgg:"d162"};
 const CHARA_MISSIONS=[
  {id:"c1", name:"Руины", req:15, lvl:20, ids:["d19","d47"], intro:"Ты просыпаешься на цветах. Рядом — нож. Ты уже знаешь, что делать.", win:"Пыль. Ты идёшь дальше."},
  {id:"c2", name:"Снежный лес", req:15, lvl:30, ids:["d37","d49","d13"], intro:"Здесь холодно. Кто-то смеётся за деревьями. Смех прекращается.", win:"Снег красный. Тебе всё равно."},
