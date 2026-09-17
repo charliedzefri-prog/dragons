@@ -470,7 +470,7 @@ const CAMPAIGN_NODES=CAMPAIGN.flatMap(c=>c.nodes.map(n=>({...n,ch:c.ch})));
 const HAB_BG={curse:"abyss",german:"base",night:"nightmare_hall",glitch:"darknet",clock:"ice_hell",cyber:"base",digit:"room1",royal:"gallery",sheep:"snow",bird:"skyship",beast:"darkside",cat:"room1",doc:"base",money:"gallery",zodiac:"skyship"};
 const BATTLE_BG={default:"versus",pvp:"versus",phone:"ice_hell",zodiac:"skyship",dungeon:"nightmare1",campaign:{1:"snow",2:"base",3:"nightmare_hall",4:"nightmare2",5:"base",6:"abyss"},boss:"darkside",final:"nightmare0"};
 
-const SOVIET_EVENT={req:15, ids:["d131","d131","d131"], lvlBonus:4, dmgTaken:0.7, reward:{gold:20000,gems:60,scrolls:40}, egg:"d132", cooldown:0};
+const SOVIET_EVENT={req:15, ids:["d131","d131","d131"], lvlBonus:4, dmgTaken:0.8, netShield:0.25, reboot:0.3, hpMult:0.8, minLvl:46, reward:{gold:20000,gems:60,scrolls:40}, egg:"d132", cooldown:0};
 
 const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, lateLvl:52, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
 
