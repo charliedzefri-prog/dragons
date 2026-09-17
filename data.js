@@ -57,8 +57,8 @@ const SKILLS = {
   hellgaze: {name:"ВЗГЛЯД",          type:"attack", power:1.5, el:"tyrant", effect:"stun", chance:0.4, cd:2, desc:"Он смотрит. Ты не двигаешься."},
   hellfire: {name:"666",             type:"attack", power:1.0, el:"curse", aoe:true, effect:"burn", chance:0.7, cd:3, desc:"Пентаграмма вспыхивает под всеми"},
   hellswap: {name:"ТВОЙ ХОД",        type:"attack", power:1.2, el:"night", effect:"weaken", chance:1, desc:"Он играет за тебя. −30% атаки."},
-  hellkara: {name:"КАРА",            type:"attack", power:0.5, el:"curse", aoe:true, execute:0.5, effect:"bleed", desc:"Приговор всем. −50% HP каждому, кровотечение, ход без лечения — а всё их лечение достаётся ему."},
-  hellheal: {name:"ОТКАТ",           type:"heal", power:0.10, el:"glitch", desc:"Откатывает себя на 10 ходов назад. +10% HP."},
+  hellkara: {name:"КАРА",            type:"attack", power:0.5, el:"curse", aoe:true, execute:0.35, effect:"bleed", desc:"Приговор всем. −35% HP каждому, кровотечение, ход без лечения — а всё их лечение достаётся ему."},
+  hellheal: {name:"ОТКАТ",           type:"heal", power:0.06, el:"glitch", desc:"Откатывает себя на 10 раундов назад. +6% HP."},
   helldrain:{name:"СОХРАНЕНИЕ",      type:"attack", power:1.2, el:"glitch", effect:"lifesteal", desc:"Он забирает твой прогресс себе. Крадёт HP."},
   staffslam:{name:"Удар посохом",    type:"attack", power:1.35,el:"curse", effect:"stun", chance:0.35, desc:"Великий Джонни бьёт посохом: оглушение 35%"},
   sunburst: {name:"СОЛНЦЕ",          type:"attack", power:1.6, el:"curse", aoe:true, effect:"burn", chance:1, desc:"Посох взрывается светом: огромный урон всем и горение"},
@@ -461,4 +461,4 @@ const SOVIET_EVENT={req:15, ids:["d131","d131","d131"], lvlBonus:2, reward:{gold
 
 const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, lateLvl:52, cooldown:6*60*60*1000, reward:{gold:30000,gems:50,scrolls:30}, egg:"d135", eggEvery:2};
 
-const MOOSE_EVENT={req:15, code:"лось.exe", ids:["d160"], lvl:145, hp:90666, defMult:4, effLvl:10, lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};
+const MOOSE_EVENT={req:15, code:"лось.exe", ids:["d160"], lvl:145, hp:90666, defMult:4, atkMult:0.22, dmgTaken:1.9, effLvl:10, lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};
