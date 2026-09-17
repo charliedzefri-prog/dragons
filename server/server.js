@@ -25,7 +25,7 @@ async function ghPush(){if(!GH.token||!GH.ready)return;if(GH.busy){GH.dirty=true
   finally{GH.busy=false;if(GH.dirty)setTimeout(ghPush,3000)}}
 let ghT=null;const ghSchedule=()=>{if(!GH.token)return;clearTimeout(ghT);ghT=setTimeout(ghPush,4000)};
 setInterval(()=>{if(GH.dirty&&!GH.busy)ghPush()},30000);
-DB.settings=Object.assign({maint:false,motd:"",goldMult:1,gemsMult:1,xpMult:1},DB.settings||{});DB.log=DB.log||[];
+DB.settings=Object.assign({maint:false,motd:"",goldMult:1,gemsMult:1,xpMult:1},DB.settings||{});DB.log=DB.log||[];Object.values(DB.players).forEach(p=>{p.room=null});
 const alog=(who,what)=>{DB.log.unshift({t:Date.now(),who,what});DB.log=DB.log.slice(0,300);saveDB()};
 {const before=Object.keys(DB.players).length;for(const id of Object.keys(DB.players)){if(!DB.players[id].user)delete DB.players[id]}for(const p of Object.values(DB.players)){p.friends=(p.friends||[]).filter(f=>DB.players[f]);p.requests=(p.requests||[]).filter(f=>DB.players[f])}const after=Object.keys(DB.players).length;if(before!==after)console.log("purged anonymous sessions:",before-after)}
 let saveT=null;const saveDB=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{fs.writeFileSync(DB_FILE,JSON.stringify(DB))}catch(e){console.error("db save",e.message)}ghSchedule()},500)};
@@ -121,7 +121,7 @@ wss.on("connection",ws=>{
       const list=()=>send(ws,{t:"admin_data",online:online.size,players:Object.values(DB.players).map(p=>({...pub(p),level:p.level,gold:p.gold,gems:p.gems,flags:p.flags||0,banned:!!p.banned,muted:!!p.muted,user:p.user,last:p.last,created:p.created,lastFlag:p.lastFlag||null,note:p.note||"",saveAt:p.saveAt,dragons:(()=>{try{return Object.keys(JSON.parse(p.save||"{}").dragons||{}).length}catch(e){return 0}})()})),raw:DB.players,settings:DB.settings,log:DB.log.slice(0,100),stats:{players:Object.keys(DB.players).length,online:online.size,queue:queue.length,rooms:rooms.size,banned:Object.values(DB.players).filter(p=>p.banned).length,flagged:Object.values(DB.players).filter(p=>p.flags).length,today:Object.values(DB.players).filter(p=>(Date.now()-(p.last||0))<864e5).length,uptime:Math.floor(process.uptime()),mem:Math.round(process.memoryUsage().rss/1048576)}});
       const tgt=DB.players[m.id];
       if(m.t==="admin_list"){list();return}
-      if(m.t==="admin_pvp"){const p=DB.players[m.id];if(!p||!online.has(p.id)){send(ws,{t:"err",msg:"Игрок не в сети"});return}if(p.room||me.room){send(ws,{t:"err",msg:"Кто-то из вас уже в бою"});return}if(p.id===me.id){send(ws,{t:"err",msg:"Нельзя с собой"});return}startRoom(me.id,p.id);return}
+      if(m.t==="admin_pvp"){const p=DB.players[m.id];if(!p||!online.has(p.id)){send(ws,{t:"err",msg:"Игрок не в сети"});return}if(p.room&&!rooms.has(p.room))p.room=null;if(me.room&&!rooms.has(me.room))me.room=null;if(p.room||me.room){send(ws,{t:"err",msg:"Кто-то из вас уже в бою"});return}if(p.id===me.id){send(ws,{t:"err",msg:"Нельзя с собой"});return}startRoom(me.id,p.id);return}
       if(m.t==="admin_settings"){const o=m.settings||{};if("maint" in o)DB.settings.maint=!!o.maint;if("motd" in o)DB.settings.motd=String(o.motd||"").slice(0,300);["goldMult","gemsMult","xpMult"].forEach(k=>{if(k in o){const v=+o[k];if(v>=0.1&&v<=10)DB.settings[k]=v}});alog(me.user,"настройки: "+JSON.stringify(o));online.forEach(w=>send(w,{t:"settings",settings:{motd:DB.settings.motd,goldMult:DB.settings.goldMult,gemsMult:DB.settings.gemsMult,xpMult:DB.settings.xpMult}}));send(ws,{t:"admin_ok",msg:"Настройки сохранены"});return}
       if(m.t==="admin_giveall"){let n=0;Object.values(DB.players).forEach(p=>{if(!p.save)return;try{const st=JSON.parse(p.save);st.gold=(st.gold||0)+(m.gold|0);st.gems=(st.gems||0)+(m.gems|0);st.scrolls=(st.scrolls||0)+(m.scrolls|0);p.save=JSON.stringify(st);p.gold=st.gold;p.gems=st.gems;p.saveAt=Date.now();n++;sendTo(p.id,{t:"save_rejected",msg:"🎁 Подарок от администрации!",data:p.save})}catch(e){}});saveDB();alog(me.user,`выдал всем: 🪙${m.gold|0} 💎${m.gems|0} 📜${m.scrolls|0} (${n})`);send(ws,{t:"admin_ok",msg:"Выдано игрокам: "+n});return}
       if(m.t==="admin_kickall"){let n=0;online.forEach((w,id)=>{if(id!==me.id){send(w,{t:"kicked"});try{w.close()}catch(e){};n++}});alog(me.user,"кикнул всех ("+n+")");send(ws,{t:"admin_ok",msg:"Отключено: "+n});return}
@@ -161,13 +161,13 @@ wss.on("connection",ws=>{
     if(m.t==="friend_decline"){me.requests=me.requests.filter(x=>x!==m.id);saveDB();pushFriends(me.id);return}
     if(m.t==="friend_remove"){const p=DB.players[m.id];me.friends=me.friends.filter(x=>x!==m.id);if(p)p.friends=p.friends.filter(x=>x!==me.id);saveDB();pushFriends(me.id);if(p)pushFriends(p.id);return}
     // ---- подбор ----
-    if(m.t==="queue"){if(me.room){send(ws,{t:"err",msg:"Вы уже в бою"});return}queue=queue.filter(q=>q.id!==me.id);
+    if(m.t==="queue"){if(me.room&&!rooms.has(me.room))me.room=null;if(me.room){send(ws,{t:"err",msg:"Вы уже в бою"});return}queue=queue.filter(q=>q.id!==me.id);
       // ближайший по силе
       let best=null,bd=1e18;queue.forEach(q=>{const d=Math.abs((q.power||0)-(me.power||0));if(online.has(q.id)&&d<bd){bd=d;best=q}});
       if(best){queue=queue.filter(q=>q.id!==best.id);startRoom(best.id,me.id)}else{queue.push({id:me.id,power:me.power,t:Date.now()});send(ws,{t:"queued",n:queue.length})}return}
     if(m.t==="dequeue"){queue=queue.filter(q=>q.id!==me.id);send(ws,{t:"dequeued"});return}
     if(m.t==="challenge"){const p=DB.players[m.to];if(!p||!online.has(p.id)){send(ws,{t:"err",msg:"Друг не в сети"});return}if(p.room){send(ws,{t:"err",msg:"Друг сейчас в бою"});return}sendTo(p.id,{t:"challenged",from:pub(me)});send(ws,{t:"info",msg:"Вызов отправлен: "+p.name});return}
-    if(m.t==="accept"){const p=DB.players[m.from];if(!p||!online.has(p.id)||p.room||me.room){send(ws,{t:"err",msg:"Вызов недоступен"});return}queue=queue.filter(q=>q.id!==me.id&&q.id!==p.id);startRoom(p.id,me.id);return}
+    if(m.t==="accept"){const p=DB.players[m.from];if(p&&p.room&&!rooms.has(p.room))p.room=null;if(me.room&&!rooms.has(me.room))me.room=null;if(!p||!online.has(p.id)||p.room||me.room){send(ws,{t:"err",msg:"Вызов недоступен"});return}queue=queue.filter(q=>q.id!==me.id&&q.id!==p.id);startRoom(p.id,me.id);return}
     if(m.t==="decline"){sendTo(m.from,{t:"info",msg:me.name+" отклонил вызов"});return}
     // ---- бой: ретрансляция ----
     const R=me.room&&rooms.get(me.room);if(!R)return;const idx=R.p.indexOf(me.id);const other=R.p[1-idx];

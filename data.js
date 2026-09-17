@@ -58,6 +58,10 @@ const SKILLS = {
   hellfire: {name:"666",             type:"attack", power:1.0, el:"curse", aoe:true, effect:"burn", chance:0.7, cd:3, desc:"Пентаграмма вспыхивает под всеми"},
   hellswap: {name:"ТВОЙ ХОД",        type:"attack", power:1.2, el:"night", effect:"weaken", chance:1, desc:"Он играет за тебя. −30% атаки."},
   hellkara: {name:"КАРА",            type:"attack", power:0.5, el:"curse", aoe:true, execute:0.35, effect:"bleed", desc:"Приговор всем. −35% HP каждому, кровотечение, ход без лечения — а всё их лечение достаётся ему."},
+  quake:    {name:"Землетрясение",   type:"attack", power:1.0, el:"beast", aoe:true, effect:"stun", chance:0.35, desc:"Копыто в землю: удар по всем, 35% оглушение"},
+  stampede: {name:"СТАМПИДА",        type:"attack", power:1.3, el:"tyrant", aoe:true, effect:"bleed", chance:0.8, desc:"Табун теней проносится по всем: огромный урон, кровотечение"},
+  roar:     {name:"Рёв",             type:"debuff", power:0.35, el:"beast", cd:3, desc:"Все враги −35% атаки"},
+  hornwall: {name:"Стена рогов",     type:"buff",   power:0.4, el:"beast", effect:"shield", desc:"Щит на 40% HP (раз за бой, при половине HP)"},
   immortal: {name:"Бессмертие",      type:"buff", power:0, el:"beast", desc:"Не может умереть от одного удара: остаётся с 1 HP (раз в 2 раунда)"},
   bullrush: {name:"Таран",           type:"attack", power:1.4, el:"beast", effect:"stun", chance:0.3, desc:"Бычок Рори несётся из темноты"},
   knife:    {name:"Нож",             type:"attack", power:1.5, el:"curse", effect:"bleed", chance:0.6, desc:"Настоящий нож. 9999?"},
@@ -341,6 +345,7 @@ const DRAGONS = [
   {id:"d159", name:"Доисторический Бисквит", els:["royal", "beast", "sheep"], rarity:"epic", base:{"hp": 140, "atk": 30, "def": 22, "spd": 9}, desc:"Бисквит, поросший мхом и колючками, с обломанными клыками. Древнейший из Бисквитов: коробка ещё каменная."},
   {id:"d160", name:"Лось 4 Сатана", els:["tyrant", "curse", "legend", "divine", "night", "digit", "clock", "beast", "glitch", "doc", "cat", "bird", "cyber", "sheep", "royal", "money", "zodiac", "german"], rarity:"tyrant", boss:true, big:true, base:{"hp": 520, "atk": 48, "def": 23, "spd": 20}, desc:"666. Пентаграмма на груди, кровь из глаз, рога лося. Четвёрка, которая ушла дальше, чем Сотона. ОН ВИДИТ ТЕБЯ ЧЕРЕЗ ЭКРАН."},
   {id:"d161", name:"MR Нарвал", els:["clock", "royal", "legend"], rarity:"legendary", noflip:true, base:{"hp": 132, "atk": 43, "def": 16, "spd": 15}, desc:"Оранжевый джентльмен-нарвал с золотым бивнем-рогом и сапфирами на голове и манжете. Единственный из Мистеров, кто носит время не на шляпе, а на роге."},
+  {id:"d164", name:"Большой Рори", els:["beast", "tyrant", "legend"], rarity:"tyrant", boss:true, big:true, base:{"hp": 100, "atk": 30, "def": 6, "spd": 10}, desc:"Первый бык. Каменная шкура, цепи на рогах, красный пар из ноздрей. Все Бычки Рори — его тени."},
   {id:"d162", name:"Пол Маккартни", els:["royal", "bird", "clock"], rarity:"legendary", noflip:true, base:{"hp": 130, "atk": 40, "def": 17, "spd": 16}, desc:"Сэр Пол за чаем на фоне Юнион Джека. Let it be — но сначала пять часов, милорд. Balagan Tea Party."},
   {id:"d163", name:"Чара", els:["night", "curse", "legend"], rarity:"legendary", noflip:true, boss:true, charaOnly:true, base:{"hp": 95, "atk": 58, "def": 10, "spd": 22}, desc:"Ребёнок в зелёном свитере. Улыбается. В руке — что-то острое. Выдаётся только на секретные миссии."},
   {id:"d131", name:"Советский Компьютер", els:["soviet", "cyber", "glitch"], rarity:"tyrant", eventOnly:true, boss:true, flipAlly:true, base:{"hp": 120, "atk": 60, "def": 22, "spd": 8}, desc:"Красный ящик с лицом. Загружается очень долго, зато когда найдёт цель — удаляет её из команды навсегда. BANNED."},
@@ -405,7 +410,7 @@ DRAGONS.forEach(dr=>{
   DRAGON_REQ[dr.id]=Math.max(RARITY_REQ[dr.rarity], habReq);
 });
 // ====== СОБЫТИЯ ======
-const PHONE_EVENT={req:15, cooldown:60*60*1000, team:["d71","d93","d15"], lvlAdd:40, lvlBonus:6, reward:{gold:3000,gems:15,scrolls:10}, egg:"d71"};
+const PHONE_EVENT={req:15, cooldown:60*60*1000, team:["d71","d93","d15"], lvlAdd:40, lvlBonus:6, reward:{gold:3000,gems:15,scrolls:10}, egg:"d71", pool:["d93","d15","d69","d70","d72","d73","d74","d75","d161"]};
 const ZODIAC_IDS=["d101","d106","d96","d102","d100","d98","d38","d104","d105","d99","d97","d103","d39"];
 const ZODIAC_EVENT={req:15, stages:13, eggAt:[4,8,13], baseLvl:8};
 const DUNGEON={req:6};
@@ -470,7 +475,7 @@ const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, lateLvl:52, 
 
 const MOOSE_EVENT={req:15, code:"лось.exe", ids:["d160"], lvl:145, hp:90666, defMult:4, atkMult:0.22, dmgTaken:1.9, effLvl:10, lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d158"};
 
-const RORY_EVENT={req:15, code:"рори", floors:10, baseLvl:45, step:7, immortalFrom:6, rewardGold:6000, rewardGems:8, finalEgg:"d162"};
+const RORY_EVENT={req:15, floors:10, baseLvl:45, step:7, immortalFrom:6, rewardGold:6000, rewardGems:8, finalEgg:"d162"};
 const CHARA_MISSIONS=[
  {id:"c1", name:"Руины", req:15, lvl:20, ids:["d19","d47"], intro:"Ты просыпаешься на цветах. Рядом — нож. Ты уже знаешь, что делать.", win:"Пыль. Ты идёшь дальше."},
  {id:"c2", name:"Снежный лес", req:15, lvl:30, ids:["d37","d49","d13"], intro:"Здесь холодно. Кто-то смеётся за деревьями. Смех прекращается.", win:"Снег красный. Тебе всё равно."},
