@@ -208,6 +208,7 @@ function tileClick(i){
   $("#collect",m).onclick=()=>{if(!b.el&&!tileReady(t)){toast("⏳ Ещё не готово");return}S.gold+=inc.gold||0;S.food+=inc.food||0;S.gems+=inc.gems||0;t.last=Date.now();addXP(b.el?Math.min(60,10+Math.floor((inc.gold||0)/20)):15);save();closeModal();renderMap();toast(`+${costStr(inc)}`)};
   $("#del",m).onclick=()=>{if(t.dragons.length){toast("Сначала выселите драконов");return}S.gold+=Math.floor((b.cost.gold||0)/2);t.b=null;save();closeModal();renderMap();updateTop()};
 }
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#hd");if(b&&b.dataset.id&&!b._done){b._done=1;setTimeout(()=>{if(document.getElementById("hd")===b){try{dragonDetail(b.dataset.id)}catch(err){toast("Ошибка: "+err.message)}}},50)}},true);
 function enterHabitat(i){
   const t=S.tiles[i],b=BUILDINGS[t.b],col=ELEMENTS[b.el].color;
   const hbg=HAB_BG[b.el];const m=modal(`<h2>${b.ico} ${b.name}</h2><div class="hab-scene ${hbg?"hab-img":""}" style="background:${hbg?`url(assets/bg/${hbg}.jpg) center/cover`:`linear-gradient(#bfe9ff,${col}aa 60%,${col})`}">
@@ -215,10 +216,10 @@ function enterHabitat(i){
    ${t.dragons.map((id,k)=>`<div class="hab-dr ${dInfo(id).noflip?"noflip":""}" data-id="${id}" style="left:${15+k*40}%;animation-duration:${6+k*2}s;animation-delay:-${k*3}s"><img src="assets/${id}.png"><div class="hab-tag">${dInfo(id).name} <b>ур.${S.dragons[id].lvl}</b></div></div>`).join("")}
   </div><small>Нажми на дракона, чтобы покормить.</small><div id="hab-info"></div>`);
   $$(".hab-dr",m).forEach(el=>el.onclick=()=>{const id=el.dataset.id,o=S.dragons[id],d=dInfo(id),ml=maxLevel(o.stars),fc=feedCost(id);
-    $("#hab-info",m).innerHTML=`<div class="panel" style="margin-top:8px;padding:8px"><b>${d.name}</b> · ${stageName(o.lvl)} · ур.${o.lvl}/${ml} <div class="bar" style="margin:4px 0"><div style="width:${o.lvl/ml*100}%"></div></div><div class="row"><button class="btn green sm" id="hf" ${o.lvl>=ml||S.food<fc?"disabled":""}>🍖 Кормить (${fc})</button><button class="btn blue sm" id="hf10">🍖 x10</button><button class="btn sm" id="hd">Подробнее</button></div></div>`;
+    $("#hab-info",m).innerHTML=`<div class="panel" style="margin-top:8px;padding:8px"><b>${d.name}</b> · ${stageName(o.lvl)} · ур.${o.lvl}/${ml} <div class="bar" style="margin:4px 0"><div style="width:${o.lvl/ml*100}%"></div></div><div class="row"><button class="btn green sm" id="hf" ${o.lvl>=ml||S.food<fc?"disabled":""}>🍖 Кормить (${fc})</button><button class="btn blue sm" id="hf10">🍖 x10</button><button class="btn sm" id="hd" data-id="${id}">Подробнее</button></div></div>`;
     $("#hf",m).onclick=()=>{feed(id,1);el.querySelector("b").textContent="ур."+S.dragons[id].lvl;el.click()};
     $("#hf10",m).onclick=()=>{feed(id,10);el.querySelector("b").textContent="ур."+S.dragons[id].lvl;el.click()};
-    $("#hd",m).onclick=()=>dragonDetail(id);
+    $("#hd",m).onclick=e=>{e.preventDefault();e.stopPropagation();try{dragonDetail(id)}catch(err){console.error(err);toast("Ошибка карточки: "+err.message)}};
     const img=el.querySelector("img");img.classList.add("hop");setTimeout(()=>img.classList.remove("hop"),500)});
 }
 function stageName(l){let n=STAGES[0][1];STAGES.forEach(([a,b])=>{if(l>=a)n=b});return n}

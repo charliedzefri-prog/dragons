@@ -64,6 +64,7 @@ const SKILLS = {
   hornwall: {name:"Стена рогов",     type:"buff",   power:0.4, el:"beast", effect:"shield", desc:"Щит на 40% HP (раз за бой, при половине HP)"},
   immortal: {name:"Бессмертие",      type:"buff", power:0, el:"beast", desc:"Не может умереть от одного удара: остаётся с 1 HP (раз в 2 раунда)"},
   bullrush: {name:"Таран",           type:"attack", power:1.4, el:"beast", effect:"stun", chance:0.3, desc:"Бычок Рори несётся из темноты"},
+  basic:    {name:"Удар",            type:"attack", power:1.0, desc:"Обычный удар"},
   knife:    {name:"Нож",             type:"attack", power:1.5, el:"curse", effect:"bleed", chance:0.6, desc:"Настоящий нож. 9999?"},
   determin: {name:"Решимость",       type:"heal",   power:0.25, el:"legend", cd:3, desc:"Ты полна решимости. +25% HP"},
   erase:    {name:"Стереть",         type:"attack", power:0.9, el:"night", aoe:true, effect:"vuln", chance:0.5, desc:"Стереть этот мир. По всем."},
