@@ -647,3 +647,5 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 .cfx-heart{inset:0;background:radial-gradient(circle,rgba(255,0,0,.6),transparent 60%);animation:dustUp 1.5s ease-out forwards}
 .ring666{font-size:90px;animation:heartBeat 1s infinite;filter:drop-shadow(0 0 20px #f00)}
 .ring-glow{position:absolute;right:10px;top:8px;font-family:monospace;color:#f00;font-weight:900;text-shadow:0 0 10px #f00;animation:pentaIn 2.5s forwards;z-index:5}
+
+.avwrap{position:relative;display:inline-block}.avwrap.locked img{filter:grayscale(.7) brightness(.6)}.avprice{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);background:#000c;color:#ffb700;font-size:11px;font-weight:900;padding:1px 5px;border-radius:6px;pointer-events:none;white-space:nowrap}

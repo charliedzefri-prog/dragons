@@ -347,6 +347,8 @@ const DRAGONS = [
   {id:"d160", name:"Лось 4 Сатана", els:["tyrant", "curse", "legend", "divine", "night", "digit", "clock", "beast", "glitch", "doc", "cat", "bird", "cyber", "sheep", "royal", "money", "zodiac", "german"], rarity:"tyrant", boss:true, big:true, base:{"hp": 520, "atk": 48, "def": 23, "spd": 20}, desc:"666. Пентаграмма на груди, кровь из глаз, рога лося. Четвёрка, которая ушла дальше, чем Сотона. ОН ВИДИТ ТЕБЯ ЧЕРЕЗ ЭКРАН."},
   {id:"d161", name:"MR Нарвал", els:["clock", "royal", "legend"], rarity:"legendary", noflip:true, base:{"hp": 132, "atk": 43, "def": 16, "spd": 15}, desc:"Оранжевый джентльмен-нарвал с золотым бивнем-рогом и сапфирами на голове и манжете. Единственный из Мистеров, кто носит время не на шляпе, а на роге."},
   {id:"d164", name:"Большой Рори", els:["beast", "tyrant", "legend"], rarity:"tyrant", boss:true, big:true, base:{"hp": 100, "atk": 30, "def": 6, "spd": 10}, desc:"Первый бык. Каменная шкура, цепи на рогах, красный пар из ноздрей. Все Бычки Рори — его тени."},
+  {id:"d165", name:"Jarkhnne Кошмар", els:["curse", "sheep", "night"], rarity:"legendary", base:{"hp": 135, "atk": 46, "def": 16, "spd": 15}, desc:"Серый барашек с закрученными рогами, красные глаза со знаком Овна, чёрная рваная мантия и чужой рот. Это то, что снится Jarkhnne, когда часы показывают «потом»."},
+  {id:"d166", name:"Тетрадь Смерти Пушканов", els:["digit", "glitch", "beast"], rarity:"epic", noflip:true, base:{"hp": 115, "atk": 40, "def": 12, "spd": 20}, desc:"Злая морковка-треугольник с зубастым хвостом-пилой. Записывает имена. Кого записала — тот на грядке."},
   {id:"d162", name:"Пол Маккартни", els:["royal", "bird", "clock"], rarity:"legendary", noflip:true, base:{"hp": 130, "atk": 40, "def": 17, "spd": 16}, desc:"Сэр Пол за чаем на фоне Юнион Джека. Let it be — но сначала пять часов, милорд. Balagan Tea Party."},
   {id:"d163", name:"Чара", els:["night", "curse", "legend"], rarity:"legendary", noflip:true, boss:true, charaOnly:true, base:{"hp": 95, "atk": 58, "def": 10, "spd": 22}, desc:"Ребёнок в зелёном свитере. Улыбается. В руке — что-то острое. Выдаётся только на секретные миссии."},
   {id:"d131", name:"Советский Компьютер", els:["soviet", "cyber", "glitch"], rarity:"tyrant", eventOnly:true, boss:true, flipAlly:true, base:{"hp": 120, "atk": 60, "def": 22, "spd": 8}, desc:"Красный ящик с лицом. Загружается очень долго, зато когда найдёт цель — удаляет её из команды навсегда. BANNED."},
@@ -417,7 +419,7 @@ const ZODIAC_EVENT={req:15, stages:13, eggAt:[4,8,13], baseLvl:8};
 const DUNGEON={req:6};
 
 // ====== АВАТАРКИ ======
-const AVATARS=[{id:"av0",n:"666"},{id:"av1",n:"Сосал"},{id:"av2",n:"БВ"},{id:"av3",n:"Гей"},{id:"av4",n:"Лофоминус"},{id:"av5",n:"Лугер"},{id:"av6",n:"Ойсмарт"}];
+const AVATARS=[{id:"av0",n:"666"},{id:"av1",n:"Сосал"},{id:"av2",n:"БВ"},{id:"av3",n:"Гей"},{id:"av4",n:"Лофоминус"},{id:"av5",n:"Лугер"},{id:"av6",n:"Ойсмарт"},{id:"av7",n:"Кролик 67",price:6777}];
 // ====== PVP ======
 const PVP_TURN_MS=10000;
 const LEAGUES=[{n:"Деревянная",min:0,ico:"🪵"},{n:"Бронзовая",min:300,ico:"🥉"},{n:"Серебряная",min:700,ico:"🥈"},{n:"Золотая",min:1200,ico:"🥇"},{n:"Алмазная",min:1800,ico:"💎"},{n:"Легендарная",min:2500,ico:"👑"}];

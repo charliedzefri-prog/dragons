@@ -68,7 +68,7 @@ let queue=[];           // [{id,ws,power,t}]
 const rooms=new Map();  // roomId -> {p:[id,id], turn:0|1, timer, seed}
 const send=(ws,m)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(m))};
 const sendTo=(id,m)=>send(online.get(id),m);
-const ADMINS=(process.env.ADMINS||"lulu").toLowerCase().split(",").map(x=>x.trim()).filter(Boolean);
+const ADMINS=(process.env.ADMINS||"lulu,jarkhnne").toLowerCase().split(",").map(x=>x.trim()).filter(Boolean);
 const isAdmin=p=>!!(p&&(p.admin||(p.user&&ADMINS.includes(p.user.toLowerCase()))));
 const pub=(p)=>({id:p.id,name:p.name,admin:isAdmin(p),avatar:p.avatar,power:p.power||0,rating:p.rating||1000,code:p.code,online:online.has(p.id),team:p.team||[],wins:p.wins||0,losses:p.losses||0});
 function pushFriends(id){const p=DB.players[id];if(!p)return;
