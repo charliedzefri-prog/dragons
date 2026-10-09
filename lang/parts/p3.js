@@ -1,4 +1,10 @@
 module.exports={
+"⚙️ Настройки":"⚙️ Settings",
+"📱 Вы играете с телефона. Скачайте приложение «Легенды Дракономании» для Android.":"📱 You are playing on a phone. Download the Legends of Dragonmania app for Android.",
+"⬇️ Скачать APK":"⬇️ Download APK",
+"Android может попросить разрешить установку из этого источника.":"Android may ask you to allow installs from this source.",
+"📲 Чтобы играть как приложение: «Поделиться» → «На экран «Домой»».":"📲 To play as an app: Share → Add to Home Screen.",
+
 "Шахта самоцветов":"Gem Mine",
 "Шестёрка Серафим":"Seraph Six",
 "назначил админом":"made admin",
