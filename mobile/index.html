@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<!-- Мобильная версия «Легенды Дракономании». Использует тот же game.js/data.js/lang и тот же сервер,
+     что и веб-версия: сохранения, аккаунты и мультиплеер полностью совместимы. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#5a3313">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Дракономания">
+<meta name="format-detection" content="telephone=no">
+<meta name="description" content="Легенды Дракономании — мобильная версия">
+<title>Легенды Дракономании</title>
+<!-- base указывает на корень игры: ассеты и скрипты общие с веб-версией -->
+<base href="../">
+<link rel="manifest" href="mobile/manifest.webmanifest">
+<link rel="icon" href="mobile/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="mobile/icon-192.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="mobile/mobile.css">
+</head>
+<body class="is-mobile">
+<div id="app">
+  <!-- Верхняя панель ресурсов -->
+  <header id="topbar">
+    <div class="logo">🐉 <span>Дракономания</span></div>
+    <div class="res"><span class="ico">🪙</span><b id="r-gold">0</b></div>
+    <div class="res"><span class="ico">🍖</span><b id="r-food">0</b></div>
+    <div class="res"><span class="ico">💎</span><b id="r-gems">0</b></div>
+    <div class="res" id="r-scroll-box" title="Свитки обучения — конвертируй в 📘 в Академии"><span class="ico">📜</span><b id="r-scroll">0</b></div>
+    <div class="res lvl"><span class="ico">⭐</span><b id="r-level">1</b><div class="xpbar"><div id="r-xp"></div></div></div>
+  </header>
+
+  <!-- Экраны -->
+  <main id="screens">
+    <section id="scr-map" class="screen active"></section>
+    <section id="scr-dragons" class="screen"></section>
+    <section id="scr-battle" class="screen"></section>
+    <section id="scr-events" class="screen"></section>
+    <section id="scr-shop" class="screen"></section>
+    <section id="scr-academy" class="screen"></section>
+    <section id="scr-breed" class="screen"></section>
+    <section id="scr-campaign" class="screen"></section>
+    <section id="scr-pvp" class="screen"></section>
+    <section id="scr-friends" class="screen"></section>
+  </main>
+
+  <!-- Нижняя навигация -->
+  <nav id="navbar">
+    <button data-scr="map" class="active">🗺️<span>Остров</span></button>
+    <button data-scr="dragons">🐲<span>Драконы</span></button>
+    <button data-scr="breed">💞<span>Гнездо</span></button>
+    <button data-scr="battle">⚔️<span>Арена</span></button>
+    <button data-scr="academy">🎓<span>Академия</span></button>
+    <button data-scr="events">🏆<span>События</span></button>
+    <button data-scr="shop">🏪<span>Магазин</span></button>
+  </nav>
+
+  <div id="modal-root"></div>
+  <div id="toasts"></div>
+</div>
+<script src="lang/en.js"></script>
+<script src="lang/i18n.js"></script>
+<script src="data.js"></script>
+<script>if(window.__i18nData)window.__i18nData()</script>
+<script src="game.js"></script>
+<script src="mobile/mobile.js"></script>
+</body>
+</html>
