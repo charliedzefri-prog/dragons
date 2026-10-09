@@ -6,7 +6,7 @@ const PORT=process.env.PORT||8000;
 const ROOT=path.join(__dirname,"..");
 const DB_FILE=process.env.DB_FILE||path.join(__dirname,"db.json");
 const TURN_MS=10000;
-const MIME={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".png":"image/png",".jpg":"image/jpeg",".mp3":"audio/mpeg",".json":"application/json",".svg":"image/svg+xml",".ico":"image/x-icon"};
+const MIME={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".png":"image/png",".jpg":"image/jpeg",".mp3":"audio/mpeg",".json":"application/json",".webmanifest":"application/manifest+json",".svg":"image/svg+xml",".ico":"image/x-icon"};
 
 // ---------- база (простой JSON) ----------
 let DB={players:{}};try{DB=JSON.parse(fs.readFileSync(DB_FILE,"utf8"))}catch(e){}
@@ -52,7 +52,7 @@ function validateSave(st,prev,p){
 
 // ---------- http: статика ----------
 const server=http.createServer((req,res)=>{
-  let u=decodeURIComponent(req.url.split("?")[0]);if(u==="/")u="/index.html";
+  let u=decodeURIComponent(req.url.split("?")[0]);if(u==="/")u="/index.html";if(u==="/mobile"||u==="/mobile/")u="/mobile/index.html";
   if(u==="/health"){res.writeHead(200,{"Content-Type":"text/plain"});return res.end("ok")}
   const f=path.normalize(path.join(ROOT,u));
   if(!f.startsWith(ROOT)||f.startsWith(path.join(ROOT,"server"))){res.writeHead(403);return res.end()}

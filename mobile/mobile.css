@@ -1,0 +1,83 @@
+/* ===================== МОБИЛЬНАЯ ВЕРСИЯ «Легенды Дракономании» =====================
+   Подключается поверх style.css веб-версии. Меняет только раскладку и размеры под телефон
+   (тач-цели, safe-area у «чёлки» и home-индикатора, компактная шапка, нижняя навигация),
+   не трогая игровую логику — поэтому сохранения и сервер полностью совместимы. */
+
+html{font-size:15px}
+html,body{height:100%;height:var(--mvh,100%);overscroll-behavior:none;touch-action:manipulation;-webkit-text-size-adjust:100%;-webkit-touch-callout:none}
+body.is-mobile{position:fixed;inset:0;overflow:hidden;background:#123}
+#app{height:100%;height:var(--mvh,100dvh);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+input,select,textarea{font-size:16px !important}   /* iOS не масштабирует поля ввода при фокусе */
+
+/* ---------- верхняя панель: два ряда — (аватар · название · сеть · звук · язык) и ресурсы ---------- */
+#topbar{flex-wrap:wrap;align-items:center;gap:4px 5px;padding:calc(4px + env(safe-area-inset-top)) 6px 5px;border-bottom-width:3px}
+#topbar::before{content:"";order:9;flex-basis:100%;width:100%;height:0}   /* принудительный перенос: ресурсы — отдельным рядом */
+#topbar .logo{order:1;flex:1 1 auto;margin-right:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#topbar .logo span{display:none}
+#avatar{order:0;width:34px !important;height:34px !important;flex-shrink:0}
+#topbar .netchip{order:2;margin-left:0;font-size:11px;padding:2px 7px;flex-shrink:0}
+#musbtn{order:3;margin-left:0}
+#langbtn{order:4}
+#installbtn{order:5}
+#fsbtn,#volslider{display:none !important}          /* полноэкранный режим даёт сам PWA-режим */
+#topbar .btn.sm{padding:3px 7px;font-size:12px;flex-shrink:0;min-height:30px}
+#topbar .res{order:10;flex:1 1 0;min-width:0;justify-content:center;padding:2px 6px 2px 4px;gap:3px;font-size:12px;border-width:2px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.15)}
+#topbar .res .ico{font-size:13px}
+#topbar .res b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+#topbar .res.lvl{flex:1.5 1 0;justify-content:flex-start}
+#topbar .xpbar{width:auto;flex:1;min-width:14px;height:7px}
+
+/* ---------- нижняя навигация: 7 вкладок должны помещаться в ширину экрана ---------- */
+#navbar{padding:4px 4px calc(4px + env(safe-area-inset-bottom));gap:3px;border-top-width:3px}
+#navbar button{flex:1 1 0;min-width:0;font-size:19px;line-height:1.1;padding:4px 0 3px;border-width:2px;border-radius:10px;box-shadow:0 3px 0 #3a2008}
+#navbar button span{font-size:9.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0}
+#navbar button.active{transform:translateY(-2px);box-shadow:0 3px 0 #3a2008}
+
+/* ---------- экраны и карта ---------- */
+.screen{-webkit-overflow-scrolling:touch;padding-bottom:6px}
+#scr-map .map-wrap{padding:10px 8px;gap:8px}
+.island-name{font-size:20px}
+.map-hint{font-size:12px;padding:6px 10px;max-width:96%}
+.tile{width:56px;height:56px;touch-action:manipulation}
+@media(max-width:360px){.tile{width:50px;height:50px}}
+
+/* ---------- модальные окна — почти на весь экран, прокрутка внутри ---------- */
+#modal-root{padding:8px calc(8px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));align-items:center}
+#modal-root .modal,#modal-root .modal.wide,#modal-root .modal.auth{width:100% !important;max-width:100% !important;max-height:calc(var(--mvh,100dvh) - 90px);overflow:auto;-webkit-overflow-scrolling:touch;font-size:14px;padding:10px;border-width:3px;animation:none}
+#modal-root .modal .x{width:36px;height:36px;font-size:16px}
+
+/* ---------- кнопки и тач-цели ---------- */
+.btn{min-height:40px;padding:8px 12px;font-size:14px;border-width:3px;touch-action:manipulation}
+.btn.sm{min-height:32px;padding:5px 9px;font-size:12px}
+.panel{padding:10px;border-width:3px}
+.panel h2{font-size:17px}
+
+/* ---------- сетки ---------- */
+.dr-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:10px}
+.dr-card img{height:96px}
+.dr-card .nm{font-size:13px}
+.dr-card .lv{width:28px;height:28px;font-size:12px;top:-6px;left:-6px}
+
+/* ---------- безопасные отступы у низа экрана ---------- */
+.toast{max-width:92vw}
+#toasts{top:calc(96px + env(safe-area-inset-top));}
+
+/* ---------- альбомная ориентация телефона: шапка в одну строку, экран не обрезается ---------- */
+@media (orientation:landscape) and (max-height:500px){
+  #topbar{flex-wrap:nowrap;padding-top:calc(3px + env(safe-area-inset-top))}
+  #topbar .logo{flex:0 0 auto;font-size:13px}
+  #topbar .res{flex:0 1 auto}
+  #topbar .res.lvl{flex:0 1 auto;min-width:110px}
+  #topbar .xpbar{width:40px;flex:none}
+  .dr-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  #modal-root .modal,#modal-root .modal.wide{max-height:calc(var(--mvh,100dvh) - 60px)}
+}
+
+/* ---------- очень узкие экраны ---------- */
+@media (max-width:340px){
+  #topbar .res{font-size:11px;padding-left:3px;padding-right:4px}
+  #navbar button span{font-size:8.5px}
+}
+
+/* ---------- кнопка установки PWA ---------- */
+#installbtn{background:linear-gradient(#9dff6a,#3fbf1d);border-color:#1f5f0e;box-shadow:0 3px 0 #1f5f0e;color:#0d2f05}
