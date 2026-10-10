@@ -582,6 +582,7 @@ function endBattle(win){$("#navbar").classList.remove("locked");
   clearInterval(B.tick);playMusic(B.opp.campaign?"campaign":"map");
   const opp=B.opp;const hpLeft={};B.allies.forEach(f=>hpLeft[f.id]=f.hp);B=null;
   if(!opp.allies){if(win)S.loseStreak=0;else{S.loseStreak=(S.loseStreak||0)+1;if(S.loseStreak>=3&&S.level>=15&&!charaState().found)setTimeout(charaOffer,1400)}}
+  if(win&&!opp.hw&&hwActive()){const c=rnd(1,3);hwAddCandy(c);setTimeout(()=>toast(`🍬 +${c} конфет(ы) Хэллоуина`),600)}
   if(opp.onEnd){opp.onEnd(win,hpLeft);return}
   let gold=0,xp=0,gems=0,food=0;
   if(win){const es=ECON_SCALE(S.level);gold=Math.round((200*opp.lvl+rnd(0,100))*es);xp=40+60*opp.lvl;food=Math.round(50*opp.lvl*es);const idx=OPPONENTS.indexOf(opp);if(idx>=0&&idx===S.wins){S.wins++;gems=10;}else if(idx<0)gems=opp.diff==="hard"?rnd(3,6):opp.diff==="normal"?rnd(1,3):rnd(0,1);
@@ -922,6 +923,42 @@ function charaWalk(m,done){const root=$("#modal-root");const R=CHARA_ROOMS[m.roo
   $("#cskip").onclick=()=>{stop=true;cleanup();root.innerHTML="";done()};goal.onclick=()=>{stop=true;cleanup();root.innerHTML="";done()};
   draw();requestAnimationFrame(step)}
 function mooseCardHtml(){return `<div class="panel moose-card"><h2 style="font-family:monospace;color:#f00">👁️ 666</h2><div class="feature"><img src="assets/d160.png" class="johnny-img" style="filter:drop-shadow(0 0 14px #f00)"><div style="flex:1"><div class="desc" style="font-family:monospace;color:#f88">ты не должен был это найти.<br>он не подчиняется стихиям. он — все стихии.<br>он играет сам.</div><div class="row"><button class="btn red" id="gomoose">▶ …</button></div></div></div></div>`}
+/* ================= 🎃 ХЭЛЛОУИН ================= */
+function hwActive(){const n=Date.now();return n>=Date.parse(HW_EVENT.start)&&n<=Date.parse(HW_EVENT.end)}
+function hwSt(){if(!S.hw)S.hw={candy:0,wins:0,last:0,treat:"",claimed:{}};return S.hw}
+function hwAddCandy(n){const h=hwSt();h.candy+=n;save()}
+function hwLeft(){return Math.max(0,HW_EVENT.cooldown-(Date.now()-(hwSt().last||0)))}
+function hwDayKey(){const d=new Date();return d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate()}
+function hwCardHtml(){if(!hwActive())return "";const h=hwSt();const end=new Date(HW_EVENT.end);const lock=S.level<HW_EVENT.req;const egg=dInfo(HW_EVENT.egg);const own=S.dragons[HW_EVENT.egg];
+  const maxC=HW_EVENT.track[HW_EVENT.track.length-1].c;const pct=Math.min(100,h.candy/maxC*100);
+  const track=HW_EVENT.track.map((t,k)=>{const ok=h.candy>=t.c;const cl=h.claimed[k];return `<div class="hw-ms ${ok?"ok":""} ${cl?"done":""}"><b>🍬${t.c}</b><span>${t.egg?"🥚 "+egg.name:costStr(t.r)}</span>${cl?`<span class="badge">✅</span>`:`<button class="btn sm ${ok?"green":""}" data-hwc="${k}" ${ok&&!lock?"":"disabled"}>${ok?"Забрать":"🔒"}</button>`}</div>`}).join("");
+  const treated=h.treat===hwDayKey();
+  return `<div class="panel hw-card"><h2>🎃 Хэллоуин: Ночь Тыкв <span class="badge" style="background:#ff7a00;color:#1a0a00">СОБЫТИЕ</span></h2>
+  <div class="feature"><img src="assets/${HW_EVENT.egg}.png" class="hw-img"><div style="flex:1"><div style="font-size:18px;font-weight:900">${egg.name} <span class="badge" style="background:${RARITY[egg.rarity].color}">${RARITY[egg.rarity].name}</span></div>${egg.els.map(elIco).join("")}<div class="desc">Остров погас, и в темноте загорелись тыквы. Миша Проклятый, Великий Джонни и Чара вышли на Ночной парад — а над ними, ровный как линия, парит тот, кого никто не видел: <b>${egg.name}</b>. Получить его можно только здесь.</div>
+  <div>До конца: <span class="timer" data-end="${end.getTime()}">${tleft(end)}</span>${lock?` · <b>🔒 нужен уровень ${HW_EVENT.req}</b>`:""}</div></div></div>
+  <div class="hw-candy"><span>🍬 Конфеты: <b>${h.candy}</b> / ${maxC}</span><div class="hw-bar"><div style="width:${pct}%"></div></div></div>
+  <div class="hw-track">${track}</div>
+  <div class="hw-actions">
+    <div class="skill"><span>🚪 <b>Сладость или гадость</b><br><small>Раз в день постучись в дверь соседа. Чаще дают конфеты… но иногда — гадость.</small></span><button class="btn sm purple" id="hwtreat" ${lock||treated?"disabled":""}>${treated?"завтра":"Постучать"}</button></div>
+    <div class="skill"><span>🕯️ <b>Ночной парад</b> <small>(ур. ${Math.max(S.level+HW_EVENT.lvlBonus,HW_EVENT.minLvl)})</small><br><small>Бой с тремя боссами ночи. Победа: 🍬${HW_EVENT.winCandy} + ${costStr(HW_EVENT.reward)}. Любая победа в PvE даёт 🍬1–3.</small></span><button class="btn sm red" id="hwfight" ${lock||hwLeft()>0?"disabled":""}>${hwLeft()>0?"⏳ "+tleft(new Date(Date.now()+hwLeft())):"▶ В БОЙ"}${h.wins?` <small>(${h.wins})</small>`:""}</button></div>
+  </div>${own?`<p><small>✅ ${egg.name} уже в коллекции.</small></p>`:""}</div>`}
+function bindHw(root){const bt=$("#hwtreat",root);if(bt)bt.onclick=()=>{const h=hwSt();if(h.treat===hwDayKey())return;h.treat=hwDayKey();const trick=Math.random()<0.3;const [a,b]=trick?HW_EVENT.trickCandy:HW_EVENT.treatCandy;const c=rnd(a,b);h.candy+=c;save();
+    if(trick){sndPlay&&sndPlay("init",.5);modal(`<h2>👻 ГАДОСТЬ!</h2><p class="center">Дверь открылась сама. Внутри никого — только зеркало, в котором ты моргнул на секунду позже. На пороге лежало 🍬${c}.</p><div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();renderEvents()">…ладно</button></div>`)}
+    else modal(`<h2>🍬 СЛАДОСТЬ!</h2><p class="center">Сосед высыпал полную горсть: 🍬${c}!</p><div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();renderEvents()">Спасибо</button></div>`)};
+  const bf=$("#hwfight",root);if(bf)bf.onclick=startHw;
+  $$("[data-hwc]",root).forEach(b=>b.onclick=()=>{const k=+b.dataset.hwc;const t=HW_EVENT.track[k];const h=hwSt();if(h.claimed[k]||h.candy<t.c)return;h.claimed[k]=1;
+    if(t.egg){giveEgg(t.egg,"halloween");modal(`<div class="result win">🎃 НАГРАДА ХЭЛЛОУИНА</div><div class="feature"><img src="assets/${t.egg}.png"><div><b>🥚 ${dInfo(t.egg).name}</b><p>Яйцо в инвентаре — положи его в Инкубатор.</p></div></div><div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();renderEvents()">Ок</button></div>`,{closable:false})}
+    else{const r=t.r;S.gold+=r.gold||0;S.gems+=r.gems||0;S.food+=r.food||0;S.scrolls=(S.scrolls||0)+(r.scrolls||0);toast("🎁 "+costStr(r));renderEvents()}
+    save();updateTop()})}
+function startHw(){if(!hwActive())return;if(S.level<HW_EVENT.req){toast("Нужен уровень "+HW_EVENT.req);return}if(hwLeft()>0){toast("Парад ещё идёт: "+tleft(new Date(Date.now()+hwLeft())));return}closeModal();
+  pickTeamModal("🎃 Ночной парад","<div class='desc'>Миша Проклятый, Великий Джонни и Чара. Три босса ночи в одном бою. Победа — 🍬"+HW_EVENT.winCandy+" и награда.</div>",()=>{
+  const lvl=Math.max(S.level+HW_EVENT.lvlBonus,HW_EVENT.minLvl);const h=hwSt();h.last=Date.now();save();
+  playDialog([["d134","Миша Проклятый","Тыквы горят красиво, правда? Это я их зажёг. Твоим золотом."],["d157","Великий Джонни","ПОСОХ ТОЖЕ ХОЧЕТ КОНФЕТ."],["d163","Чара","Тише. Он смотрит. Красный квадрат над нами… он не из нашей ночи."],["av0","Хранитель","Тогда соберём конфеты раньше, чем он решит спуститься."]],()=>{
+    startBattle({name:"Ночной парад",lvl,ids:HW_EVENT.ids,bg:"abyss",boss:true,hw:true,music:"gbt",onEnd:(win)=>{
+      if(win){h.wins=(h.wins||0)+1;h.candy+=HW_EVENT.winCandy;const r=HW_EVENT.reward;S.gold+=r.gold;S.gems+=r.gems;S.scrolls=(S.scrolls||0)+r.scrolls;addXP(300+30*lvl);save();updateTop();
+        modal(`<div class="result win">🎃 ПАРАД РАЗОГНАН</div><div class="center" style="font-weight:900">🍬+${HW_EVENT.winCandy} +🪙${fmt(r.gold)} +💎${r.gems} +📜${r.scrolls}</div><p class="center"><small>Конфет: ${h.candy}. Следующий парад через ${tleft(new Date(Date.now()+HW_EVENT.cooldown))}.</small></p><div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal();show('events')">Ок</button></div>`,{closable:false})}
+      else{save();modal(`<div class="result lose">НОЧЬ ПОБЕДИЛА</div><p class="center">Тыквы хохочут. Попробуй снова, когда парад вернётся.</p><div class="row" style="justify-content:center"><button class="btn" onclick="closeModal();show('events')">Ок</button></div>`,{closable:false})}}})})})}
+
 function renderEvents(){
   const f=featured();const root=$("#scr-events");
   const feat=(d,title,badge,end,key,disc)=>{const own=S.dragons[d.id];const r=RARITY[d.rarity];const price=Math.round(r.price*disc);const claimed=S.quests["claim_"+key];
@@ -932,6 +969,7 @@ function renderEvents(){
     ${claimed?`<button class="btn" disabled>🎁 Награда получена</button>`:`<button class="btn purple" data-claim="${key}">🎁 Награда события</button>`}</div>
     <small>Бонус: драконы стихии ${d.els.map(e=>ELEMENTS[e].name).join("/")} получают +25% атаки на арене в этот период.</small></div></div></div>`};
   if(S.mooseFound)$("#navbar").classList.add("locked");root.innerHTML=S.mooseFound?`<div class="ev-wrap">${mooseCardHtml()}</div>`:`<div class="ev-wrap">${feat(f.dom,"🏆 Дракон месяца","gold",f.endM,f.mk,0.6)}${feat(f.dow,"📅 Дракон недели","",f.endW,f.wk,0.75)}
+  ${hwCardHtml()}
   ${renderZodiacCard()}
   ${roryCardHtml()}${charaCardHtml()}
   
@@ -943,13 +981,13 @@ function renderEvents(){
   ${sovietUnlocked()?`<div class="panel soviet-card"><h2>🖥️ СЕКРЕТНЫЙ УРОВЕНЬ: Советские Компьютеры <span class="badge" style="background:#b0201a">???</span></h2><div class="phone-card" style="background:linear-gradient(135deg,#1a0505,#4a0a0a);border-color:#ff4030"><img src="assets/d131.png" style="height:100px;filter:none"><div><b>Три красных ящика, уровень 50+.</b><br><small>Они в СЕТИ: пока живы соседи, каждая получает на 25% меньше урона за соседа и один раз перезагружается после смерти. Каждая 3 хода заряжает BANNED — удаляет бойца целиком. Стан/заморозка сбрасывает заряд. Нужна команда 50 ур., контроль и фокус.<b>удаляет одного твоего бойца одним ударом</b> (BANNED). Следи за индикатором загрузки и убивай самого заряженного первым. Уклонение спасает.</small><br><small>Награда: 🪙${fmt(SOVIET_EVENT.reward.gold)} 💎${SOVIET_EVENT.reward.gems} 📜${SOVIET_EVENT.reward.scrolls}, первая победа — 🥚 <b>Бог</b> (божественный).</small></div></div>
   <div class="row"><button class="btn red" id="gosoviet">▶ ЗАПУСТИТЬ${S.sovietWins?` <small>(побед: ${S.sovietWins})</small>`:""}</button></div></div>`:""}
   <div class="panel"><h2 id="stat-title">📊 Статистика</h2><div class="stat"><span>Драконов</span><span>${ownedIds().length}/${DRAGONS.filter(d=>!d.boss).length}</span></div><div class="stat"><span>Побед</span><span>${S.wins}</span></div><div class="stat"><span>Боёв</span><span>${S.battles}</span></div><div class="stat"><span>Островов</span><span>${S.islands.length}/${ISLANDS.length}</span></div><div class="stat"><span>Построек</span><span>${allTiles().filter(t=>t.b).length}</span></div><div class="stat"><span>Открыто клеток</span><span>${allTiles().filter(t=>t.unlocked).length}/${allTiles().length}</span></div>
-  <div class="row"><button class="btn red sm" id="reset">Сбросить прогресс</button></div></div></div>`;
-  bindZodiac(root);const gp=$("#gophone",root);if(gp)gp.onclick=openPhone;const gs=$("#gosoviet",root);if(gs)gs.onclick=startSoviet;const gj=$("#gojohnny",root);if(gj)gj.onclick=startJohnny;const gm=$("#gomoose",root);if(gm)gm.onclick=startMoose;
+  <p><small>Сброс прогресса — в ⚙️ Настройках.</small></p></div></div>`;
+  bindZodiac(root);bindHw(root);const gp=$("#gophone",root);if(gp)gp.onclick=openPhone;const gs=$("#gosoviet",root);if(gs)gs.onclick=startSoviet;const gj=$("#gojohnny",root);if(gj)gj.onclick=startJohnny;const gm=$("#gomoose",root);if(gm)gm.onclick=startMoose;
   const stt=$("#stat-title",root);if(stt){stt.onclick=()=>{S._sovTap=(S._sovTap||0)+1;if(S._sovTap>=5&&!S.sovietFound){S.sovietFound=true;S._sovTap=0;save();sndPlay("init",.8);toast("🖥️ …init. Что-то нашлось.");renderEvents()}}}const gd=$("#godg",root);if(gd)gd.onclick=openDungeon;const gr=$("#gorory",root);if(gr)gr.onclick=openRory;$$("[data-cm]",root).forEach(b=>b.onclick=()=>charaMission(b.dataset.cm));
   $$("[data-buy]",root).forEach(b=>b.onclick=()=>{const p=+b.dataset.price;if(S.level<DRAGON_REQ[b.dataset.buy]){toast("Нужен уровень "+DRAGON_REQ[b.dataset.buy]);return}if(S.gold<p){toast("Не хватает золота");return}S.gold-=p;giveEgg(b.dataset.buy,"event");addXP(150);save();renderEvents()});
   $$("[data-claim]",root).forEach(b=>b.onclick=()=>{S.quests["claim_"+b.dataset.claim]=1;S.gold+=1000;S.gems+=10;S.food+=300;S.scrolls=(S.scrolls||0)+5;addXP(50);save();toast("🎁 +🪙1000 +💎10 +🍖300 +📜5");renderEvents()});
   $$("[data-q]",root).forEach(b=>b.onclick=()=>{const q=QUESTS.find(x=>x.id===b.dataset.q);S.quests["done_"+q.id]=1;S.gold+=q.reward.gold||0;S.gems+=q.reward.gems||0;S.food+=q.reward.food||0;S.scrolls=(S.scrolls||0)+(q.reward.scrolls||0);addXP(80);save();toast("✅ "+costStr(q.reward));renderEvents()});
-  const rst=$("#reset");if(rst)rst.onclick=()=>{if(confirm("Точно удалить весь прогресс?")){if(SAVE_MODE==="account"){netSend({t:"save_reset"});sessionStorage.removeItem("dml_acc_session")}else localStorage.removeItem(SAVE_KEY);location.reload()}};
+  
 }
 setInterval(()=>$$(".timer").forEach(t=>t.textContent=tleft(+t.dataset.end)),1000);
 // хуки квестов
@@ -1048,7 +1086,7 @@ function playMusic(name){if(MUSIC.cur===name)return;stopMusic();MUSIC.cur=name;i
   sched()}
 function stopMusic(){clearTimeout(MUSIC.timer);MUSIC.timer=null;if(MUSIC.master){try{MUSIC.master.gain.linearRampToValueAtTime(0,MUSIC.ctx.currentTime+.3)}catch(e){}const m=MUSIC.master;setTimeout(()=>m.disconnect(),400);MUSIC.master=null}if(MUSIC.mp3){MUSIC.mp3.pause();MUSIC.mp3=null}MUSIC.cur=null}
 function ctxMusic(){if(B)return B.opp.music||(B.opp.pvp?"pvp":"battle");if(S.mooseFound)return "drone";const a=$(".screen.active");const scr=a?a.id.replace("scr-",""):"map";return scr==="battle"||scr==="pvp"?"select":scr==="campaign"?"campaign":"map"}
-function toggleMusic(){S.music=!S.music;save();stopMusic();if(S.music){playMusic(ctxMusic())}$("#musbtn").textContent=S.music?"🔊":"🔇"}
+function toggleMusic(){S.music=!S.music;save();stopMusic();if(S.music){playMusic(ctxMusic())}const mb=$("#musbtn");if(mb)mb.textContent=S.music?"🔊":"🔇"}
 function setVolume(v){S.vol=Math.max(0,Math.min(1,v));save();if(MUSIC.mp3)MUSIC.mp3.volume=.6*S.vol;if(MUSIC.master)try{MUSIC.master.gain.value=(MUSIC.baseGain||1)*S.vol}catch(e){}}
 // музыка стартует только после первого жеста пользователя (политика браузеров)
 document.addEventListener("pointerdown",()=>{if(MUSIC.ctx&&MUSIC.ctx.state==="suspended")MUSIC.ctx.resume();if(!MUSIC.cur&&S&&S.music)playMusic(B?"battle":"map")},{once:false});
@@ -1190,18 +1228,33 @@ function renderPvp(){const root=$("#scr-pvp");const r=S.pvp.rating||1000,L=leagu
 /* ================= НАСТРОЙКИ: предложение установить приложение на телефон ================= */
 const APK_URL="mobile/dragonmania.apk";
 function apkPanel(){
-  const ua=navigator.userAgent||"";
-  const phone=/Android|iPhone|iPad|iPod/i.test(ua)||(matchMedia("(pointer:coarse)").matches&&Math.min(innerWidth,innerHeight)<600);
-  // внутри самого приложения (WebView из APK или установленный PWA) предложение не нужно
-  const inApp=/\bwv\b/.test(ua)||matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
-  if(!phone||inApp)return "";
-  const ios=/iPhone|iPad|iPod/i.test(ua);
-  return `<div class="panel sub apk-offer"><h2>⚙️ Настройки</h2>${ios?`<p>📲 Чтобы играть как приложение: «Поделиться» → «На экран «Домой»».</p>`:`<p>📱 Вы играете с телефона. Скачайте приложение «Легенды Дракономании» для Android.</p><div class="row"><button class="btn green" onclick="const a=document.createElement('a');a.href=APK_URL;a.download='';document.body.append(a);a.click();a.remove()">⬇️ Скачать APK</button></div><p><small>Android может попросить разрешить установку из этого источника.</small></p>`}</div>`;
+  const ua=navigator.userAgent;const ios=/iPhone|iPad|iPod/i.test(ua);const android=/Android/i.test(ua);const inApp=/DragonmaniaApp/.test(ua)||window.matchMedia("(display-mode: standalone)").matches;
+  if(inApp)return `<div class="set-sec"><h3>📱 Приложение</h3><p><small>✅ Вы играете в приложении. Сохранения, аккаунты и PvP общие с веб-версией.</small></p></div>`;
+  return `<div class="set-sec"><h3>📱 Приложение</h3>${ios?`<p><small>Чтобы играть как приложение на iPhone: «Поделиться» → «На экран «Домой»».</small></p>`:`<p><small>${android?"Скачайте приложение «Легенды Дракономании» для Android.":"Есть версия для Android — ссылку можно открыть с телефона."}</small></p><div class="row"><button class="btn green sm" onclick="const a=document.createElement('a');a.href=APK_URL;a.download='';document.body.append(a);a.click();a.remove()">⬇️ Скачать APK</button><button class="btn sm" onclick="location.href='mobile/'">🌐 Мобильная веб-версия</button></div><p><small>Android может попросить разрешить установку из этого источника.</small></p>`}</div>`;
+}
+function openSettings(){const me=NET.me;const on=NET.status==="online";const L=window.LANG||"ru";
+  const m=modal(`<h2>⚙️ Настройки</h2><div class="settings">
+  <div class="set-sec"><h3>🔊 Звук</h3><div class="row"><button class="btn sm" id="musbtn">${S.music?"🔊":"🔇"}</button><span>Музыка: <b id="mus-state">${S.music?"вкл":"выкл"}</b></span></div>
+  <div class="row"><span>Громкость</span><input type="range" id="volslider" min="0" max="100" value="${Math.round((S.vol==null?1:S.vol)*100)}"><b id="vol-val">${Math.round((S.vol==null?1:S.vol)*100)}%</b></div></div>
+  <div class="set-sec"><h3>🌐 Язык / Language</h3><div class="row"><button class="btn sm ${L==="ru"?"green":""}" data-lang="ru">Русский</button><button class="btn sm ${L==="en"?"green":""}" data-lang="en">English</button></div></div>
+  <div class="set-sec"><h3>🖥️ Экран</h3><div class="row"><button class="btn sm" id="s-fs">⛶ Полный экран</button><small>клавиша F / F11</small></div></div>
+  <div class="set-sec"><h3>👤 Аккаунт</h3>${me?`<p><small>Вы вошли как <b>${me.name}</b>. Код друга: <b class="code">${me.code}</b>. Прогресс сохраняется в аккаунт.</small></p><div class="row"><button class="btn sm" id="s-prof">Профиль и друзья</button><button class="btn sm red" id="s-logout">Выйти из аккаунта</button></div>`:`<p><small>Вы играете офлайн — прогресс хранится только в этом браузере.</small></p><div class="row"><button class="btn sm green" id="s-login" ${on?"":"disabled"}>Войти / Регистрация</button></div>`}</div>
+  ${apkPanel()}
+  <div class="set-sec danger"><h3>🗑️ Данные</h3><div class="row"><button class="btn red sm" id="reset">Сбросить прогресс</button><small>${SAVE_MODE==="account"?"удалит сохранение аккаунта":"удалит локальное сохранение"}</small></div></div>
+  </div>`);
+  $("#musbtn",m).onclick=()=>{toggleMusic();$("#mus-state",m).textContent=S.music?"вкл":"выкл"};
+  const vs=$("#volslider",m);vs.oninput=()=>{setVolume(vs.value/100);$("#vol-val",m).textContent=vs.value+"%"};
+  $$("[data-lang]",m).forEach(b=>b.onclick=()=>{if(b.dataset.lang!==L)setLang(b.dataset.lang)});
+  $("#s-fs",m).onclick=toggleFullscreen;
+  const lo=$("#s-logout",m);if(lo)lo.onclick=()=>{if(confirm("Выйти из аккаунта?"))logout()};
+  const li=$("#s-login",m);if(li)li.onclick=()=>{closeModal();NET.wantAuth=true;sessionStorage.removeItem("dml_offline");showAuth("login")};
+  const pr=$("#s-prof",m);if(pr)pr.onclick=()=>{closeModal();show("friends")};
+  $("#reset",m).onclick=()=>{if(confirm("Точно удалить весь прогресс?")){if(SAVE_MODE==="account"){netSend({t:"save_reset"});sessionStorage.removeItem("dml_acc_session")}else localStorage.removeItem(SAVE_KEY);location.reload()}};
 }
 function renderFriends(){const root=$("#scr-friends");const on=NET.status==="online";const me=NET.me;
   root.innerHTML=`<div class="pvp-menu"><div class="panel"><h2>👤 ${me?"Аккаунт: "+me.name:"Аккаунт"}</h2>${me?`<p><small>☁️ Прогресс сохраняется в аккаунт автоматически.</small> <button class="btn sm" id="alogout">Выйти</button></p>`:`<p>Вы играете офлайн. <button class="btn sm green" id="alogin" ${on?"":"disabled"}>Войти / Регистрация</button></p>`}<div class="prof"><img src="assets/av/${S.profile.avatar}.jpg" class="av big" id="pickav"><div><input id="pname" maxlength="20" value="${S.profile.name.replace(/"/g,"&quot;")}" ${me?"disabled title='Имя = логин аккаунта'":""}><br><small>Твой код друга: <b class="code">${me?me.code:"— (офлайн)"}</b></small><br><small>Нажми на аватар, чтобы сменить</small></div></div>
   <div class="avgrid">${AVATARS.map(a=>{const locked=a.price&&!(S.avOwned||[]).includes(a.id);return `<div class="avwrap ${locked?"locked":""}"><img src="assets/av/${a.id}.jpg" class="av ${S.profile.avatar===a.id?"sel":""}" data-av="${a.id}" data-price="${locked?a.price:""}" title="${a.n}${locked?" — 💎"+a.price:""}">${locked?`<span class="avprice">💎${a.price}</span>`:""}</div>`}).join("")}</div></div>
-  ${apkPanel()}<div class="panel"><h2>➕ Добавить друга</h2><div class="row"><input id="fcode" placeholder="Код друга, напр. A1B2C3" maxlength="6" style="text-transform:uppercase"><button class="btn green" id="fadd" ${on?"":"disabled"}>Отправить заявку</button></div></div>
+  <div class="panel"><h2>➕ Добавить друга</h2><div class="row"><input id="fcode" placeholder="Код друга, напр. A1B2C3" maxlength="6" style="text-transform:uppercase"><button class="btn green" id="fadd" ${on?"":"disabled"}>Отправить заявку</button></div></div>
   ${NET.requests.length?`<div class="panel"><h2>📨 Заявки (${NET.requests.length})</h2>${NET.requests.map(p=>`<div class="frow"><img src="assets/av/${p.avatar}.jpg" class="av"><b>${p.name}</b><small>${leagueOf(p.rating).ico} ${p.rating}</small><button class="btn sm green" data-acc="${p.id}">✓</button><button class="btn sm" data-dec="${p.id}">✕</button></div>`).join("")}</div>`:""}
   <div class="panel"><h2>👥 Друзья (${NET.friends.length})</h2>${NET.friends.map(p=>`<div class="frow"><img src="assets/av/${p.avatar}.jpg" class="av"><span class="dot ${p.online?"on":""}"></span><b>${p.name}</b><small>${leagueOf(p.rating).ico} ${p.rating} · ⚡${p.power}</small><button class="btn sm blue" data-visit="${p.id}" title="Посетить остров и сравнить драконов">🏝️ В гости</button><button class="btn sm red" data-ch="${p.id}" ${p.online&&team.length?"":"disabled"}>⚔️ Вызвать</button><button class="btn sm" data-rm="${p.id}">🗑</button></div>`).join("")||`<small>${on?"Добавь друзей по коду — и вызывай их на PvP-бой.":"Нет связи с сервером."}</small>`}<p><small>Друг показан «не в сети», пока он не <b>вошёл в аккаунт</b> в игре (индикатор в шапке должен быть 🟢).</small></p>${``}</div></div>`;
   const lo=$("#alogout",root);if(lo)lo.onclick=()=>{if(confirm("Выйти из аккаунта?"))logout()};const li=$("#alogin",root);if(li)li.onclick=()=>{NET.wantAuth=true;sessionStorage.removeItem("dml_offline");showAuth("login")};
@@ -1341,12 +1394,12 @@ if(TICKER)TICKER.onmessage=()=>{if(document.hidden){/* в фоне: обновл
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){if(NET.status!=="online")netConnect();if($("#boot")||$("#b_login"))return;if(MUSIC.ctx&&MUSIC.ctx.state==="suspended")MUSIC.ctx.resume();if(!B)show($("#navbar button.active")?.dataset.scr||"map")}});
 
 /* ================= СТАРТ ================= */
+if(typeof HW_EVENT!=="undefined"&&hwActive())document.body.classList.add("hw");
 S=newState();SAVE_MODE="local"; // временное состояние на время загрузки; реальное выбирается на экране входа
 updateTop();NET.booting=true;netConnect();showBoot();
 const _chip=document.createElement("button");_chip.id="netchip";_chip.className="netchip";_chip.onclick=()=>{if(NET.status!=="online"){toast("⏳ Пробуем подключиться…");netConnect();return}if(!NET.me){NET.wantAuth=true;sessionStorage.removeItem("dml_offline");showAuth("login")}else show("friends")};$("#topbar").append(_chip);refreshNetUI();
-const _fs=document.createElement("button");_fs.id="fsbtn";_fs.className="btn sm";_fs.textContent="⛶";_fs.title="Полный экран (F11 / F)";_fs.onclick=toggleFullscreen;$("#topbar").append(_fs);
+const _sb=document.createElement("button");_sb.id="setbtn";_sb.className="btn sm";_sb.textContent="⚙️";_sb.title="Настройки";_sb.onclick=openSettings;$("#topbar").append(_sb);
 document.addEventListener("keydown",e=>{if(e.code==="KeyF"&&!e.target.matches("input,textarea")&&!B)toggleFullscreen()});
-const _mb=document.createElement("button");_mb.id="musbtn";_mb.className="btn sm";_mb.textContent=S.music?"🔊":"🔇";_mb.title="Музыка";_mb.onclick=toggleMusic;const _vs=document.createElement("input");_vs.type="range";_vs.min=0;_vs.max=100;_vs.value=Math.round((S.vol==null?1:S.vol)*100);_vs.id="volslider";_vs.title="Громкость";_vs.oninput=()=>setVolume(_vs.value/100);$("#topbar").append(_vs);$("#topbar").append(_mb);
 const _av=document.createElement("img");_av.id="avatar";_av.className="av";_av.onclick=()=>show("friends");$("#topbar").prepend(_av);updateTop();
 // приветствие
 if(!S.quests.intro){S.quests.intro=1;save();modal(`<h2>🐉 Добро пожаловать, Хранитель!</h2><p>Это твой остров. Строй жилища, собирай драконов, корми их и сражайся на арене в пошаговых боях.</p><ul style="margin:8px 0 8px 18px;font-size:13px"><li>🗺️ <b>Остров</b> — постройки и доход</li><li>🐲 <b>Драконы</b> — прокачка и эволюция</li><li>⚔️ <b>Арена</b> — пошаговые бои 3×3</li><li>🏆 <b>События</b> — дракон месяца и недели</li><li>🏪 <b>Магазин</b> — яйца и драконы</li><li>⭐ Нажми на <b>уровень</b> вверху — увидишь дорогу наград</li></ul><div class="center"><img src="assets/d00.png" style="height:120px"></div><div class="row" style="justify-content:center"><button class="btn green" onclick="closeModal()">Начать!</button></div>`)}

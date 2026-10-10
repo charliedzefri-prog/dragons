@@ -478,6 +478,11 @@ const JOHNNY_EVENT={req:15, ids:["d157","d135","d136"], lvlBonus:3, lateLvl:52, 
 
 const MOOSE_EVENT={req:15, code:"лось.exe", ids:["d160"], lvl:145, hp:90666, defMult:4, atkMult:0.22, dmgTaken:1.9, effLvl:10, lvlBonus:5, cooldown:0, reward:{gold:66600,gems:66,scrolls:66}, egg:"d159"};
 
+/* 🎃 Хэллоуин: сезонное событие. Награда дорожки — ТимКой Бог (d149), больше его получить негде. */
+const HW_EVENT={start:"2026-10-10T00:00:00+03:00", end:"2026-11-08T23:59:59+03:00", req:15, egg:"d149",
+  ids:["d134","d157","d163"], lvlBonus:6, minLvl:20, cooldown:2*3600e3, winCandy:15, reward:{gold:6000,gems:15,scrolls:12},
+  treatCandy:[8,14], trickCandy:[3,5],
+  track:[{c:30,r:{gems:20}},{c:60,r:{gold:5000,food:1500}},{c:100,r:{scrolls:30,gems:30}},{c:150,egg:"d149"}]};
 const RORY_EVENT={req:15, floors:10, bossLvl:250, baseLvl:45, step:7, immortalFrom:6, rewardGold:6000, rewardGems:8, finalEgg:"d162"};
 const CHARA_MISSIONS=[
  {id:"c1", name:"Пробуждение острова", req:15, lvl:20, ids:["d19","d47"], room:"island",

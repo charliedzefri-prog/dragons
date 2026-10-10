@@ -11,14 +11,7 @@
   window.LANG=LANG;
   window.setLang=l=>{localStorage.setItem("dml_lang",l);location.reload()};
 
-  // language toggle button in the top bar (always available, in both languages)
-  function addToggle(){
-    const bar=document.getElementById("topbar");if(!bar||document.getElementById("langbtn"))return;
-    const b=document.createElement("button");b.id="langbtn";b.className="btn sm";b.textContent=LANG==="en"?"RU":"EN";
-    b.title=LANG==="en"?"Переключить на русский":"Switch to English";b.onclick=()=>setLang(LANG==="en"?"ru":"en");bar.append(b)}
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",addToggle);else addToggle();
-  // game.js appends music controls later — keep the language button last
-  setTimeout(addToggle,0);setTimeout(()=>{const b=document.getElementById("langbtn");if(b)b.parentNode.append(b)},50);
+  // язык переключается в ⚙️ Настройках (game.js → openSettings)
 
   if(LANG!=="en"||!window.LANG_EN)return;
   document.documentElement.lang="en";

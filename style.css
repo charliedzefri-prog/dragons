@@ -649,3 +649,36 @@ table.adm{width:100%;border-collapse:collapse;font-size:.85rem}table.adm th,tabl
 .ring-glow{position:absolute;right:10px;top:8px;font-family:monospace;color:#f00;font-weight:900;text-shadow:0 0 10px #f00;animation:pentaIn 2.5s forwards;z-index:5}
 
 .avwrap{position:relative;display:inline-block}.avwrap.locked img{filter:grayscale(.7) brightness(.6)}.avprice{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);background:#000c;color:#ffb700;font-size:11px;font-weight:900;padding:1px 5px;border-radius:6px;pointer-events:none;white-space:nowrap}
+
+/* ===== ⚙️ Настройки ===== */
+#setbtn{margin-left:4px}
+.settings{display:flex;flex-direction:column;gap:10px;max-height:70vh;overflow:auto;padding-right:4px}
+.set-sec{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px}
+.set-sec h3{margin:0 0 6px;font-size:14px;color:#7a4300}
+.set-sec .row{align-items:center;gap:8px;flex-wrap:wrap}
+.set-sec small{opacity:.9}
+.set-sec.danger{border-color:rgba(255,80,60,.5)}
+.settings #volslider{width:140px;accent-color:#ffb700;vertical-align:middle}
+
+/* ===== 🎃 Хэллоуин ===== */
+body.hw #topbar{box-shadow:0 2px 14px rgba(255,122,0,.45);border-bottom:1px solid #ff7a00}
+body.hw #topbar .logo::before{content:"🎃 "}
+body.hw #navbar button[data-scr="events"] span::after{content:" 🎃"}
+.hw-card{background:linear-gradient(160deg,#1a0a1f,#2d0f0a 60%,#0d0d16);border:1px solid #ff7a00;box-shadow:0 0 18px rgba(255,122,0,.3) inset}
+.hw-card h2{color:#ffb15e}
+.hw-img{filter:drop-shadow(0 0 12px #ff7a00)}
+.hw-candy{display:flex;align-items:center;gap:10px;margin:8px 0;font-weight:800}
+.hw-bar{flex:1;height:12px;background:rgba(0,0,0,.5);border-radius:8px;overflow:hidden;border:1px solid #ff7a00}
+.hw-bar>div{height:100%;background:linear-gradient(90deg,#ff7a00,#ffd84a);transition:width .4s}
+.hw-track{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin:6px 0}
+.hw-ms{background:rgba(0,0,0,.35);border:1px solid rgba(255,122,0,.35);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;font-size:12px;opacity:.65}
+.hw-ms.ok{opacity:1;border-color:#ffd84a}
+.hw-ms.done{opacity:.5}
+.hw-actions .skill{border-color:rgba(255,122,0,.35)}
+.hw-card{grid-column:1/-1;color:#fff}
+.hw-card .desc,.hw-card small,.hw-card .skill,.hw-card .skill small{color:#f3e4d0}
+.hw-card .desc{background:rgba(0,0,0,.35)}
+.hw-card .skill{background:rgba(0,0,0,.3)}
+.hw-card .hw-img{height:150px;animation:float 1.6s infinite alternate}
+.hw-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}
+.hw-ms{color:#fff}.hw-ms span{color:#f3e4d0}
